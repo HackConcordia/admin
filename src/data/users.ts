@@ -4,7 +4,7 @@ export const users = [
     name: "HackConcordia",
     username: "hackconcordia",
     email: "hackconcordia@hackconcordia.io",
-    avatar: "/avatars/ConuHacksLogo.webp",
+    avatar: "/avatars/ConuHacksLogo.png",
     role: "administrator",
   },
   {

@@ -21,7 +21,7 @@ export function TableCards() {
 
   return (
     <div className="grid grid-cols-1 gap-4 *:data-[slot=card]:shadow-xs">
-      <Card>
+      <div className="mt-5">
         <CardHeader>
           <CardTitle>Applications</CardTitle>
           <CardDescription>Track and manage your applications and their status.</CardDescription>
@@ -35,13 +35,13 @@ export function TableCards() {
             </div>
           </CardAction>
         </CardHeader>
-        <CardContent className="flex size-full flex-col gap-4">
+        <CardContent className="mt-4 flex size-full flex-col gap-4">
           <div className="overflow-hidden rounded-md border">
             <DataTable table={table} columns={recentLeadsColumns} />
           </div>
           <DataTablePagination table={table} />
         </CardContent>
-      </Card>
+      </div>
     </div>
   );
 }
