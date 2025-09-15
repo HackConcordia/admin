@@ -1,14 +1,25 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { COOKIE_NAME, verifyAuthToken } from "@/lib/auth-token";
 
-export function authMiddleware(req: NextRequest) {
+export async function authMiddleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  const isLoggedIn = req.cookies.get("auth-token");
+  const token = req.cookies.get(COOKIE_NAME)?.value;
 
-  if (!isLoggedIn && pathname.startsWith("/dashboard")) {
-    return NextResponse.redirect(new URL("/auth/login", req.url));
+  let isAuthenticated = false;
+  if (token) {
+    const payload = await verifyAuthToken(token);
+    isAuthenticated = !!payload;
   }
 
-  if (isLoggedIn && pathname === "/auth/login") {
+  const isDashboardPath = pathname.startsWith("/dashboard");
+  const isAuthPath = pathname.startsWith("/auth/");
+  const loginPath = "/auth/v1/login";
+
+  if (!isAuthenticated && isDashboardPath) {
+    return NextResponse.redirect(new URL(loginPath, req.url));
+  }
+
+  if (isAuthenticated && isAuthPath) {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
