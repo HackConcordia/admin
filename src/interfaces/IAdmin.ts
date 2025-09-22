@@ -1,8 +1,9 @@
 export interface IAdmin {
-    _id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-    password: string;
-    isSuperAdmin: boolean;
+  _id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  isSuperAdmin: boolean;
+  assignedApplications: string[];
 }

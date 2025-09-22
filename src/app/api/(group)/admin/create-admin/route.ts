@@ -1,28 +1,36 @@
-import type { NextRequest } from 'next/server'
+import type { NextRequest } from "next/server";
 
-import connectMongoDB from '@/repository/mongoose'
-import { sendErrorResponse, sendSuccessResponse } from '@/repository/response'
-import Admin from '@/repository/models/admin'
+import connectMongoDB from "@/repository/mongoose";
+import { sendErrorResponse, sendSuccessResponse } from "@/repository/response";
+import Admin from "@/repository/models/admin";
+import bcrypt from "bcryptjs";
 
 export const POST = async (req: NextRequest) => {
   try {
-    const { firstName, lastName, email, password } = await req.json()
+    const { firstName, lastName, email, password } = await req.json();
 
     if (!password || !firstName || !lastName || !email) {
-      return sendErrorResponse('Username or password is not present in the body', null, 400)
+      return sendErrorResponse("Username or password is not present in the body", null, 400);
     }
 
-    await connectMongoDB()
+    await connectMongoDB();
 
-    const newAdmin = Admin.create({
-      firstName: firstName,
-      lastName: lastName,
-      email: email,
-      password: password,
-    })
+    const existing = await Admin.findOne({ email });
+    if (existing) {
+      return sendErrorResponse("An admin with this email already exists", null, 409);
+    }
 
-    return sendSuccessResponse('Admin created successfully', newAdmin, 200)
+    const hashed = await bcrypt.hash(password, 10);
+
+    const newAdmin = await Admin.create({
+      firstName,
+      lastName,
+      email,
+      password: hashed,
+    });
+
+    return sendSuccessResponse("Admin created successfully", newAdmin, 200);
   } catch (error) {
-    return sendErrorResponse('Failed to create admin', error, 500)
+    return sendErrorResponse("Failed to create admin", error, 500);
   }
-}
+};

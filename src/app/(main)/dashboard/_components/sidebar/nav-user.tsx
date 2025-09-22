@@ -1,6 +1,7 @@
 "use client";
 
 import { EllipsisVertical, CircleUser, CreditCard, MessageSquareDot, LogOut } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -25,6 +26,22 @@ export function NavUser({
   };
 }) {
   const { isMobile } = useSidebar();
+  const router = useRouter();
+
+  async function handleLogout() {
+    try {
+      console.log("Logging out");
+      await fetch("/api/auth-token/logout", { method: "POST" });
+    } catch (_) {
+      // ignore
+    } finally {
+      try {
+        router.replace("/auth/v1/login");
+      } catch (_) {
+        window.location.href = "/auth/v1/login";
+      }
+    }
+  }
 
   return (
     <SidebarMenu>
@@ -80,7 +97,17 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem
+              variant="destructive"
+              onSelect={(e) => {
+                e.preventDefault();
+                handleLogout();
+              }}
+              onClick={(e) => {
+                e.preventDefault();
+                handleLogout();
+              }}
+            >
               <LogOut />
               Log out
             </DropdownMenuItem>

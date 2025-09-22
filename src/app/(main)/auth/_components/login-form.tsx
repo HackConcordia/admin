@@ -33,15 +33,25 @@ export function LoginForm() {
   });
 
   const onSubmit = async (data: z.infer<typeof FormSchema>) => {
-    toast("You submitted the following values", {
-      description: (
-        <pre className="mt-2 w-[320px] rounded-md bg-neutral-950 p-4">
-          <code className="text-white">{JSON.stringify(data, null, 2)}</code>
-        </pre>
-      ),
-    });
-    
-    window.location.href = "/dashboard/conuhacks";
+    try {
+      const res = await fetch("/api/auth-token/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: data.email, password: data.password, remember: !!data.remember }),
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || `Login failed (${res.status})`);
+      }
+
+      toast.success("Logged in successfully");
+      window.location.href = "/dashboard/applications";
+    } catch (e: any) {
+      toast.error(e?.message ? String(e.message) : "Login failed");
+    }
   };
 
   return (
@@ -54,7 +64,14 @@ export function LoginForm() {
             <FormItem>
               <FormLabel>Email Address</FormLabel>
               <FormControl>
-                <Input id="email" type="email" placeholder="you@example.com" autoComplete="email" {...field} required={false} />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                  {...field}
+                  required={false}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -106,4 +123,3 @@ export function LoginForm() {
     </Form>
   );
 }
-
