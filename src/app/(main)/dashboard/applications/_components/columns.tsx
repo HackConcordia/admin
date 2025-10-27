@@ -85,7 +85,6 @@ export const applicationsColumns: ColumnDef<ApplicationTableRow>[] = [
           <DropdownMenuItem
             variant="destructive"
             onClick={() => {
-              // placeholder for delete action
               console.log("Delete", row.original._id);
             }}
           >
@@ -93,8 +92,7 @@ export const applicationsColumns: ColumnDef<ApplicationTableRow>[] = [
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => {
-              // placeholder for review action
-              console.log("Review", row.original._id);
+              window.location.href = `/dashboard/applications/${row.original._id}`;
             }}
           >
             <Eye /> Review
