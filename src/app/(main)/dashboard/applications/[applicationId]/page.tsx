@@ -200,10 +200,35 @@ export default function Page() {
 
                 {(() => {
                   const status = application.status;
-                  const isAdmitted = status === "Admitted";
+                  const isSubmitted = status === "Submitted";
+                  const isConfirmed = status === "Confirmed";
                   const isCheckedIn = status === "CheckedIn" || status === "Checked-in";
 
-                  if (isAdmitted) {
+                  if (isSubmitted) {
+                    return (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button onClick={() => updateStatus("admit")} disabled={isSaving !== null} variant="default">
+                          <CheckCircle2 className="mr-2" /> Admit
+                        </Button>
+                        <Button
+                          onClick={() => updateStatus("waitlist")}
+                          disabled={isSaving !== null}
+                          variant="secondary"
+                        >
+                          <Hourglass className="mr-2" /> Waitlist
+                        </Button>
+                        <Button
+                          onClick={() => updateStatus("reject")}
+                          disabled={isSaving !== null}
+                          variant="destructive"
+                        >
+                          <XCircle className="mr-2" /> Reject
+                        </Button>
+                      </div>
+                    );
+                  }
+
+                  if (isConfirmed) {
                     return (
                       <div className="flex flex-wrap items-center gap-2">
                         <Button onClick={checkIn} disabled={isSaving !== null} variant="default">
@@ -223,19 +248,7 @@ export default function Page() {
                     );
                   }
 
-                  return (
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Button onClick={() => updateStatus("admit")} disabled={isSaving !== null} variant="default">
-                        <CheckCircle2 className="mr-2" /> Admit
-                      </Button>
-                      <Button onClick={() => updateStatus("waitlist")} disabled={isSaving !== null} variant="secondary">
-                        <Hourglass className="mr-2" /> Waitlist
-                      </Button>
-                      <Button onClick={() => updateStatus("reject")} disabled={isSaving !== null} variant="destructive">
-                        <XCircle className="mr-2" /> Reject
-                      </Button>
-                    </div>
-                  );
+                  return null;
                 })()}
               </>
             )}
