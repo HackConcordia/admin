@@ -92,7 +92,7 @@ export const applicationsColumns: ColumnDef<ApplicationTableRow>[] = [
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => {
-              window.location.href = `/dashboard/applications/${row.original._id}`;
+              window.open(`/dashboard/applications/${row.original._id}`, "_blank", "noopener,noreferrer");
             }}
           >
             <Eye /> Review
