@@ -9,17 +9,18 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardAction } from "@/components/ui/card";
 import { useDataTableInstance } from "@/hooks/use-data-table-instance";
 
-import { applicationsColumns, type ApplicationTableRow } from "./columns";
+import { getApplicationsColumns, type ApplicationTableRow } from "./columns";
 import ApplicationsFilters from "./filters";
 
 type TableCardsProps = {
   initialData: ApplicationTableRow[];
+  isSuperAdmin: boolean;
 };
 
-export function TableCards({ initialData }: TableCardsProps) {
+export function TableCards({ initialData, isSuperAdmin }: TableCardsProps) {
   const table = useDataTableInstance({
     data: initialData ?? [],
-    columns: applicationsColumns,
+    columns: getApplicationsColumns(isSuperAdmin),
     getRowId: (row) => row._id,
   });
 
@@ -44,7 +45,7 @@ export function TableCards({ initialData }: TableCardsProps) {
         </CardHeader>
         <CardContent className="mt-4 flex size-full flex-col gap-4">
           <div className="overflow-hidden rounded-md border">
-            <DataTable table={table} columns={applicationsColumns} />
+            <DataTable table={table} columns={getApplicationsColumns(isSuperAdmin)} />
           </div>
           <DataTablePagination table={table} />
         </CardContent>
