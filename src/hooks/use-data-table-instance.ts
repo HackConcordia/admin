@@ -50,6 +50,9 @@ export function useDataTableInstance<TData, TValue>({
       columnFilters,
       pagination,
     },
+    // Avoid state updates triggered by auto-resets during initial render/mount
+    autoResetPageIndex: false,
+    autoResetAll: false,
     enableRowSelection,
     getRowId: getRowId ?? ((row) => (row as any).id.toString()),
     onRowSelectionChange: setRowSelection,
