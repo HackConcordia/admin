@@ -15,9 +15,9 @@ import { useRouter } from "next/navigation";
  */
 function formatArrayValue(value: string | string[] | undefined | null): string {
   if (!value) return "—";
-  
+
   let arrayValue: string[];
-  
+
   // If it's an array
   if (Array.isArray(value)) {
     // Check if it's an array with a single string element that looks like a stringified array
@@ -41,11 +41,11 @@ function formatArrayValue(value: string | string[] | undefined | null): string {
       // It's a regular array, use it directly
       arrayValue = value;
     }
-  } 
+  }
   // If it's a string, try to parse it as JSON
   else if (typeof value === "string") {
     const trimmed = value.trim();
-    
+
     // Check if it looks like a stringified array
     if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
       try {
@@ -62,14 +62,14 @@ function formatArrayValue(value: string | string[] | undefined | null): string {
       // Not an array format, return as-is
       return value;
     }
-  } 
+  }
   // Otherwise, treat it as a single value
   else {
     return String(value);
   }
-  
+
   // Filter out empty values and join with " | "
-  const filtered = arrayValue.filter(item => item && item !== "none" && item !== "None");
+  const filtered = arrayValue.filter((item) => item && item !== "none" && item !== "None");
   return filtered.length > 0 ? filtered.join(" | ") : "—";
 }
 
@@ -226,7 +226,7 @@ export default function ApplicationView({
                 <div className="space-y-6">
                   {/* Personal Information */}
                   <div>
-                    <h3 className="text-sm font-semibold mb-3">Personal Information</h3>
+                    <h3 className="mb-3 text-sm font-semibold">Personal Information</h3>
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       <div className="space-y-1">
                         <div className="text-muted-foreground text-xs">18 or Above</div>
@@ -255,7 +255,7 @@ export default function ApplicationView({
 
                   {/* Education */}
                   <div>
-                    <h3 className="text-sm font-semibold mb-3">Education</h3>
+                    <h3 className="mb-3 text-sm font-semibold">Education</h3>
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       <div className="space-y-1">
                         <div className="text-muted-foreground text-xs">School</div>
@@ -304,7 +304,7 @@ export default function ApplicationView({
 
                   {/* Project Experience */}
                   <div>
-                    <h3 className="text-sm font-semibold mb-3">Project Experience</h3>
+                    <h3 className="mb-3 text-sm font-semibold">Project Experience</h3>
                     <div className="space-y-4">
                       <div className="space-y-1">
                         <div className="text-muted-foreground text-xs">Cool Project</div>
@@ -321,7 +321,7 @@ export default function ApplicationView({
 
                   {/* Career Interests */}
                   <div>
-                    <h3 className="text-sm font-semibold mb-3">Career Interests</h3>
+                    <h3 className="mb-3 text-sm font-semibold">Career Interests</h3>
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       <div className="space-y-1">
                         <div className="text-muted-foreground text-xs">Job Roles Looking For</div>
@@ -362,7 +362,7 @@ export default function ApplicationView({
 
                   {/* Preferences */}
                   <div>
-                    <h3 className="text-sm font-semibold mb-3">Preferences</h3>
+                    <h3 className="mb-3 text-sm font-semibold">Preferences</h3>
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       <div className="space-y-1">
                         <div className="text-muted-foreground text-xs">Preferred Language</div>
@@ -387,7 +387,7 @@ export default function ApplicationView({
 
                   {/* Logistics */}
                   <div>
-                    <h3 className="text-sm font-semibold mb-3">Logistics</h3>
+                    <h3 className="mb-3 text-sm font-semibold">Logistics</h3>
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       <div className="space-y-1">
                         <div className="text-muted-foreground text-xs">Country</div>
@@ -418,7 +418,7 @@ export default function ApplicationView({
 
                   {/* Links */}
                   <div>
-                    <h3 className="text-sm font-semibold mb-3">Links & Documents</h3>
+                    <h3 className="mb-3 text-sm font-semibold">Links & Documents</h3>
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       <div className="space-y-1">
                         <div className="text-muted-foreground text-xs">GitHub</div>
@@ -464,7 +464,7 @@ export default function ApplicationView({
                               rel="noopener noreferrer"
                               className="text-blue-600 underline"
                             >
-                              Download Resume
+                              View Resume
                             </a>
                           ) : (
                             "—"
