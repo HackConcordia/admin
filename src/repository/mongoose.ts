@@ -14,7 +14,6 @@ const connectMongoDB = async () => {
 
     return;
   }
-  console.log("query string", process.env.MONGODB_URI);
 
   try {
     await mongoose.connect(process.env.MONGODB_URI as string);

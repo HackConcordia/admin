@@ -4,6 +4,7 @@ import z from "zod";
 
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -55,7 +56,7 @@ export const recentLeadsColumns: ColumnDef<z.infer<typeof recentLeadSchema>>[] =
   {
     accessorKey: "status",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
-    cell: ({ row }) => <Badge variant="secondary">{row.original.status}</Badge>,
+    cell: ({ row }) => <StatusBadge status={row.original.status} />,
     enableSorting: false,
   },
   {

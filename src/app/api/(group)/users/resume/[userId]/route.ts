@@ -35,37 +35,35 @@ export const GET = async (req: NextRequest, ctx: { params: Promise<{ userId: str
 
     const gridFSBucket = new GridFSBucket(mongoose.connection.db);
     const objectId = new mongoose.Types.ObjectId(resumeId);
+
+    // Check if the file exists
+    const files = await gridFSBucket.find({ _id: objectId }).toArray();
+
+    if (files.length === 0) {
+      return sendErrorResponse("Resume file not found in storage", {}, 404);
+    }
+
+    const file = files[0];
     const downloadStream = gridFSBucket.openDownloadStream(objectId);
 
-    const headers = new Headers();
+    // Convert Node.js Readable stream to Web Streams API ReadableStream
+    const stream = new ReadableStream({
+      start(controller) {
+        downloadStream.on("data", (chunk) => controller.enqueue(chunk));
+        downloadStream.on("end", () => controller.close());
+        downloadStream.on("error", (err) => controller.error(err));
+      },
+    });
 
-    return new Promise<NextResponse>((resolve, reject) => {
-      downloadStream.on("file", (file) => {
-        headers.append("Content-Type", file.contentType || "application/octet-stream");
-        headers.append("Content-Disposition", `attachment; filename="${file.filename || "resume"}"`);
-      });
+    // Get content type from metadata or use default
+    const contentType = file.metadata?.mimetype || file.contentType || "application/pdf";
+    const filename = file.filename || "resume";
 
-      const chunks: any[] = [];
-
-      downloadStream.on("data", (chunk) => {
-        chunks.push(chunk);
-      });
-
-      downloadStream.on("end", () => {
-        const buffer = Buffer.concat(chunks);
-
-        const response = new NextResponse(buffer, {
-          headers,
-          status: 200,
-        });
-
-        resolve(response); // Ensure this is a valid NextResponse
-      });
-
-      downloadStream.on("error", (error) => {
-        console.error("Error retrieving file:", error);
-        reject(new NextResponse("Error retrieving file", { status: 500 }));
-      });
+    return new NextResponse(stream, {
+      headers: {
+        "Content-Type": contentType,
+        "Content-Disposition": `inline; filename="${filename}"`,
+      },
     });
   } catch (error) {
     console.error("Error retrieving file:", error);
