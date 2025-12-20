@@ -66,7 +66,7 @@ export const GET = async (req: NextRequest): Promise<NextResponse> => {
     const memberCountFilter = searchParams.get("memberCount"); // e.g., "1", "2", "3", "4+"
 
     // Build search query
-    let searchQuery: any = {};
+    const searchQuery: any = {};
 
     if (search) {
       searchQuery.$or = [

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Settings, CircleHelp, Search, Database, ClipboardList, File, Command } from "lucide-react";
 
 import {
@@ -12,7 +13,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { APP_CONFIG } from "@/config/app-config";
-import { sidebarItems } from "@/navigation/sidebar/sidebar-items";
+import { sidebarItems, type NavGroup } from "@/navigation/sidebar/sidebar-items";
 
 import { NavMain } from "./nav-main";
 import { NavUser } from "./nav-user";
@@ -55,6 +56,34 @@ const data = {
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const [filteredItems, setFilteredItems] = useState<NavGroup[]>(sidebarItems);
+  const [isSuperAdmin, setIsSuperAdmin] = useState<boolean>(false);
+
+  useEffect(() => {
+    // Fetch current admin info to check if SuperAdmin
+    const fetchAdminInfo = async () => {
+      try {
+        const res = await fetch("/api/auth-token/me");
+        if (res.ok) {
+          const data = await res.json();
+          const superAdmin = data.data?.isSuperAdmin ?? false;
+          setIsSuperAdmin(superAdmin);
+
+          // Filter sidebar items based on SuperAdmin status
+          const filtered = sidebarItems.map((group) => ({
+            ...group,
+            items: group.items.filter((item) => !item.superAdminOnly || superAdmin),
+          }));
+          setFilteredItems(filtered);
+        }
+      } catch (error) {
+        console.error("Failed to fetch admin info:", error);
+      }
+    };
+
+    fetchAdminInfo();
+  }, []);
+
   return (
     <Sidebar {...props}>
       <SidebarHeader>
@@ -70,7 +99,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={sidebarItems} />
+        <NavMain items={filteredItems} />
         {/* <NavDocuments items={data.documents} /> */}
         {/* <NavSecondary items={data.navSecondary} className="mt-auto" /> */}
       </SidebarContent>

@@ -77,7 +77,7 @@ async function getTeamsSSR(searchParams: {
     const memberCountFilter = searchParams.memberCount || "";
 
     // Build search query
-    let searchQuery: any = {};
+    const searchQuery: any = {};
 
     if (search) {
       searchQuery.$or = [

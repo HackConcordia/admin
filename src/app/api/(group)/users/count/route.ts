@@ -6,8 +6,7 @@ import type { Count } from "@/interfaces/count";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export const GET = async (req: Request) => {
+export const GET = async () => {
   try {
     await connectMongoDB();
 
