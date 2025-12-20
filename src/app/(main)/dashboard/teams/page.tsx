@@ -67,7 +67,7 @@ async function getTeamsSSR(searchParams: {
     await connectMongoDB();
 
     const page = Math.max(1, parseInt(searchParams.page || "1", 10));
-    const limit = Math.min(50, Math.max(1, parseInt(searchParams.limit || "12", 10)));
+    const limit = Math.min(50, Math.max(1, parseInt(searchParams.limit || "8", 10)));
     const search = searchParams.search || "";
 
     // Parse sorting parameters
@@ -216,10 +216,8 @@ export default async function TeamsPage({ searchParams }: PageProps) {
   const { teams, pagination, filters } = await getTeamsSSR(params);
 
   return (
-    <div className="flex flex-col gap-4 p-4 md:gap-6 md:p-6">
-      <Suspense fallback={<TeamsLoading />}>
-        <TeamsGrid initialTeams={teams} initialPagination={pagination} initialFilters={filters} />
-      </Suspense>
-    </div>
+    <Suspense fallback={<TeamsLoading />}>
+      <TeamsGrid initialTeams={teams} initialPagination={pagination} initialFilters={filters} />
+    </Suspense>
   );
 }

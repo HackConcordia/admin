@@ -120,98 +120,85 @@ export function MealTable({ initialData, initialPagination }: MealTableProps) {
   }, [table.getState().pagination.pageIndex]);
 
   return (
-    <div className="grid grid-cols-1 gap-4 *:data-[slot=card]:shadow-xs">
-      <div className="mt-5">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <div className="flex flex-col gap-3">
-            <CardHeader>
-              <CardTitle>Meals Management</CardTitle>
-              <CardDescription>Track meal consumption for ConuHacks 2026</CardDescription>
-            </CardHeader>
-
-            <CardContent>
-              <TooltipProvider>
-                <TabsList className="grid w-full max-w-md grid-cols-2">
-                  <TabsTrigger value="jan24">January 24, 2026</TabsTrigger>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="relative">
-                        <TabsTrigger value="jan25" disabled={!isJan25Accessible} className="w-full">
-                          {!isJan25Accessible && <Lock className="mr-2 h-4 w-4" />}
-                          January 25, 2026
-                        </TabsTrigger>
-                      </div>
-                    </TooltipTrigger>
-                    {!isJan25Accessible && (
-                      <TooltipContent>
-                        <p>Available on January 25, 2026</p>
-                      </TooltipContent>
-                    )}
-                  </Tooltip>
-                </TabsList>
-              </TooltipProvider>
-            </CardContent>
-          </div>
-
-          <TabsContent value="jan24" className="mt-4">
-            <CardContent>
-              <div className="mb-4">
-                <h2 className="text-muted-foreground mb-4 text-center text-lg font-semibold">
-                  MEALS FOR JANUARY 24, 2026
-                </h2>
-                <Input
-                  placeholder="Search by name or email..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="max-w-sm"
-                />
-              </div>
-            </CardContent>
-
-            <CardContent className="flex size-full flex-col gap-4">
-              <div className="overflow-hidden rounded-md border">
-                {loading ? (
-                  <div className="flex h-24 items-center justify-center">
-                    <p className="text-muted-foreground">Loading...</p>
-                  </div>
-                ) : (
-                  <DataTable table={table} columns={columns} />
-                )}
-              </div>
-              <DataTablePagination table={table} />
-            </CardContent>
-          </TabsContent>
-
-          <TabsContent value="jan25" className="mt-4">
-            <CardContent>
-              <div className="mb-4">
-                <h2 className="text-muted-foreground mb-4 text-center text-lg font-semibold">
-                  MEALS FOR JANUARY 25, 2026
-                </h2>
-                <Input
-                  placeholder="Search by name or email..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="max-w-sm"
-                />
-              </div>
-            </CardContent>
-
-            <CardContent className="flex size-full flex-col gap-4">
-              <div className="overflow-hidden rounded-md border">
-                {loading ? (
-                  <div className="flex h-24 items-center justify-center">
-                    <p className="text-muted-foreground">Loading...</p>
-                  </div>
-                ) : (
-                  <DataTable table={table} columns={columns} />
-                )}
-              </div>
-              <DataTablePagination table={table} />
-            </CardContent>
-          </TabsContent>
-        </Tabs>
+    <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <div className="flex justify-between w-full gap-4">
+        <div>
+          <h2>Meals Management</h2>
+          <p className="text-xs text-gray-600 dark:text-gray-400">Track meal consumption for ConuHacks 2026</p>
+        </div>
+        <TooltipProvider>
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="jan24">January 24, 2026</TabsTrigger>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="relative">
+                  <TabsTrigger value="jan25" disabled={!isJan25Accessible} className="w-full">
+                    {!isJan25Accessible && <Lock className="mr-2 h-4 w-4" />}
+                    January 25, 2026
+                  </TabsTrigger>
+                </div>
+              </TooltipTrigger>
+              {!isJan25Accessible && (
+                <TooltipContent>
+                  <p>Available on January 25, 2026</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TabsList>
+        </TooltipProvider>
       </div>
-    </div>
+
+      <Input
+        placeholder="Search by name or email..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="w-full my-4"
+      />
+
+      <TabsContent value="jan24">
+
+        <div className="flex flex-col gap-4">
+          <div className="overflow-hidden rounded-md border">
+            {loading ? (
+              <div className="flex h-24 items-center justify-center">
+                <p className="text-muted-foreground">Loading...</p>
+              </div>
+            ) : (
+              <DataTable table={table} columns={columns} />
+            )}
+          </div>
+          <DataTablePagination table={table} />
+        </div>
+      </TabsContent>
+
+      <TabsContent value="jan25" className="mt-4">
+        <div className="flex flex-col gap-4">
+          <div className="mb-4">
+            <h2 className="text-muted-foreground mb-4 text-center text-lg font-semibold">
+              MEALS FOR JANUARY 25, 2026
+            </h2>
+            <Input
+              placeholder="Search by name or email..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="max-w-sm"
+            />
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          <div className="overflow-hidden rounded-md border">
+            {loading ? (
+              <div className="flex h-24 items-center justify-center">
+                <p className="text-muted-foreground">Loading...</p>
+              </div>
+            ) : (
+              <DataTable table={table} columns={columns} />
+            )}
+          </div>
+          <DataTablePagination table={table} />
+        </div>
+      </TabsContent>
+    </Tabs>
   );
 }

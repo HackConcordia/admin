@@ -61,10 +61,10 @@ export default async function AccountPage() {
     <div className="flex flex-col gap-4 md:gap-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">
+          <h2>
             Account Settings
-          </h1>
-          <p className="text-muted-foreground">
+          </h2>
+          <p className="text-xs text-gray-600 dark:text-gray-400">
             Manage your account information and password
           </p>
         </div>

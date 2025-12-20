@@ -83,8 +83,6 @@ export default async function Page() {
   const initialData = await getMealsSSR();
 
   return (
-    <div className="flex flex-col gap-4 md:gap-6">
-      <MealTable initialData={initialData.data} initialPagination={initialData.pagination} />
-    </div>
+    <MealTable initialData={initialData.data} initialPagination={initialData.pagination} />
   );
 }

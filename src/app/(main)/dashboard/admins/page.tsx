@@ -104,10 +104,10 @@ export default async function AdminsPage() {
     <div className="flex flex-col gap-4 md:gap-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">
+          <h2>
             Admin Management
-          </h1>
-          <p className="text-muted-foreground">
+          </h2>
+          <p className="text-xs text-gray-600 dark:text-gray-400">
             Manage admin accounts and permissions
           </p>
         </div>

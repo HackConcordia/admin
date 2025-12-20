@@ -273,8 +273,7 @@ export default async function Page({ searchParams }: PageProps) {
   const { applications, isSuperAdmin, pagination, search, status, travelReimbursement } = await getApplicationsSSR(params);
 
   return (
-    <div className="flex flex-col gap-4 md:gap-6">
-      <ApplicationTable
+    <ApplicationTable
         initialData={applications}
         isSuperAdmin={isSuperAdmin}
         pagination={pagination}
@@ -282,6 +281,5 @@ export default async function Page({ searchParams }: PageProps) {
         initialStatus={status}
         initialTravelReimbursement={travelReimbursement}
       />
-    </div>
   );
 }

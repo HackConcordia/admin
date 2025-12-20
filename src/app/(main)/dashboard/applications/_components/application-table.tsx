@@ -346,7 +346,7 @@ export function ApplicationTable({
   return (
     <>
       <div className="flex flex-col gap-3">
-        <div className="flex flex-col gap-2">
+        <div>
           <h2>Applications</h2>
           <p className="text-xs text-gray-600 dark:text-gray-400">
             Manage and review submitted applications

@@ -175,23 +175,23 @@ export function TeamsGrid({ initialTeams, initialPagination, initialFilters }: T
   };
 
   return (
-    <div className="flex flex-col gap-6">
+    <>
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex gap-4 w-full justify-between items-center">
         <div>
-          <h1 className="text-2xl font-semibold">Teams</h1>
-          <p className="text-muted-foreground text-sm">
-            Manage and view all registered teams. Total: {pagination.totalTeams} teams
+          <h2>Teams</h2>
+          <p className="text-xs text-gray-600 dark:text-gray-400">
+            View and manage all teams in the system
           </p>
         </div>
         <CreateTeamDialog onTeamCreated={handleRefresh} />
       </div>
 
       {/* Search, Filter & Sort Controls */}
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col my-6">
         <div className="flex flex-wrap items-center gap-2">
           {/* Search */}
-          <div className="relative min-w-[200px] max-w-md flex-1">
+          <div className="relative w-full flex-1">
             <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
             <Input
               placeholder="Search teams by name or code..."
@@ -278,11 +278,53 @@ export function TeamsGrid({ initialTeams, initialPagination, initialFilters }: T
               </div>
             </PopoverContent>
           </Popover>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => handlePageChange(1)}
+              disabled={!pagination.hasPrevPage || isLoading}
+            >
+              <ChevronsLeft className="h-4 w-4" />
+              <span className="sr-only">First page</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => handlePageChange(pagination.page - 1)}
+              disabled={!pagination.hasPrevPage || isLoading}
+            >
+              <ChevronLeft className="h-4 w-4" />
+              <span className="sr-only">Previous page</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => handlePageChange(pagination.page + 1)}
+              disabled={!pagination.hasNextPage || isLoading}
+            >
+              <ChevronRight className="h-4 w-4" />
+              <span className="sr-only">Next page</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => handlePageChange(pagination.totalPages)}
+              disabled={!pagination.hasNextPage || isLoading}
+            >
+              <ChevronsRight className="h-4 w-4" />
+              <span className="sr-only">Last page</span>
+            </Button>
+          </div>
         </div>
 
         {/* Active Filters Display */}
         {(activeFilterCount > 0 || searchValue) && (
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 mt-4">
             <span className="text-muted-foreground text-sm">Active filters:</span>
             {searchValue && (
               <Badge variant="secondary" className="gap-1">
@@ -305,6 +347,10 @@ export function TeamsGrid({ initialTeams, initialPagination, initialFilters }: T
             )}
           </div>
         )}
+      </div>
+
+      <div className="text-muted-foreground text-sm mb-6">
+        Showing page {pagination.page} of {pagination.totalPages} ({pagination.totalTeams} teams)
       </div>
 
       {/* Teams Grid */}
@@ -339,8 +385,8 @@ export function TeamsGrid({ initialTeams, initialPagination, initialFilters }: T
       )}
 
       {/* Pagination */}
-      {pagination.totalPages > 0 && (
-        <div className="flex flex-col items-center justify-between gap-4 border-t pt-4 sm:flex-row">
+      {/* {pagination.totalPages > 0 && (
+        <div className="flex flex-col items-center justify-between gap-4 border-t pt-4 sm:flex-row mt-8">
           <div className="text-muted-foreground text-sm">
             Showing {teams.length} of {pagination.totalTeams} teams
           </div>
@@ -365,51 +411,9 @@ export function TeamsGrid({ initialTeams, initialPagination, initialFilters }: T
             <div className="flex items-center gap-1 text-sm font-medium">
               Page {pagination.page} of {pagination.totalPages}
             </div>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => handlePageChange(1)}
-                disabled={!pagination.hasPrevPage || isLoading}
-              >
-                <ChevronsLeft className="h-4 w-4" />
-                <span className="sr-only">First page</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => handlePageChange(pagination.page - 1)}
-                disabled={!pagination.hasPrevPage || isLoading}
-              >
-                <ChevronLeft className="h-4 w-4" />
-                <span className="sr-only">Previous page</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => handlePageChange(pagination.page + 1)}
-                disabled={!pagination.hasNextPage || isLoading}
-              >
-                <ChevronRight className="h-4 w-4" />
-                <span className="sr-only">Next page</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => handlePageChange(pagination.totalPages)}
-                disabled={!pagination.hasNextPage || isLoading}
-              >
-                <ChevronsRight className="h-4 w-4" />
-                <span className="sr-only">Last page</span>
-              </Button>
-            </div>
           </div>
         </div>
-      )}
-    </div>
+      )} */}
+    </>
   );
 }

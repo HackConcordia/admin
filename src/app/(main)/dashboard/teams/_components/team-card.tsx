@@ -174,7 +174,7 @@ export function TeamCard({ _id, teamName, teamCode, members, teamOwner, onMember
   return (
     <>
       <Card className="group transition-all hover:shadow-md">
-        <CardHeader className="pb-3">
+        <CardHeader className="">
           <div className="flex items-start justify-between gap-2">
             <CardTitle className="line-clamp-1 text-lg font-semibold">{teamName}</CardTitle>
             <div className="flex items-center gap-1">
@@ -201,7 +201,7 @@ export function TeamCard({ _id, teamName, teamCode, members, teamOwner, onMember
             </div>
           </div>
           <div className="text-muted-foreground flex items-center gap-2 text-sm">
-            <span>Team Code:</span>
+            <span>Code:</span>
             <Badge variant="secondary" className="font-mono">
               {teamCode}
             </Badge>
