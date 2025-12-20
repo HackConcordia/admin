@@ -55,11 +55,10 @@ function MealCheckbox({ mealRow, date, mealType, onUpdate }: MealCheckboxProps) 
         },
       ];
 
-      const response = await fetch("/api/meals", {
-        method: "PUT",
+      const response = await fetch(`/api/users/meals/${mealRow._id}`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          id: mealRow._id,
           mealData,
         }),
       });
