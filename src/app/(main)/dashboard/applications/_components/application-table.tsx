@@ -236,31 +236,24 @@ export function ApplicationTable({ initialData, isSuperAdmin }: TableCardsProps)
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 *:data-[slot=card]:shadow-xs">
-      <div className="mt-5">
-        <div className="flex flex-col gap-3">
-          <CardHeader>
-            <CardTitle>Applications</CardTitle>
-            <CardDescription>Manage and review submitted applications</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Actions
-              table={table}
-              isSuperAdmin={isSuperAdmin}
-              selectedCount={selectedCount}
-              onOpenBulkAssign={() => setBulkOpen(true)}
-              onOpenAutoAssign={() => setAutoAssignOpen(true)}
-              onOpenExport={() => setExportOpen(true)}
-            />
-          </CardContent>
+    <>
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2">
+          <h2>Applications</h2>
+          <p className="text-xs text-gray-600 dark:text-gray-400">Manage and review submitted applications</p>
         </div>
-
-        <CardContent className="mt-4 flex size-full flex-col gap-4">
-          <div className="overflow-hidden rounded-md border">
-            <DataTable table={table} columns={columns} />
-          </div>
-          <DataTablePagination table={table} />
-        </CardContent>
+        <Actions
+          table={table}
+          isSuperAdmin={isSuperAdmin}
+          selectedCount={selectedCount}
+          onOpenBulkAssign={() => setBulkOpen(true)}
+          onOpenAutoAssign={() => setAutoAssignOpen(true)}
+          onOpenExport={() => setExportOpen(true)}
+        />
+        <div className="rounded-md border mb-2">
+          <DataTable table={table} columns={columns} />
+        </div>
+        <DataTablePagination table={table} />
       </div>
 
       {isSuperAdmin && (
@@ -294,6 +287,6 @@ export function ApplicationTable({ initialData, isSuperAdmin }: TableCardsProps)
           />
         </>
       )}
-    </div>
+    </>
   );
 }
