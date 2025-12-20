@@ -12,7 +12,7 @@ import {
   DietaryChart,
   StatusOverview,
 } from "../_components/stats";
-import { FileText, Users, Trophy, UserX, Shield } from "lucide-react";
+import { FileText, Users, Trophy, UserX, Shield, BarChart3 } from "lucide-react";
 import { IStats } from "@/interfaces/IStats";
 import Link from "next/link";
 
@@ -90,11 +90,17 @@ export default function DashboardPage() {
               <div>
                 <p className="text-primary text-4xl font-bold">{stats.totalApplicants.toLocaleString()}</p>
                 <p className="text-muted-foreground mt-1 text-sm">{percentageOfTarget}% of target </p>
-                <Link href="/dashboard/applications">
-                  <Button className="mt-4" size="sm">
-                    View Applications
-                  </Button>
-                </Link>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Link href="/dashboard/applications">
+                    <Button size="sm">View Applications</Button>
+                  </Link>
+                  <Link href="/dashboard/conuhacks/advanced">
+                    <Button size="sm" variant="outline">
+                      <BarChart3 className="mr-1 h-4 w-4" />
+                      Advanced Analytics
+                    </Button>
+                  </Link>
+                </div>
               </div>
               <div className="flex h-24 w-24 items-center justify-center">
                 <Trophy className="h-20 w-20 text-amber-500" strokeWidth={1.5} />
