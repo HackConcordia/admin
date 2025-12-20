@@ -49,7 +49,10 @@ export function ApplicationTable({
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const columns = useMemo(() => getApplicationsColumns(isSuperAdmin), [isSuperAdmin]);
+  const columns = useMemo(
+    () => getApplicationsColumns(isSuperAdmin),
+    [isSuperAdmin]
+  );
 
   const table = useDataTableInstance({
     data: initialData,
@@ -77,23 +80,32 @@ export function ApplicationTable({
   const [, forceRerender] = useState(0);
 
   const selectedRows = table.getSelectedRowModel().rows;
-  const selectedIds = useMemo(() => selectedRows.map((r) => r.original._id), [selectedRows]);
+  const selectedIds = useMemo(
+    () => selectedRows.map((r) => r.original._id),
+    [selectedRows]
+  );
   const selectedCount = selectedIds.length;
 
   // Function to update URL params
   const updateUrlParams = useCallback(
     (updates: Record<string, string | undefined>) => {
       const params = new URLSearchParams(searchParams.toString());
-      
       Object.entries(updates).forEach(([key, value]) => {
-        if (value === undefined || value === "" || (key === "page" && value === "1") || (key === "limit" && value === "10")) {
+        if (
+          value === undefined ||
+          value === "" ||
+          (key === "page" && value === "1") ||
+          (key === "limit" && value === "10")
+        ) {
           params.delete(key);
         } else {
           params.set(key, value);
         }
       });
 
-      const newUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname;
+      const newUrl = params.toString()
+        ? `${pathname}?${params.toString()}`
+        : pathname;
       router.push(newUrl, { scroll: false });
     },
     [pathname, router, searchParams]
@@ -171,7 +183,11 @@ export function ApplicationTable({
 
     const unassignedCount = table
       .getCoreRowModel()
-      .rows.filter((row) => row.original.status === "Submitted" && row.original.processedBy === "Not processed").length;
+      .rows.filter(
+        (row) =>
+          row.original.status === "Submitted" &&
+          row.original.processedBy === "Not processed"
+      ).length;
 
     const reviewerCount = adminEmails.length;
 
@@ -193,7 +209,10 @@ export function ApplicationTable({
       const promise = fetch("/api/admin/assign-applications", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ selectedAdminEmail: selectedEmail, selectedApplicants: selectedIds }),
+        body: JSON.stringify({
+          selectedAdminEmail: selectedEmail,
+          selectedApplicants: selectedIds,
+        }),
       }).then(async (r) => {
         if (!r.ok) {
           const err = await r.json().catch(() => ({}));
@@ -227,7 +246,9 @@ export function ApplicationTable({
 
     setExporting(true);
     try {
-      const promise = fetch(`/api/resumes/export?statusFilter=${exportFilter}`).then(async (response) => {
+      const promise = fetch(
+        `/api/resumes/export?statusFilter=${exportFilter}`
+      ).then(async (response) => {
         if (!response.ok) {
           const err = await response.json().catch(() => ({}));
           throw new Error(err?.message && "Failed to export resumes");
@@ -242,7 +263,9 @@ export function ApplicationTable({
         const contentDisposition = response.headers.get("Content-Disposition");
         let filename = `resumes_${exportFilter}_${new Date().toISOString().slice(0, 10)}.zip`;
         if (contentDisposition) {
-          const filenameMatch = contentDisposition.match(/filename[^;=\n]*=\s*(['"]?)([^'"\n]*)\1/i);
+          const filenameMatch = contentDisposition.match(
+            /filename[^;=\n]*=\s*(['"]?)([^'"\n]*)\1/i
+          );
           if (filenameMatch && filenameMatch[2]) {
             filename = filenameMatch[2];
           }
@@ -293,7 +316,7 @@ export function ApplicationTable({
       toast.success("No unassigned applications found");
     } else {
       toast.success(
-        `Successfully assigned ${stats?.totalAssigned} applications to ${stats?.reviewerStats?.length} reviewers`,
+        `Successfully assigned ${stats?.totalAssigned} applications to ${stats?.reviewerStats?.length} reviewers`
       );
     }
 
@@ -325,7 +348,9 @@ export function ApplicationTable({
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-2">
           <h2>Applications</h2>
-          <p className="text-xs text-gray-600 dark:text-gray-400">Manage and review submitted applications</p>
+          <p className="text-xs text-gray-600 dark:text-gray-400">
+            Manage and review submitted applications
+          </p>
         </div>
         <Actions
           table={table}
