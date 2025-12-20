@@ -28,7 +28,7 @@ export function Actions({
   onOpenExport,
 }: ActionsProps) {
   return (
-    <div className="flex w-full gap-3">
+    <div className="flex w-full gap-3 my-3">
       <ApplicationsFilters table={table} />
       <div className="flex items-center gap-2">
         <DataTableViewOptions table={table} />
@@ -36,7 +36,7 @@ export function Actions({
           <>
             <Button variant="outline" size="sm" onClick={onOpenBulkAssign} disabled={selectedCount === 0}>
               <UserPlus />
-              <span className="hidden lg:inline">Assign selected {selectedCount ? `(${selectedCount})` : ""}</span>
+              <span className="hidden lg:inline">Assign {selectedCount ? `(${selectedCount})` : ""}</span>
             </Button>
             <Button variant="outline" size="sm" onClick={onOpenAutoAssign}>
               <Sparkles />

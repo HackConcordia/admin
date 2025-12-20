@@ -7,7 +7,6 @@ import { toast } from "sonner";
 
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
-import { CardHeader, CardTitle, CardContent, CardDescription, Card } from "@/components/ui/card";
 import { useDataTableInstance } from "@/hooks/use-data-table-instance";
 
 import { Actions } from "./actions";
@@ -227,40 +226,33 @@ export function ApplicationTable({ initialData, isSuperAdmin }: TableCardsProps)
     try {
       const stats = await performAutoAssign();
       handleAutoAssignSuccess(stats);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Auto-assign error:", error);
-      toast.error(error?.message && "Failed to auto-assign");
+      toast.error("Failed to auto-assign");
     } finally {
       setAutoAssigning(false);
     }
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 *:data-[slot=card]:shadow-xs">
-      <div className="mt-5">
-        <div className="flex flex-col gap-3">
-          <CardHeader>
-            <CardTitle>Applications</CardTitle>
-            <CardDescription>Manage and review submitted applications</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Actions
-              table={table}
-              isSuperAdmin={isSuperAdmin}
-              selectedCount={selectedCount}
-              onOpenBulkAssign={() => setBulkOpen(true)}
-              onOpenAutoAssign={() => setAutoAssignOpen(true)}
-              onOpenExport={() => setExportOpen(true)}
-            />
-          </CardContent>
+    <>
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2">
+          <h2>Applications</h2>
+          <p className="text-xs text-gray-600 dark:text-gray-400">Manage and review submitted applications</p>
         </div>
-
-        <CardContent className="mt-4 flex size-full flex-col gap-4">
-          <div className="overflow-hidden rounded-md border">
-            <DataTable table={table} columns={columns} />
-          </div>
-          <DataTablePagination table={table} />
-        </CardContent>
+        <Actions
+          table={table}
+          isSuperAdmin={isSuperAdmin}
+          selectedCount={selectedCount}
+          onOpenBulkAssign={() => setBulkOpen(true)}
+          onOpenAutoAssign={() => setAutoAssignOpen(true)}
+          onOpenExport={() => setExportOpen(true)}
+        />
+        <div className="mb-2 rounded-md border">
+          <DataTable table={table} columns={columns} />
+        </div>
+        <DataTablePagination table={table} />
       </div>
 
       {isSuperAdmin && (
@@ -294,6 +286,6 @@ export function ApplicationTable({ initialData, isSuperAdmin }: TableCardsProps)
           />
         </>
       )}
-    </div>
+    </>
   );
 }
