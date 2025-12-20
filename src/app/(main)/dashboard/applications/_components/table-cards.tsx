@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 import { getApplicationsColumns, type ApplicationTableRow } from "./columns";
 import ApplicationsFilters from "./filters";
@@ -40,6 +41,10 @@ export function TableCards({ initialData, isSuperAdmin }: TableCardsProps) {
   const [selectedEmail, setSelectedEmail] = React.useState<string>("");
   const [assigning, setAssigning] = React.useState(false);
   const [, forceRerender] = React.useState(0);
+
+  const [exportOpen, setExportOpen] = React.useState(false);
+  const [exportFilter, setExportFilter] = React.useState<string>("all");
+  const [exporting, setExporting] = React.useState(false);
 
   const selectedRows = table.getSelectedRowModel().rows;
   const selectedIds = React.useMemo(() => selectedRows.map((r) => r.original._id), [selectedRows]);
@@ -101,6 +106,67 @@ export function TableCards({ initialData, isSuperAdmin }: TableCardsProps) {
     }
   }
 
+  async function handleExport() {
+    if (!exportFilter) {
+      toast.error("Please select an export filter");
+      return;
+    }
+
+    setExporting(true);
+    try {
+      const promise = fetch(`/api/resumes/export?statusFilter=${exportFilter}`).then(async (response) => {
+        if (!response.ok) {
+          const err = await response.json().catch(() => ({}));
+          throw new Error(err?.message || "Failed to export resumes");
+        }
+
+        // Get the blob from the response
+        const blob = await response.blob();
+
+        // Create a download link
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+
+        // Extract filename from Content-Disposition header or use default
+        const contentDisposition = response.headers.get("Content-Disposition");
+        let filename = `resumes_${exportFilter}_${new Date().toISOString().slice(0, 10)}.zip`;
+        if (contentDisposition) {
+          // Improved regex to properly extract filename without quotes
+          const filenameMatch = contentDisposition.match(/filename[^;=\n]*=\s*(['"]?)([^'"\n]*)\1/i);
+          if (filenameMatch && filenameMatch[2]) {
+            filename = filenameMatch[2];
+          }
+        }
+
+        // Ensure the filename always has .zip extension
+        if (!filename.toLowerCase().endsWith(".zip")) {
+          filename += ".zip";
+        }
+
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+
+        // Cleanup
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      });
+
+      await toast.promise(promise, {
+        loading: "Exporting resumes...",
+        success: "Resumes exported successfully",
+        error: (e) => e.message || "Failed to export resumes",
+      });
+
+      setExportOpen(false);
+    } catch (error) {
+      console.error("Export error:", error);
+    } finally {
+      setExporting(false);
+    }
+  }
+
   return (
     <div className="grid grid-cols-1 gap-4 *:data-[slot=card]:shadow-xs">
       <div className="mt-5">
@@ -120,10 +186,12 @@ export function TableCards({ initialData, isSuperAdmin }: TableCardsProps) {
                     </span>
                   </Button>
                 )}
-                <Button variant="outline" size="sm">
-                  <Download />
-                  <span className="hidden lg:inline">Export</span>
-                </Button>
+                {isSuperAdmin && (
+                  <Button variant="outline" size="sm" onClick={() => setExportOpen(true)}>
+                    <Download />
+                    <span className="hidden lg:inline">Export</span>
+                  </Button>
+                )}
               </div>
             </div>
           </CardAction>
@@ -163,6 +231,47 @@ export function TableCards({ initialData, isSuperAdmin }: TableCardsProps) {
               </Button>
               <Button onClick={handleBulkAssign} disabled={assigning || !selectedIds.length || !selectedEmail}>
                 Assign
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+      {isSuperAdmin && (
+        <Dialog open={exportOpen} onOpenChange={setExportOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Export Resumes</DialogTitle>
+              <DialogDescription>Select which applicant resumes to export as a ZIP file.</DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4">
+              <Label>Filter by Status</Label>
+              <RadioGroup value={exportFilter} onValueChange={setExportFilter}>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="all" id="export-all" />
+                  <Label htmlFor="export-all" className="cursor-pointer font-normal">
+                    All Submitted Applicants
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="admitted" id="export-admitted" />
+                  <Label htmlFor="export-admitted" className="cursor-pointer font-normal">
+                    Admitted Applicants Only
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="confirmed" id="export-confirmed" />
+                  <Label htmlFor="export-confirmed" className="cursor-pointer font-normal">
+                    Confirmed Applicants Only
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
+            <DialogFooter>
+              <Button variant="secondary" onClick={() => setExportOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleExport} disabled={exporting || !exportFilter}>
+                {exporting ? "Exporting..." : "Export"}
               </Button>
             </DialogFooter>
           </DialogContent>
