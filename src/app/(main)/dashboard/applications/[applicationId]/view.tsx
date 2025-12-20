@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { TravelReimbursementDialog, type TravelReimbursementData } from "@/components/ui/travel-reimbursement-dialog";
+import { NoTravelConfirmationDialog } from "@/components/ui/no-travel-confirmation-dialog";
 
 /**
  * Helper function to format array values for display
@@ -141,6 +142,8 @@ export default function ApplicationView({
   const [error, setError] = React.useState<string | null>(null);
   const [isSaving, setIsSaving] = React.useState<null | "admit" | "waitlist" | "reject" | "checkin">(null);
   const [travelReimbursementDialogOpen, setTravelReimbursementDialogOpen] = React.useState(false);
+  const [noTravelConfirmationOpen, setNoTravelConfirmationOpen] = React.useState(false);
+  const [pendingAction, setPendingAction] = React.useState<"admit" | "waitlist" | "reject" | null>(null);
 
   React.useEffect(() => {
     let active = true;
@@ -200,7 +203,34 @@ export default function ApplicationView({
     if (application.travelReimbursement) {
       setTravelReimbursementDialogOpen(true);
     } else {
-      updateStatus("admit");
+      setPendingAction("admit");
+      setNoTravelConfirmationOpen(true);
+    }
+  }
+
+  function handleWaitlistClick() {
+    if (!application.travelReimbursement) {
+      setPendingAction("waitlist");
+      setNoTravelConfirmationOpen(true);
+    } else {
+      updateStatus("waitlist");
+    }
+  }
+
+  function handleRejectClick() {
+    if (!application.travelReimbursement) {
+      setPendingAction("reject");
+      setNoTravelConfirmationOpen(true);
+    } else {
+      updateStatus("reject");
+    }
+  }
+
+  function handleNoTravelConfirm() {
+    setNoTravelConfirmationOpen(false);
+    if (pendingAction) {
+      updateStatus(pendingAction);
+      setPendingAction(null);
     }
   }
 
@@ -539,14 +569,14 @@ export default function ApplicationView({
                           <CheckCircle2 className="mr-2" /> Admit
                         </Button>
                         <Button
-                          onClick={() => updateStatus("waitlist")}
+                          onClick={handleWaitlistClick}
                           disabled={isSaving !== null}
                           variant="secondary"
                         >
                           <Hourglass className="mr-2" /> Waitlist
                         </Button>
                         <Button
-                          onClick={() => updateStatus("reject")}
+                          onClick={handleRejectClick}
                           disabled={isSaving !== null}
                           variant="destructive"
                         >
@@ -594,6 +624,14 @@ export default function ApplicationView({
         onOpenChange={setTravelReimbursementDialogOpen}
         onSubmit={handleTravelReimbursementSubmit}
         candidateName={`${application.firstName} ${application.lastName}`}
+      />
+
+      <NoTravelConfirmationDialog
+        open={noTravelConfirmationOpen}
+        onOpenChange={setNoTravelConfirmationOpen}
+        onConfirm={handleNoTravelConfirm}
+        candidateName={`${application.firstName} ${application.lastName}`}
+        action={pendingAction || "admit"}
       />
     </div>
   );

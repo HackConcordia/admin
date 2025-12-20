@@ -3,10 +3,17 @@ import type { NextRequest } from "next/server";
 import connectMongoDB from "@/repository/mongoose";
 import { sendErrorResponse, sendSuccessResponse } from "@/repository/response";
 
-import { sendAdmittedEmail, sendWaitlistedEmail, sendRefusedEmail } from "@/utils/admissionEmailConfig";
+import {
+  sendAdmittedEmail,
+  sendWaitlistedEmail,
+  sendRefusedEmail,
+} from "@/utils/admissionEmailConfig";
 import Application from "@/repository/models/application";
 
-export const PATCH = async (req: NextRequest, { params }: { params: Promise<{ applicationId: string }> }) => {
+export const PATCH = async (
+  req: NextRequest,
+  { params }: { params: Promise<{ applicationId: string }> }
+) => {
   try {
     const { applicationId } = await params;
     const { action, adminEmail, travelReimbursement } = await req.json();
@@ -27,13 +34,24 @@ export const PATCH = async (req: NextRequest, { params }: { params: Promise<{ ap
     };
 
     if (action === "admit") {
-      console.log("Application Info", application.email, application.firstName, application.lastName);
+      console.log(
+        "Application Info",
+        application.email,
+        application.firstName,
+        application.lastName
+      );
 
       if (travelReimbursement) {
-        updateFields.isTravelReimbursementApproved = travelReimbursement.approved;
-        if (travelReimbursement.approved && travelReimbursement.amount && travelReimbursement.currency) {
+        updateFields.isTravelReimbursementApproved =
+          travelReimbursement.approved;
+        if (
+          travelReimbursement.approved &&
+          travelReimbursement.amount &&
+          travelReimbursement.currency
+        ) {
           updateFields.travelReimbursementAmount = travelReimbursement.amount;
-          updateFields.travelReimbursementCurrency = travelReimbursement.currency;
+          updateFields.travelReimbursementCurrency =
+            travelReimbursement.currency;
         }
       }
 
@@ -45,35 +63,43 @@ export const PATCH = async (req: NextRequest, { params }: { params: Promise<{ ap
           application.email as string,
           application.firstName as string,
           application.lastName as string,
-          travelReimbursement,
+          travelReimbursement
         );
     } else if (action === "waitlist") {
       newStatus = "Waitlisted";
       updateFields.status = newStatus;
 
-      // emailToSend = () =>
-      //   sendWaitlistedEmail(
-      //     application.email as string,
-      //     application.firstName as string,
-      //     application.lastName as string
-      //   );
+      emailToSend = () =>
+        sendWaitlistedEmail(
+          application.email as string,
+          application.firstName as string,
+          application.lastName as string
+        );
     } else if (action === "reject") {
       newStatus = "Refused";
       updateFields.status = newStatus;
 
       emailToSend = () =>
-        sendRefusedEmail(application.email as string, application.firstName as string, application.lastName as string);
+        sendRefusedEmail(
+          application.email as string,
+          application.firstName as string,
+          application.lastName as string
+        );
     } else {
       return sendErrorResponse("Invalid action", null, 400);
     }
 
-    await Application.findByIdAndUpdate(applicationId, updateFields, { new: true });
+    await Application.findByIdAndUpdate(applicationId, updateFields, {
+      new: true,
+    });
 
     if (emailToSend) {
       try {
         const sendEmail = await emailToSend();
         if (!sendEmail) {
-          console.log("Failed to send email, but status was updated successfully");
+          console.log(
+            "Failed to send email, but status was updated successfully"
+          );
         } else {
           console.log("Email sent successfully");
         }
@@ -85,6 +111,10 @@ export const PATCH = async (req: NextRequest, { params }: { params: Promise<{ ap
     return sendSuccessResponse("Attendance confirmed", newStatus, 200);
   } catch (error) {
     console.error("Error in PATCH /api/status/[applicationId]:", error);
-    return sendErrorResponse("Something went wrong while confirming attendance", null, 500);
+    return sendErrorResponse(
+      "Something went wrong while confirming attendance",
+      null,
+      500
+    );
   }
 };

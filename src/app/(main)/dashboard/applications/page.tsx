@@ -66,7 +66,6 @@ function mapApplications(docs: any[]): ApplicationTableRow[] {
  */
 async function getAllApplications(): Promise<ApplicationTableRow[]> {
   const apps = await Application.find({}, "email firstName lastName status createdAt processedBy").lean().exec();
-  console.log("Fetched applications:", apps);
 
   return mapApplications(apps);
 }
