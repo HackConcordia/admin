@@ -1,10 +1,12 @@
-import { TableCards } from "./_components/table-cards";
-import { type ApplicationTableRow } from "./_components/columns";
-import connectMongoDB from "@/repository/mongoose";
-import Application from "@/repository/models/application";
-import Admin from "@/repository/models/admin";
 import { cookies } from "next/headers";
+
 import { COOKIE_NAME, verifyAuthToken } from "@/lib/auth-token";
+import Admin from "@/repository/models/admin";
+import Application from "@/repository/models/application";
+import connectMongoDB from "@/repository/mongoose";
+
+import { ApplicationTable } from "./_components/application-table";
+import { type ApplicationTableRow } from "./_components/columns";
 
 export const dynamic = "force-dynamic";
 
@@ -83,7 +85,7 @@ export default async function Page() {
 
   return (
     <div className="flex flex-col gap-4 md:gap-6">
-      <TableCards initialData={initialData} isSuperAdmin={isSuperAdmin} />
+      <ApplicationTable initialData={initialData} isSuperAdmin={isSuperAdmin} />
     </div>
   );
 }

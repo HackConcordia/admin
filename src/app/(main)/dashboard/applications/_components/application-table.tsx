@@ -7,7 +7,7 @@ import { toast } from "sonner";
 
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
+import { CardHeader, CardTitle, CardContent, CardDescription, Card } from "@/components/ui/card";
 import { useDataTableInstance } from "@/hooks/use-data-table-instance";
 
 import { Actions } from "./actions";
@@ -26,7 +26,7 @@ type AutoAssignStats = {
   reviewerCount: number;
 } | null;
 
-export function TableCards({ initialData, isSuperAdmin }: TableCardsProps) {
+export function ApplicationTable({ initialData, isSuperAdmin }: TableCardsProps) {
   const columns = useMemo(() => getApplicationsColumns(isSuperAdmin), [isSuperAdmin]);
 
   const table = useDataTableInstance({
@@ -238,18 +238,22 @@ export function TableCards({ initialData, isSuperAdmin }: TableCardsProps) {
   return (
     <div className="grid grid-cols-1 gap-4 *:data-[slot=card]:shadow-xs">
       <div className="mt-5">
-        <CardHeader>
-          <CardTitle>Applications</CardTitle>
-          <CardDescription>Track and manage your applications and their status.</CardDescription>
-          <Actions
-            table={table}
-            isSuperAdmin={isSuperAdmin}
-            selectedCount={selectedCount}
-            onOpenBulkAssign={() => setBulkOpen(true)}
-            onOpenAutoAssign={() => setAutoAssignOpen(true)}
-            onOpenExport={() => setExportOpen(true)}
-          />
-        </CardHeader>
+        <div className="flex flex-col gap-3">
+          <CardHeader>
+            <CardTitle>Applications</CardTitle>
+            <CardDescription>Manage and review submitted applications</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Actions
+              table={table}
+              isSuperAdmin={isSuperAdmin}
+              selectedCount={selectedCount}
+              onOpenBulkAssign={() => setBulkOpen(true)}
+              onOpenAutoAssign={() => setAutoAssignOpen(true)}
+              onOpenExport={() => setExportOpen(true)}
+            />
+          </CardContent>
+        </div>
 
         <CardContent className="mt-4 flex size-full flex-col gap-4">
           <div className="overflow-hidden rounded-md border">

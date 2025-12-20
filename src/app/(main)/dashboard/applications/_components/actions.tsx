@@ -6,7 +6,6 @@ import { Sparkles, Download, UserPlus } from "lucide-react";
 
 import { DataTableViewOptions } from "@/components/data-table/data-table-view-options";
 import { Button } from "@/components/ui/button";
-import { CardAction } from "@/components/ui/card";
 
 import ApplicationsFilters from "./filters";
 
@@ -29,29 +28,27 @@ export function Actions({
   onOpenExport,
 }: ActionsProps) {
   return (
-    <CardAction>
-      <div className="flex w-full flex-col gap-3">
-        <ApplicationsFilters table={table} />
-        <div className="flex items-center gap-2">
-          <DataTableViewOptions table={table} />
-          {isSuperAdmin && (
-            <>
-              <Button variant="outline" size="sm" onClick={onOpenBulkAssign} disabled={selectedCount === 0}>
-                <UserPlus />
-                <span className="hidden lg:inline">Assign selected {selectedCount ? `(${selectedCount})` : ""}</span>
-              </Button>
-              <Button variant="outline" size="sm" onClick={onOpenAutoAssign}>
-                <Sparkles />
-                <span className="hidden lg:inline">Auto Assign</span>
-              </Button>
-              <Button variant="outline" size="sm" onClick={onOpenExport}>
-                <Download />
-                <span className="hidden lg:inline">Export</span>
-              </Button>
-            </>
-          )}
-        </div>
+    <div className="flex w-full gap-3">
+      <ApplicationsFilters table={table} />
+      <div className="flex items-center gap-2">
+        <DataTableViewOptions table={table} />
+        {isSuperAdmin && (
+          <>
+            <Button variant="outline" size="sm" onClick={onOpenBulkAssign} disabled={selectedCount === 0}>
+              <UserPlus />
+              <span className="hidden lg:inline">Assign selected {selectedCount ? `(${selectedCount})` : ""}</span>
+            </Button>
+            <Button variant="outline" size="sm" onClick={onOpenAutoAssign}>
+              <Sparkles />
+              <span className="hidden lg:inline">Auto Assign</span>
+            </Button>
+            <Button variant="outline" size="sm" onClick={onOpenExport}>
+              <Download />
+              <span className="hidden lg:inline">Export</span>
+            </Button>
+          </>
+        )}
       </div>
-    </CardAction>
+    </div>
   );
 }
