@@ -1,4 +1,4 @@
-import type { NextRequest} from "next/server";
+import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
 import mongoose from "mongoose";
@@ -37,13 +37,14 @@ const updateMeal = async (req: NextRequest) => {
     const userMeal = await Meal.findOne({ _id: userId }); // Use ObjectId for querying
 
     if (!userMeal) {
-      return NextResponse.json({ message: 'Meal record not found for this user' }, { status: 404 });
+      return NextResponse.json({ message: "Meal record not found for this user" }, { status: 404 });
     }
 
     // Update meals for the user based on the provided mealData
-    const updatedMeals = userMeal.meals.map((meal: { date: string | number | Date; type: any; }) => {
-      const updatedMeal = mealData.find((newMeal: { date: string | number | Date; type: any; }) =>
-        new Date(newMeal.date).toDateString() === new Date(meal.date).toDateString() && newMeal.type === meal.type
+    const updatedMeals = userMeal.meals.map((meal: { date: string | number | Date; type: any }) => {
+      const updatedMeal = mealData.find(
+        (newMeal: { date: string | number | Date; type: any }) =>
+          new Date(newMeal.date).toDateString() === new Date(meal.date).toDateString() && newMeal.type === meal.type,
       );
 
       if (updatedMeal) {
@@ -59,23 +60,50 @@ const updateMeal = async (req: NextRequest) => {
 
     return NextResponse.json(userMeal, { status: 200 }); // Return the updated meal record
   } catch (error) {
-    console.error('Error updating meal:', error);
-    return NextResponse.json({ message: error || 'Something went wrong' }, { status: 500 });
+    console.error("Error updating meal:", error);
+    return NextResponse.json({ message: error || "Something went wrong" }, { status: 500 });
   }
 };
 
-
-
 const getMeals = async (req: NextRequest) => {
   try {
-    const meals = await Meal.find({});
-    if (!meals) {
-      return NextResponse.json({ message: 'Meals not found for this user' }, { status: 404 });
+    // Extract query parameters
+    const { searchParams } = new URL(req.url);
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const pageSize = parseInt(searchParams.get("pageSize") || "10", 10);
+    const search = searchParams.get("search") || "";
+
+    // Build match query for search
+    const matchQuery: any = {};
+    if (search) {
+      matchQuery.$or = [{ name: { $regex: search, $options: "i" } }, { email: { $regex: search, $options: "i" } }];
     }
 
-    return NextResponse.json({ data: meals }, { status: 200 });
+    // Calculate skip value for pagination
+    const skip = (page - 1) * pageSize;
+
+    // Get total count for pagination metadata
+    const totalRecords = await Meal.countDocuments(matchQuery);
+    const totalPages = Math.ceil(totalRecords / pageSize);
+
+    // Fetch paginated meals
+    const meals = await Meal.find(matchQuery).skip(skip).limit(pageSize).lean();
+
+    return NextResponse.json(
+      {
+        data: meals,
+        pagination: {
+          page,
+          pageSize,
+          totalRecords,
+          totalPages,
+        },
+      },
+      { status: 200 },
+    );
   } catch (error) {
-    return NextResponse.json({ message: error }, { status: 500 });
+    console.error("Error fetching meals:", error);
+    return NextResponse.json({ message: "Failed to fetch meals", error }, { status: 500 });
   }
 };
 
@@ -96,5 +124,5 @@ export async function PUT(req: NextRequest) {
 
 // Optional: Handle unsupported HTTP methods
 export async function OPTIONS(req: NextRequest) {
-  return NextResponse.json({ message: 'Allowed methods: POST, PUT, GET' }, { status: 200 });
+  return NextResponse.json({ message: "Allowed methods: POST, PUT, GET" }, { status: 200 });
 }
