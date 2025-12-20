@@ -1,3 +1,5 @@
+"use client";
+
 import * as React from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { Eye, EyeOff, Trash2 } from "lucide-react";
