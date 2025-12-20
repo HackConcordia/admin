@@ -8,29 +8,120 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useRouter } from "next/navigation";
+import { TravelReimbursementDialog, type TravelReimbursementData } from "@/components/ui/travel-reimbursement-dialog";
+
+/**
+ * Helper function to format array values for display
+ * Handles arrays, stringified arrays, and arrays containing stringified arrays
+ */
+function formatArrayValue(value: string | string[] | undefined | null): string {
+  if (!value) return "—";
+
+  let arrayValue: string[];
+
+  // If it's an array
+  if (Array.isArray(value)) {
+    // Check if it's an array with a single string element that looks like a stringified array
+    if (value.length === 1 && typeof value[0] === "string") {
+      const str = value[0].trim();
+      if (str.startsWith("[") && str.endsWith("]")) {
+        try {
+          const parsed = JSON.parse(str);
+          if (Array.isArray(parsed)) {
+            arrayValue = parsed;
+          } else {
+            arrayValue = value;
+          }
+        } catch {
+          arrayValue = value;
+        }
+      } else {
+        arrayValue = value;
+      }
+    } else {
+      // It's a regular array, use it directly
+      arrayValue = value;
+    }
+  }
+  // If it's a string, try to parse it as JSON
+  else if (typeof value === "string") {
+    const trimmed = value.trim();
+
+    // Check if it looks like a stringified array
+    if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) {
+          arrayValue = parsed;
+        } else {
+          return value;
+        }
+      } catch {
+        return value;
+      }
+    } else {
+      // Not an array format, return as-is
+      return value;
+    }
+  }
+  // Otherwise, treat it as a single value
+  else {
+    return String(value);
+  }
+
+  // Filter out empty values and join with " | "
+  const filtered = arrayValue.filter((item) => item && item !== "none" && item !== "None");
+  return filtered.length > 0 ? filtered.join(" | ") : "—";
+}
 
 export type ApplicationDetails = {
   _id: string;
   firstName: string;
   lastName: string;
-  age?: string;
-  phoneNumber?: string;
+  isEighteenOrAbove: string;
+  phoneNumber: string;
   email: string;
+  country: string;
+  city: string;
+  school: string;
+  schoolOther: string;
+  faculty: string;
+  facultyOther: string;
+  levelOfStudy: string;
+  levelOfStudyOther: string;
+  program: string;
+  programOther: string;
+  graduationSemester: string;
+  graduationYear: string;
+  coolProject: string;
+  excitedAbout: string;
+  travelReimbursement: boolean;
+  preferredLanguage: string;
+  workingLanguages: string;
+  workingLanguagesOther: string;
+  shirtSize: string;
+  dietaryRestrictions?: string[];
+  dietaryRestrictionsDescription: string;
+  github: string;
+  linkedin: string;
+  gender: string;
+  pronouns: string;
+  underrepresented: string;
+  jobRolesLookingFor: string;
+  workRegions: string;
+  workRegionsOther: string;
+  jobTypesInterested: string;
+  jobTypesInterestedOther: string;
+  isRegisteredForCoop: boolean;
+  nextCoopTerm: string;
+  nextCoopTermOther: string;
   status: string;
   processedBy?: string;
   processedAt?: string;
-  isFromMontreal?: boolean;
-  country?: string;
-  city?: string;
-  school?: string;
-  discipline?: string;
-  shirtSize?: string;
-  dietaryRestrictions?: string[];
-  dietaryRestrictionsDescription?: string;
-  hackathons?: number;
-  github?: string;
-  linkedin?: string;
   hasResume?: boolean;
+  isTravelReimbursementApproved?: boolean;
+  travelReimbursementAmount?: number;
+  travelReimbursementCurrency?: string;
 };
 
 export default function ApplicationView({
@@ -46,6 +137,7 @@ export default function ApplicationView({
   const [adminEmail, setAdminEmail] = React.useState<string | null>(initialAdminEmail);
   const [error, setError] = React.useState<string | null>(null);
   const [isSaving, setIsSaving] = React.useState<null | "admit" | "waitlist" | "reject" | "checkin">(null);
+  const [travelReimbursementDialogOpen, setTravelReimbursementDialogOpen] = React.useState(false);
 
   React.useEffect(() => {
     let active = true;
@@ -65,14 +157,21 @@ export default function ApplicationView({
     };
   }, [adminEmail]);
 
-  async function updateStatus(action: "admit" | "waitlist" | "reject") {
+  async function updateStatus(
+    action: "admit" | "waitlist" | "reject",
+    travelReimbursementData?: TravelReimbursementData,
+  ) {
     try {
       setIsSaving(action);
       setError(null);
       const res = await fetch(`/api/status/${application._id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, adminEmail }),
+        body: JSON.stringify({
+          action,
+          adminEmail,
+          travelReimbursement: travelReimbursementData,
+        }),
       });
       if (!res.ok) {
         const text = await res.text();
@@ -80,12 +179,31 @@ export default function ApplicationView({
       }
       const json = await res.json();
       const newStatus = json?.data as string;
-      setApplication((prev) => ({ ...prev, status: newStatus }));
+      setApplication((prev) => ({
+        ...prev,
+        status: newStatus,
+        isTravelReimbursementApproved: travelReimbursementData?.approved,
+        travelReimbursementAmount: travelReimbursementData?.amount,
+        travelReimbursementCurrency: travelReimbursementData?.currency,
+      }));
     } catch (e: any) {
       setError(e?.message ?? "Failed to update status");
     } finally {
       setIsSaving(null);
     }
+  }
+
+  function handleAdmitClick() {
+    if (application.travelReimbursement) {
+      setTravelReimbursementDialogOpen(true);
+    } else {
+      updateStatus("admit");
+    }
+  }
+
+  function handleTravelReimbursementSubmit(data: TravelReimbursementData) {
+    setTravelReimbursementDialogOpen(false);
+    updateStatus("admit", data);
   }
 
   async function checkIn() {
@@ -136,58 +254,269 @@ export default function ApplicationView({
 
                 <Separator />
 
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div className="space-y-1">
-                    <div className="text-muted-foreground text-xs">School</div>
-                    <div>{application.school || "—"}</div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="text-muted-foreground text-xs">Discipline</div>
-                    <div>{application.discipline || "—"}</div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="text-muted-foreground text-xs">Country</div>
-                    <div>{application.country || "—"}</div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="text-muted-foreground text-xs">City</div>
-                    <div>{application.city || "—"}</div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="text-muted-foreground text-xs">Shirt size</div>
-                    <div>{application.shirtSize || "—"}</div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="text-muted-foreground text-xs">Hackathons</div>
-                    <div>{application.hackathons ?? "—"}</div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="text-muted-foreground text-xs">Dietary restrictions</div>
-                    <div>
-                      {application.dietaryRestrictions && application.dietaryRestrictions.length > 0
-                        ? application.dietaryRestrictions.join(", ")
-                        : "—"}
+                <div className="space-y-6">
+                  {/* Personal Information */}
+                  <div>
+                    <h3 className="mb-3 text-sm font-semibold">Personal Information</h3>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">18 or Above</div>
+                        <div>{application.isEighteenOrAbove || "—"}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">Phone Number</div>
+                        <div>{application.phoneNumber || "—"}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">Gender</div>
+                        <div>{application.gender || "—"}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">Pronouns</div>
+                        <div>{application.pronouns || "—"}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">Underrepresented</div>
+                        <div>{application.underrepresented || "—"}</div>
+                      </div>
                     </div>
                   </div>
-                  <div className="space-y-1">
-                    <div className="text-muted-foreground text-xs">From Montreal</div>
-                    <div>{application.isFromMontreal ? "Yes" : "No"}</div>
+
+                  <Separator />
+
+                  {/* Education */}
+                  <div>
+                    <h3 className="mb-3 text-sm font-semibold">Education</h3>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">School</div>
+                        <div>{application.school || "—"}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">School (Other)</div>
+                        <div>{application.schoolOther || "—"}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">Faculty</div>
+                        <div>{application.faculty || "—"}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">Faculty (Other)</div>
+                        <div>{application.facultyOther || "—"}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">Level of Study</div>
+                        <div>{application.levelOfStudy || "—"}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">Level of Study (Other)</div>
+                        <div>{application.levelOfStudyOther || "—"}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">Program</div>
+                        <div>{application.program || "—"}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">Program (Other)</div>
+                        <div>{application.programOther || "—"}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">Graduation Semester</div>
+                        <div>{application.graduationSemester || "—"}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">Graduation Year</div>
+                        <div>{application.graduationYear || "—"}</div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    <div className="text-muted-foreground text-xs">Resume</div>
-                    <div>
-                      {application.hasResume ? (
-                        <a
-                          href={`/api/users/resume/${application._id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 underline"
-                        >
-                          Download Resume
-                        </a>
-                      ) : (
-                        "—"
+
+                  <Separator />
+
+                  {/* Project Experience */}
+                  <div>
+                    <h3 className="mb-3 text-sm font-semibold">Project Experience</h3>
+                    <div className="space-y-4">
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">Cool Project</div>
+                        <div className="whitespace-pre-wrap">{application.coolProject || "—"}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">What are you excited about?</div>
+                        <div className="whitespace-pre-wrap">{application.excitedAbout || "—"}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Career Interests */}
+                  <div>
+                    <h3 className="mb-3 text-sm font-semibold">Career Interests</h3>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">Job Roles Looking For</div>
+                        <div>{formatArrayValue(application.jobRolesLookingFor)}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">Work Regions</div>
+                        <div>{formatArrayValue(application.workRegions)}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">Work Regions (Other)</div>
+                        <div>{application.workRegionsOther || "—"}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">Job Types Interested</div>
+                        <div>{formatArrayValue(application.jobTypesInterested)}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">Job Types (Other)</div>
+                        <div>{application.jobTypesInterestedOther || "—"}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">Registered for Co-op</div>
+                        <div>{application.isRegisteredForCoop ? "Yes" : "No"}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">Next Co-op Term</div>
+                        <div>{application.nextCoopTerm || "—"}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">Next Co-op Term (Other)</div>
+                        <div>{application.nextCoopTermOther || "—"}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Preferences */}
+                  <div>
+                    <h3 className="mb-3 text-sm font-semibold">Preferences</h3>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">Preferred Language</div>
+                        <div>{application.preferredLanguage || "—"}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">Working Languages</div>
+                        <div>{formatArrayValue(application.workingLanguages)}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">Working Languages (Other)</div>
+                        <div>{application.workingLanguagesOther || "—"}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">Travel Reimbursement</div>
+                        <div>{application.travelReimbursement ? "Yes" : "No"}</div>
+                      </div>
+                      {application.isTravelReimbursementApproved !== undefined && (
+                        <div className="space-y-1 md:col-span-2">
+                          <div className="text-muted-foreground text-xs">Travel Reimbursement Status</div>
+                          <div>
+                            {application.isTravelReimbursementApproved ? (
+                              <span className="font-semibold text-green-600">
+                                Approved: {application.travelReimbursementAmount}{" "}
+                                {application.travelReimbursementCurrency}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">Not Approved</span>
+                            )}
+                          </div>
+                        </div>
                       )}
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Logistics */}
+                  <div>
+                    <h3 className="mb-3 text-sm font-semibold">Logistics</h3>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">Country</div>
+                        <div>{application.country || "—"}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">City</div>
+                        <div>{application.city || "—"}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">Shirt Size</div>
+                        <div>{application.shirtSize || "—"}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">Dietary Restrictions</div>
+                        <div>{formatArrayValue(application.dietaryRestrictions)}</div>
+                      </div>
+                      {application.dietaryRestrictionsDescription && (
+                        <div className="space-y-1 md:col-span-2">
+                          <div className="text-muted-foreground text-xs">Dietary Restrictions Description</div>
+                          <div>{application.dietaryRestrictionsDescription}</div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Links */}
+                  <div>
+                    <h3 className="mb-3 text-sm font-semibold">Links & Documents</h3>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">GitHub</div>
+                        <div>
+                          {application.github ? (
+                            <a
+                              href={application.github}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 underline"
+                            >
+                              {application.github}
+                            </a>
+                          ) : (
+                            "—"
+                          )}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">LinkedIn</div>
+                        <div>
+                          {application.linkedin ? (
+                            <a
+                              href={application.linkedin}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 underline"
+                            >
+                              {application.linkedin}
+                            </a>
+                          ) : (
+                            "—"
+                          )}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">Resume</div>
+                        <div>
+                          {application.hasResume ? (
+                            <a
+                              href={`/api/users/resume/${application._id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 underline"
+                            >
+                              View Resume
+                            </a>
+                          ) : (
+                            "—"
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -203,7 +532,7 @@ export default function ApplicationView({
                   if (isSubmitted) {
                     return (
                       <div className="flex flex-wrap items-center gap-2">
-                        <Button onClick={() => updateStatus("admit")} disabled={isSaving !== null} variant="default">
+                        <Button onClick={handleAdmitClick} disabled={isSaving !== null} variant="default">
                           <CheckCircle2 className="mr-2" /> Admit
                         </Button>
                         <Button
@@ -256,6 +585,13 @@ export default function ApplicationView({
           Back
         </Button>
       </div>
+
+      <TravelReimbursementDialog
+        open={travelReimbursementDialogOpen}
+        onOpenChange={setTravelReimbursementDialogOpen}
+        onSubmit={handleTravelReimbursementSubmit}
+        candidateName={`${application.firstName} ${application.lastName}`}
+      />
     </div>
   );
 }
