@@ -1,12 +1,12 @@
 "use client";
 
 import * as React from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 
 import { toast } from "sonner";
 
 import { DataTable } from "@/components/data-table/data-table";
-import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { useDataTableInstance } from "@/hooks/use-data-table-instance";
 
 import { Actions } from "./actions";
@@ -14,10 +14,22 @@ import { AutoAssignDialog } from "./auto-assign-dialog";
 import { BulkAssignDialog } from "./bulk-assign-dialog";
 import { ApplicationTableRow, getApplicationsColumns } from "./columns";
 import { ExportDialog } from "./export-dialog";
+import { ServerPagination } from "./server-pagination";
+
+type PaginationInfo = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
 
 type TableCardsProps = {
   initialData: ApplicationTableRow[];
   isSuperAdmin: boolean;
+  pagination: PaginationInfo;
+  initialSearch: string;
+  initialStatus: string;
+  initialTravelReimbursement: string;
 };
 
 type AutoAssignStats = {
@@ -25,13 +37,31 @@ type AutoAssignStats = {
   reviewerCount: number;
 } | null;
 
-export function ApplicationTable({ initialData, isSuperAdmin }: TableCardsProps) {
-  const columns = useMemo(() => getApplicationsColumns(isSuperAdmin), [isSuperAdmin]);
+export function ApplicationTable({
+  initialData,
+  isSuperAdmin,
+  pagination,
+  initialSearch,
+  initialStatus,
+  initialTravelReimbursement,
+}: TableCardsProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const columns = useMemo(
+    () => getApplicationsColumns(isSuperAdmin),
+    [isSuperAdmin]
+  );
 
   const table = useDataTableInstance({
     data: initialData,
     columns,
     getRowId: (row) => row._id,
+    manualPagination: true,
+    pageCount: pagination.totalPages,
+    defaultPageIndex: pagination.page - 1,
+    defaultPageSize: pagination.limit,
   });
 
   const [bulkOpen, setBulkOpen] = useState(false);
@@ -50,8 +80,76 @@ export function ApplicationTable({ initialData, isSuperAdmin }: TableCardsProps)
   const [, forceRerender] = useState(0);
 
   const selectedRows = table.getSelectedRowModel().rows;
-  const selectedIds = useMemo(() => selectedRows.map((r) => r.original._id), [selectedRows]);
+  const selectedIds = useMemo(
+    () => selectedRows.map((r) => r.original._id),
+    [selectedRows]
+  );
   const selectedCount = selectedIds.length;
+
+  // Function to update URL params
+  const updateUrlParams = useCallback(
+    (updates: Record<string, string | undefined>) => {
+      const params = new URLSearchParams(searchParams.toString());
+      Object.entries(updates).forEach(([key, value]) => {
+        if (
+          value === undefined ||
+          value === "" ||
+          (key === "page" && value === "1") ||
+          (key === "limit" && value === "10")
+        ) {
+          params.delete(key);
+        } else {
+          params.set(key, value);
+        }
+      });
+
+      const newUrl = params.toString()
+        ? `${pathname}?${params.toString()}`
+        : pathname;
+      router.push(newUrl, { scroll: false });
+    },
+    [pathname, router, searchParams]
+  );
+
+  // Handle page change
+  const handlePageChange = useCallback(
+    (newPage: number) => {
+      updateUrlParams({ page: String(newPage) });
+    },
+    [updateUrlParams]
+  );
+
+  // Handle page size change
+  const handlePageSizeChange = useCallback(
+    (newSize: number) => {
+      updateUrlParams({ limit: String(newSize), page: "1" });
+    },
+    [updateUrlParams]
+  );
+
+  // Handle search change (debounced in the filter component)
+  const handleSearchChange = useCallback(
+    (newSearch: string) => {
+      updateUrlParams({ search: newSearch, page: "1" });
+    },
+    [updateUrlParams]
+  );
+
+  // Handle status filter change
+  const handleStatusChange = useCallback(
+    (newStatus: string) => {
+      updateUrlParams({ status: newStatus, page: "1" });
+    },
+    [updateUrlParams]
+  );
+
+  // Handle travel reimbursement filter change
+  const handleTravelReimbursementChange = useCallback(
+    (newValue: string) => {
+      updateUrlParams({ travelReimbursement: newValue, page: "1" });
+    },
+    [updateUrlParams]
+  );
 
   // Shared admin email loading (used for bulk assign and auto-assign)
   useEffect(() => {
@@ -85,7 +183,11 @@ export function ApplicationTable({ initialData, isSuperAdmin }: TableCardsProps)
 
     const unassignedCount = table
       .getCoreRowModel()
-      .rows.filter((row) => row.original.status === "Submitted" && row.original.processedBy === "Not processed").length;
+      .rows.filter(
+        (row) =>
+          row.original.status === "Submitted" &&
+          row.original.processedBy === "Not processed"
+      ).length;
 
     const reviewerCount = adminEmails.length;
 
@@ -107,7 +209,10 @@ export function ApplicationTable({ initialData, isSuperAdmin }: TableCardsProps)
       const promise = fetch("/api/admin/assign-applications", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ selectedAdminEmail: selectedEmail, selectedApplicants: selectedIds }),
+        body: JSON.stringify({
+          selectedAdminEmail: selectedEmail,
+          selectedApplicants: selectedIds,
+        }),
       }).then(async (r) => {
         if (!r.ok) {
           const err = await r.json().catch(() => ({}));
@@ -141,7 +246,9 @@ export function ApplicationTable({ initialData, isSuperAdmin }: TableCardsProps)
 
     setExporting(true);
     try {
-      const promise = fetch(`/api/resumes/export?statusFilter=${exportFilter}`).then(async (response) => {
+      const promise = fetch(
+        `/api/resumes/export?statusFilter=${exportFilter}`
+      ).then(async (response) => {
         if (!response.ok) {
           const err = await response.json().catch(() => ({}));
           throw new Error(err?.message && "Failed to export resumes");
@@ -156,7 +263,9 @@ export function ApplicationTable({ initialData, isSuperAdmin }: TableCardsProps)
         const contentDisposition = response.headers.get("Content-Disposition");
         let filename = `resumes_${exportFilter}_${new Date().toISOString().slice(0, 10)}.zip`;
         if (contentDisposition) {
-          const filenameMatch = contentDisposition.match(/filename[^;=\n]*=\s*(['"]?)([^'"\n]*)\1/i);
+          const filenameMatch = contentDisposition.match(
+            /filename[^;=\n]*=\s*(['"]?)([^'"\n]*)\1/i
+          );
           if (filenameMatch && filenameMatch[2]) {
             filename = filenameMatch[2];
           }
@@ -207,7 +316,7 @@ export function ApplicationTable({ initialData, isSuperAdmin }: TableCardsProps)
       toast.success("No unassigned applications found");
     } else {
       toast.success(
-        `Successfully assigned ${stats?.totalAssigned} applications to ${stats?.reviewerStats?.length} reviewers`,
+        `Successfully assigned ${stats?.totalAssigned} applications to ${stats?.reviewerStats?.length} reviewers`
       );
     }
 
@@ -239,7 +348,9 @@ export function ApplicationTable({ initialData, isSuperAdmin }: TableCardsProps)
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-2">
           <h2>Applications</h2>
-          <p className="text-xs text-gray-600 dark:text-gray-400">Manage and review submitted applications</p>
+          <p className="text-xs text-gray-600 dark:text-gray-400">
+            Manage and review submitted applications
+          </p>
         </div>
         <Actions
           table={table}
@@ -248,11 +359,22 @@ export function ApplicationTable({ initialData, isSuperAdmin }: TableCardsProps)
           onOpenBulkAssign={() => setBulkOpen(true)}
           onOpenAutoAssign={() => setAutoAssignOpen(true)}
           onOpenExport={() => setExportOpen(true)}
+          initialSearch={initialSearch}
+          initialStatus={initialStatus}
+          initialTravelReimbursement={initialTravelReimbursement}
+          onSearchChange={handleSearchChange}
+          onStatusChange={handleStatusChange}
+          onTravelReimbursementChange={handleTravelReimbursementChange}
         />
         <div className="mb-2 rounded-md border">
           <DataTable table={table} columns={columns} />
         </div>
-        <DataTablePagination table={table} />
+        <ServerPagination
+          pagination={pagination}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+          selectedCount={table.getFilteredSelectedRowModel().rows.length}
+        />
       </div>
 
       {isSuperAdmin && (
