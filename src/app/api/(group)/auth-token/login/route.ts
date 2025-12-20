@@ -1,11 +1,8 @@
 import type { NextRequest } from "next/server";
-import { NextResponse } from "next/server";
-
 import connectMongoDB from "@/repository/mongoose";
 import Admin from "@/repository/models/admin";
 import { sendErrorResponse, sendSuccessResponse } from "@/repository/response";
 import { COOKIE_MAX_AGE_SECONDS, COOKIE_NAME, signAuthToken } from "@/lib/auth-token";
-import bcrypt from "bcryptjs";
 
 export const POST = async (req: NextRequest) => {
   try {
@@ -22,25 +19,8 @@ export const POST = async (req: NextRequest) => {
       return sendErrorResponse("Invalid credentials", null, 401);
     }
 
-    let passwordMatches = false;
-    try {
-      passwordMatches = await bcrypt.compare(password, admin.password);
-    } catch (_err) {
-      passwordMatches = false;
-    }
-
-    // Legacy fallback: if stored password was plaintext, upgrade to hashed transparently
-    if (!passwordMatches) {
-      if (admin.password === password) {
-        const newHash = await bcrypt.hash(password, 10);
-        admin.password = newHash;
-        await admin.save();
-        passwordMatches = true;
-      }
-    }
-
-    if (!passwordMatches) {
-      return sendErrorResponse("Invalid credentials", null, 401);
+    if (password !== admin.password) {
+      return sendErrorResponse("Invalid password", null, 401);
     }
 
     const token = await signAuthToken(
