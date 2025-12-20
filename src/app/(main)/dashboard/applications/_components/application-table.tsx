@@ -7,7 +7,6 @@ import { toast } from "sonner";
 
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
-import { CardHeader, CardTitle, CardContent, CardDescription, Card } from "@/components/ui/card";
 import { useDataTableInstance } from "@/hooks/use-data-table-instance";
 
 import { Actions } from "./actions";
@@ -227,9 +226,9 @@ export function ApplicationTable({ initialData, isSuperAdmin }: TableCardsProps)
     try {
       const stats = await performAutoAssign();
       handleAutoAssignSuccess(stats);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Auto-assign error:", error);
-      toast.error(error?.message && "Failed to auto-assign");
+      toast.error("Failed to auto-assign");
     } finally {
       setAutoAssigning(false);
     }
@@ -250,7 +249,7 @@ export function ApplicationTable({ initialData, isSuperAdmin }: TableCardsProps)
           onOpenAutoAssign={() => setAutoAssignOpen(true)}
           onOpenExport={() => setExportOpen(true)}
         />
-        <div className="rounded-md border mb-2">
+        <div className="mb-2 rounded-md border">
           <DataTable table={table} columns={columns} />
         </div>
         <DataTablePagination table={table} />
