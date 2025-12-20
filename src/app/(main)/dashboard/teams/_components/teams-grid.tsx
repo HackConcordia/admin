@@ -51,7 +51,7 @@ const defaultFilters: Filters = {
   search: "",
   memberCount: "",
   sortField: "memberCount",
-  sortOrder: "desc",
+  sortOrder: "asc",
 };
 
 const SORT_OPTIONS = [
@@ -79,7 +79,7 @@ export function TeamsGrid({ initialTeams, initialPagination, initialFilters }: T
     search: initialFilters?.search || "",
     memberCount: initialFilters?.memberCount || "",
     sortField: initialFilters?.sortField || "memberCount",
-    sortOrder: initialFilters?.sortOrder || "desc",
+    sortOrder: initialFilters?.sortOrder || "asc",
   });
 
   // Track the previous search value to detect actual user changes

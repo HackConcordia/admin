@@ -72,7 +72,7 @@ async function getTeamsSSR(searchParams: {
 
     // Parse sorting parameters
     const sortField = VALID_SORT_FIELDS.includes(searchParams.sortField || "") ? searchParams.sortField! : "memberCount";
-    const sortOrder = VALID_SORT_ORDERS.includes(searchParams.sortOrder || "") ? searchParams.sortOrder! : "desc";
+    const sortOrder = VALID_SORT_ORDERS.includes(searchParams.sortOrder || "") ? searchParams.sortOrder! : "asc";
 
     // Parse filtering parameters
     const memberCountFilter = searchParams.memberCount || "";
@@ -197,7 +197,7 @@ async function getTeamsSSR(searchParams: {
         search: "",
         memberCount: "",
         sortField: "memberCount",
-        sortOrder: "desc",
+        sortOrder: "asc",
       },
     };
   }
