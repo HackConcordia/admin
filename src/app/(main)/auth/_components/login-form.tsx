@@ -10,12 +10,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 
-// const FormSchema = z.object({
-//   email: z.string().email({ message: "Please enter a valid email address." }),
-//   password: z.string().min(6, { message: "Password must be at least 6 characters." }),
-//   remember: z.boolean().optional(),
-// });
-
 const FormSchema = z.object({
   email: z.string(),
   password: z.string(),
@@ -43,6 +37,10 @@ export function LoginForm() {
       });
 
       if (!res.ok) {
+        if (res.status === 401) {
+          toast.error("Incorrect email or password");
+          return;
+        }
         const text = await res.text();
         throw new Error(text || `Login failed (${res.status})`);
       }
@@ -50,7 +48,8 @@ export function LoginForm() {
       toast.success("Logged in successfully");
       window.location.href = "/dashboard/applications";
     } catch (e: any) {
-      toast.error(e?.message ? String(e.message) : "Login failed");
+      console.log(e.message);
+      toast.error(e.message ?? "Something went wrong");
     }
   };
 
@@ -70,7 +69,7 @@ export function LoginForm() {
                   placeholder="you@example.com"
                   autoComplete="email"
                   {...field}
-                  required={false}
+                  required={true}
                 />
               </FormControl>
               <FormMessage />
@@ -84,35 +83,9 @@ export function LoginForm() {
             <FormItem>
               <FormLabel>Password</FormLabel>
               <FormControl>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  autoComplete="current-password"
-                  required={false}
-                  {...field}
-                />
+                <Input id="password" type="password" placeholder="••••••••" required={true} {...field} />
               </FormControl>
               <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="remember"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-center">
-              <FormControl>
-                <Checkbox
-                  id="login-remember"
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                  className="size-4"
-                />
-              </FormControl>
-              <FormLabel htmlFor="login-remember" className="text-muted-foreground ml-1 text-sm font-medium">
-                Remember me for 30 days
-              </FormLabel>
             </FormItem>
           )}
         />

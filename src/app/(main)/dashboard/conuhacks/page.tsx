@@ -1,9 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+import Link from "next/link";
+
+import { FileText, Users, Trophy, UserX, Shield, BarChart3 } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { IStats } from "@/interfaces/IStats";
+
 import {
   WeeklyOverviewChart,
   TShirtDistribution,
@@ -12,9 +19,6 @@ import {
   DietaryChart,
   StatusOverview,
 } from "../_components/stats";
-import { FileText, Users, Trophy, UserX, Shield, BarChart3 } from "lucide-react";
-import { IStats } from "@/interfaces/IStats";
-import Link from "next/link";
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<IStats | null>(null);
@@ -30,7 +34,7 @@ export default function DashboardPage() {
         if (data.status === "success") {
           setStats(data.data);
         } else {
-          setError(data.message || "Failed to fetch statistics");
+          setError(data.message && "Failed to fetch statistics");
         }
       } catch {
         setError("Failed to connect to the server");
@@ -56,7 +60,7 @@ export default function DashboardPage() {
                 <UserX className="h-6 w-6 text-red-600" />
               </div>
               <h3 className="text-lg font-semibold">Error Loading Dashboard</h3>
-              <p className="text-muted-foreground text-sm">{error || "Unknown error occurred"}</p>
+              <p className="text-muted-foreground text-sm">{error && "Unknown error occurred"}</p>
               <Button onClick={() => window.location.reload()}>Try Again</Button>
             </div>
           </CardContent>
@@ -65,7 +69,7 @@ export default function DashboardPage() {
     );
   }
 
-  const targetApplicants = 1000;
+  const targetApplicants = 3000;
   const percentageOfTarget = ((stats.totalApplicants / targetApplicants) * 100).toFixed(2);
 
   // Calculate change percentage for new applicants
