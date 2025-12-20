@@ -110,14 +110,34 @@ export const GET = async () => {
     }, { S: 0, M: 0, L: 0, XL: 0, XXL: 0 })
 
     // Dietary restriction counts
+    let applicantsWithNoRestrictions = 0
     const dietaryRestrictionCounts = applications.reduce((acc, app) => {
-      let restrictions = []
+      let restrictions: string[] = []
 
       // Parse dietaryRestrictions if available
       try {
-        restrictions = app.dietaryRestrictions ? JSON.parse(app.dietaryRestrictions[0]) : []
-      } catch (error) {
-        console.error('Error parsing dietaryRestrictions:', error)
+        const rawRestrictions = app.dietaryRestrictions
+        // Check if dietaryRestrictions exists, is an array, has items, and first item is valid JSON
+        if (
+          rawRestrictions && 
+          Array.isArray(rawRestrictions) && 
+          rawRestrictions.length > 0 && 
+          rawRestrictions[0] && 
+          rawRestrictions[0] !== 'undefined' &&
+          typeof rawRestrictions[0] === 'string'
+        ) {
+          const parsed = JSON.parse(rawRestrictions[0])
+          if (Array.isArray(parsed)) {
+            restrictions = parsed
+          }
+        }
+      } catch {
+        // Silently handle parsing errors - these applicants will be counted as "no restrictions"
+      }
+
+      // Count applicants with no restrictions
+      if (restrictions.length === 0) {
+        applicantsWithNoRestrictions++
       }
 
       // Count each dietary restriction
@@ -140,10 +160,13 @@ export const GET = async () => {
       'other',
     ]
 
-    const dietaryRestrictionsData = dietaryRestrictions.map((restriction) => ({
-      restriction: formatDisplayName(restriction), // Capitalized with spaces
-      count: dietaryRestrictionCounts[restriction] || 0,
-    }))
+    const dietaryRestrictionsData = [
+      { restriction: 'None', count: applicantsWithNoRestrictions },
+      ...dietaryRestrictions.map((restriction) => ({
+        restriction: formatDisplayName(restriction), // Capitalized with spaces
+        count: dietaryRestrictionCounts[restriction] || 0,
+      }))
+    ]
 
     // Response
     const responseData = {
