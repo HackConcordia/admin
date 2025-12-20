@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useRouter } from "next/navigation";
+import { TravelReimbursementDialog, type TravelReimbursementData } from "@/components/ui/travel-reimbursement-dialog";
 
 /**
  * Helper function to format array values for display
@@ -118,6 +119,9 @@ export type ApplicationDetails = {
   processedBy?: string;
   processedAt?: string;
   hasResume?: boolean;
+  isTravelReimbursementApproved?: boolean;
+  travelReimbursementAmount?: number;
+  travelReimbursementCurrency?: string;
 };
 
 export default function ApplicationView({
@@ -133,6 +137,7 @@ export default function ApplicationView({
   const [adminEmail, setAdminEmail] = React.useState<string | null>(initialAdminEmail);
   const [error, setError] = React.useState<string | null>(null);
   const [isSaving, setIsSaving] = React.useState<null | "admit" | "waitlist" | "reject" | "checkin">(null);
+  const [travelReimbursementDialogOpen, setTravelReimbursementDialogOpen] = React.useState(false);
 
   React.useEffect(() => {
     let active = true;
@@ -152,14 +157,21 @@ export default function ApplicationView({
     };
   }, [adminEmail]);
 
-  async function updateStatus(action: "admit" | "waitlist" | "reject") {
+  async function updateStatus(
+    action: "admit" | "waitlist" | "reject",
+    travelReimbursementData?: TravelReimbursementData,
+  ) {
     try {
       setIsSaving(action);
       setError(null);
       const res = await fetch(`/api/status/${application._id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, adminEmail }),
+        body: JSON.stringify({
+          action,
+          adminEmail,
+          travelReimbursement: travelReimbursementData,
+        }),
       });
       if (!res.ok) {
         const text = await res.text();
@@ -167,12 +179,31 @@ export default function ApplicationView({
       }
       const json = await res.json();
       const newStatus = json?.data as string;
-      setApplication((prev) => ({ ...prev, status: newStatus }));
+      setApplication((prev) => ({
+        ...prev,
+        status: newStatus,
+        isTravelReimbursementApproved: travelReimbursementData?.approved,
+        travelReimbursementAmount: travelReimbursementData?.amount,
+        travelReimbursementCurrency: travelReimbursementData?.currency,
+      }));
     } catch (e: any) {
       setError(e?.message ?? "Failed to update status");
     } finally {
       setIsSaving(null);
     }
+  }
+
+  function handleAdmitClick() {
+    if (application.travelReimbursement) {
+      setTravelReimbursementDialogOpen(true);
+    } else {
+      updateStatus("admit");
+    }
+  }
+
+  function handleTravelReimbursementSubmit(data: TravelReimbursementData) {
+    setTravelReimbursementDialogOpen(false);
+    updateStatus("admit", data);
   }
 
   async function checkIn() {
@@ -380,6 +411,21 @@ export default function ApplicationView({
                         <div className="text-muted-foreground text-xs">Travel Reimbursement</div>
                         <div>{application.travelReimbursement ? "Yes" : "No"}</div>
                       </div>
+                      {application.isTravelReimbursementApproved !== undefined && (
+                        <div className="space-y-1 md:col-span-2">
+                          <div className="text-muted-foreground text-xs">Travel Reimbursement Status</div>
+                          <div>
+                            {application.isTravelReimbursementApproved ? (
+                              <span className="font-semibold text-green-600">
+                                Approved: {application.travelReimbursementAmount}{" "}
+                                {application.travelReimbursementCurrency}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">Not Approved</span>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -486,7 +532,7 @@ export default function ApplicationView({
                   if (isSubmitted) {
                     return (
                       <div className="flex flex-wrap items-center gap-2">
-                        <Button onClick={() => updateStatus("admit")} disabled={isSaving !== null} variant="default">
+                        <Button onClick={handleAdmitClick} disabled={isSaving !== null} variant="default">
                           <CheckCircle2 className="mr-2" /> Admit
                         </Button>
                         <Button
@@ -539,6 +585,13 @@ export default function ApplicationView({
           Back
         </Button>
       </div>
+
+      <TravelReimbursementDialog
+        open={travelReimbursementDialogOpen}
+        onOpenChange={setTravelReimbursementDialogOpen}
+        onSubmit={handleTravelReimbursementSubmit}
+        candidateName={`${application.firstName} ${application.lastName}`}
+      />
     </div>
   );
 }

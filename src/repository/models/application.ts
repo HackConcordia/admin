@@ -82,6 +82,9 @@ const applicationsSchema = new mongoose.Schema(
     teamId: { type: String, default: "" },
     processedBy: { type: String, default: "Not processed" },
     processedAt: { type: Date, default: null },
+    isTravelReimbursementApproved: { type: Boolean, required: false },
+    travelReimbursementAmount: { type: Number, required: false },
+    travelReimbursementCurrency: { type: String, required: false },
   },
   {
     timestamps: {

@@ -67,4 +67,7 @@ export interface IApplication {
   };
   status: string;
   teamId: string;
+  isTravelReimbursementApproved?: boolean;
+  travelReimbursementAmount?: number;
+  travelReimbursementCurrency?: string;
 }
