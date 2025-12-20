@@ -29,6 +29,7 @@ import {
   getStatusFillColor,
   getStatusStrokeColor,
 } from "@/utils/statusColors";
+import Link from "next/link";
 
 export type ApplicationTableRow = {
   _id: string;
@@ -141,12 +142,10 @@ function RowActions({ row, isSuperAdmin }: any) {
           </Button>
         )}
 
-        <Button
-          size="icon"
-          variant="outline"
-          onClick={() => window.open(`/dashboard/applications/${id}`)}
-        >
-          <Eye className="h-4 w-4" />
+        <Button size="icon" variant="outline" asChild>
+          <Link href={`/dashboard/applications/${id}`}>
+            <Eye className="h-4 w-4" />
+          </Link>
         </Button>
 
         {isSuperAdmin && (
