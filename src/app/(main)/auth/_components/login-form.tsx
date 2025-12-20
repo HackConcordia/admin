@@ -1,13 +1,23 @@
 "use client";
 
+import { useState } from "react";
+
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 
 const FormSchema = z.object({
@@ -17,6 +27,8 @@ const FormSchema = z.object({
 });
 
 export function LoginForm() {
+  const [isLoading, setIsLoading] = useState(false);
+
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
@@ -27,13 +39,18 @@ export function LoginForm() {
   });
 
   const onSubmit = async (data: z.infer<typeof FormSchema>) => {
+    setIsLoading(true);
     try {
       const res = await fetch("/api/auth-token/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email: data.email, password: data.password, remember: !!data.remember }),
+        body: JSON.stringify({
+          email: data.email,
+          password: data.password,
+          remember: !!data.remember,
+        }),
       });
 
       if (!res.ok) {
@@ -46,10 +63,12 @@ export function LoginForm() {
       }
 
       toast.success("Logged in successfully");
-      window.location.href = "/dashboard/applications";
+      window.location.href = "/dashboard/conuhacks";
     } catch (e: any) {
       console.log(e.message);
       toast.error(e.message ?? "Something went wrong");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -83,14 +102,27 @@ export function LoginForm() {
             <FormItem>
               <FormLabel>Password</FormLabel>
               <FormControl>
-                <Input id="password" type="password" placeholder="••••••••" required={true} {...field} />
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  required={true}
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <Button className="w-full" type="submit">
-          Login
+        <Button className="w-full" type="submit" disabled={isLoading}>
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Logging in...
+            </>
+          ) : (
+            "Login"
+          )}
         </Button>
       </form>
     </Form>
