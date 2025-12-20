@@ -81,10 +81,30 @@ async function getTeamsSSR(searchParams: {
     const searchQuery: any = {};
 
     if (search) {
+      // Find users matching the search term (by name or email)
+      const matchingUsers = await Application.find(
+        {
+          $or: [
+            { email: { $regex: search, $options: "i" } },
+            { firstName: { $regex: search, $options: "i" } },
+            { lastName: { $regex: search, $options: "i" } },
+          ],
+        },
+        "_id"
+      ).lean();
+
+      const matchingUserIds = matchingUsers.map((u: any) => String(u._id));
+
+      // Search by team name, team code, OR teams containing matching users
       searchQuery.$or = [
         { teamName: { $regex: search, $options: "i" } },
         { teamCode: { $regex: search, $options: "i" } },
       ];
+
+      // Only add member search if there are matching users
+      if (matchingUserIds.length > 0) {
+        searchQuery.$or.push({ "members.userId": { $in: matchingUserIds } });
+      }
     }
 
     // Build aggregation pipeline
