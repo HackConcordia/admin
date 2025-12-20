@@ -58,6 +58,8 @@ export function MealTable({ initialData, initialPagination }: MealTableProps) {
     getRowId: (row) => row._id,
     enableRowSelection: false,
     defaultPageSize: pagination.pageSize,
+    manualPagination: true,
+    pageCount: pagination.totalPages,
   });
 
   // Fetch data from API

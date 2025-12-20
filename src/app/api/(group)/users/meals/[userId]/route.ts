@@ -1,17 +1,20 @@
 import type { NextRequest } from "next/server";
-import { NextResponse } from "next/server";
 
 import mongoose from "mongoose";
 
 import Meal from "@/repository/models/meal";
 import connectMongoDB from "@/repository/mongoose";
+import { sendErrorResponse, sendSuccessResponse } from "@/repository/response";
 
-export const PATCH = async (req: NextRequest, { params }: { params: Promise<{ userId: string }> }) => {
+export const PATCH = async (
+  req: NextRequest,
+  { params }: { params: Promise<{ userId: string }> }
+) => {
   try {
     const { userId } = await params;
 
     if (!userId) {
-      return NextResponse.json({ message: "userId is not defined" }, { status: 400 });
+      return sendErrorResponse("userId is not defined", {}, 400);
     }
 
     await connectMongoDB();
@@ -19,7 +22,7 @@ export const PATCH = async (req: NextRequest, { params }: { params: Promise<{ us
     const { mealData } = await req.json();
 
     if (!mealData || !Array.isArray(mealData)) {
-      return NextResponse.json({ message: "Invalid mealData format" }, { status: 400 });
+      return sendErrorResponse("Invalid mealData format", {}, 400);
     }
 
     console.log("userId:", userId);
@@ -31,30 +34,37 @@ export const PATCH = async (req: NextRequest, { params }: { params: Promise<{ us
     const userMeal = await Meal.findOne({ _id: mealDocumentId });
 
     if (!userMeal) {
-      return NextResponse.json({ message: "Meal record not found for this user" }, { status: 404 });
+      return sendErrorResponse("Meal record not found for this user", {}, 404);
     }
 
     // Update meals for the user based on the provided mealData
-    const updatedMeals = userMeal.meals.map((meal: { date: string | number | Date; type: any }) => {
-      const updatedMeal = mealData.find(
-        (newMeal: { date: string | number | Date; type: any }) =>
-          new Date(newMeal.date).toDateString() === new Date(meal.date).toDateString() && newMeal.type === meal.type,
-      );
+    const updatedMeals = userMeal.meals.map(
+      (meal: { date: string | number | Date; type: any }) => {
+        const updatedMeal = mealData.find(
+          (newMeal: { date: string | number | Date; type: any }) =>
+            new Date(newMeal.date).toDateString() ===
+              new Date(meal.date).toDateString() && newMeal.type === meal.type
+        );
 
-      if (updatedMeal) {
-        return { ...meal, taken: updatedMeal.taken };
+        if (updatedMeal) {
+          return { ...meal, taken: updatedMeal.taken };
+        }
+
+        return meal;
       }
-
-      return meal;
-    });
+    );
 
     // Update the meal document in the database
     userMeal.meals = updatedMeals;
     await userMeal.save();
 
-    return NextResponse.json(userMeal, { status: 200 });
+    return sendSuccessResponse(
+      "User meals information updated successfully",
+      userMeal,
+      200
+    );
   } catch (error) {
     console.error("Error updating meal:", error);
-    return NextResponse.json({ message: error || "Something went wrong" }, { status: 500 });
+    return sendErrorResponse("Failed to update meal", error, 500);
   }
 };
