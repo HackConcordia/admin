@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, UserPlus } from "lucide-react";
+import { Download, UserPlus, Sparkles } from "lucide-react";
 import * as React from "react";
 
 import { DataTable } from "@/components/data-table/data-table";
@@ -46,6 +46,13 @@ export function TableCards({ initialData, isSuperAdmin }: TableCardsProps) {
   const [exportFilter, setExportFilter] = React.useState<string>("all");
   const [exporting, setExporting] = React.useState(false);
 
+  const [autoAssignOpen, setAutoAssignOpen] = React.useState(false);
+  const [autoAssigning, setAutoAssigning] = React.useState(false);
+  const [autoAssignStats, setAutoAssignStats] = React.useState<{
+    unassignedCount: number;
+    reviewerCount: number;
+  } | null>(null);
+
   const selectedRows = table.getSelectedRowModel().rows;
   const selectedIds = React.useMemo(() => selectedRows.map((r) => r.original._id), [selectedRows]);
 
@@ -67,6 +74,37 @@ export function TableCards({ initialData, isSuperAdmin }: TableCardsProps) {
       cancelled = true;
     };
   }, [bulkOpen]);
+
+  React.useEffect(() => {
+    if (!autoAssignOpen) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const [unassignedRes, reviewersRes] = await Promise.all([
+          fetch("/api/admin/get-emails"),
+          table.getCoreRowModel().rows.length,
+        ]);
+
+        const reviewersJson = await unassignedRes.json();
+        const reviewerCount = Array.isArray(reviewersJson?.data) ? reviewersJson.data.length : 0;
+
+        const unassignedCount = table
+          .getCoreRowModel()
+          .rows.filter(
+            (row) => row.original.status === "Submitted" && row.original.processedBy === "Not processed",
+          ).length;
+
+        if (!cancelled) {
+          setAutoAssignStats({ unassignedCount, reviewerCount });
+        }
+      } catch (_e) {
+        toast.error("Failed to load assignment statistics");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [autoAssignOpen, table]);
 
   async function handleBulkAssign() {
     if (!selectedIds.length) {
@@ -167,6 +205,46 @@ export function TableCards({ initialData, isSuperAdmin }: TableCardsProps) {
     }
   }
 
+  async function handleAutoAssign() {
+    setAutoAssigning(true);
+    try {
+      const result = await fetch("/api/admin/auto-assign-applications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      }).then(async (r) => {
+        if (!r.ok) {
+          const err = await r.json().catch(() => ({}));
+          throw new Error(err?.message || "Failed to auto-assign");
+        }
+        return r.json();
+      });
+
+      const stats = result?.data;
+
+      if (stats?.totalAssigned === 0) {
+        toast.success("No unassigned applications found");
+      } else {
+        toast.success(
+          `Successfully assigned ${stats?.totalAssigned} applications to ${stats?.reviewerStats?.length} reviewers`,
+        );
+      }
+
+      forceRerender((n) => n + 1);
+      setAutoAssignOpen(false);
+
+      if (stats?.reviewerStats && stats.reviewerStats.length > 0) {
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      }
+    } catch (error: any) {
+      console.error("Auto-assign error:", error);
+      toast.error(error?.message || "Failed to auto-assign");
+    } finally {
+      setAutoAssigning(false);
+    }
+  }
+
   return (
     <div className="grid grid-cols-1 gap-4 *:data-[slot=card]:shadow-xs">
       <div className="mt-5">
@@ -184,6 +262,12 @@ export function TableCards({ initialData, isSuperAdmin }: TableCardsProps) {
                     <span className="hidden lg:inline">
                       Assign selected {selectedIds.length ? `(${selectedIds.length})` : ""}
                     </span>
+                  </Button>
+                )}
+                {isSuperAdmin && (
+                  <Button variant="outline" size="sm" onClick={() => setAutoAssignOpen(true)}>
+                    <Sparkles />
+                    <span className="hidden lg:inline">Auto Assign</span>
                   </Button>
                 )}
                 {isSuperAdmin && (
@@ -272,6 +356,51 @@ export function TableCards({ initialData, isSuperAdmin }: TableCardsProps) {
               </Button>
               <Button onClick={handleExport} disabled={exporting || !exportFilter}>
                 {exporting ? "Exporting..." : "Export"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+      {isSuperAdmin && (
+        <Dialog open={autoAssignOpen} onOpenChange={setAutoAssignOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Auto Assign Applications</DialogTitle>
+              <DialogDescription>
+                Automatically distribute unassigned applications to reviewers while keeping teams together.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4">
+              {autoAssignStats ? (
+                <div className="bg-muted rounded-md p-4 text-sm">
+                  <div className="mb-2 font-medium">Assignment Preview:</div>
+                  <ul className="text-muted-foreground space-y-1">
+                    <li>Unassigned applications: {autoAssignStats.unassignedCount}</li>
+                    <li>Available reviewers: {autoAssignStats.reviewerCount}</li>
+                    <li>
+                      Estimated per reviewer: ~
+                      {autoAssignStats.reviewerCount > 0
+                        ? Math.ceil(autoAssignStats.unassignedCount / autoAssignStats.reviewerCount)
+                        : 0}
+                    </li>
+                  </ul>
+                  <div className="text-muted-foreground mt-3 text-xs">
+                    Note: Team members will be assigned together to the same reviewer.
+                  </div>
+                </div>
+              ) : (
+                <div className="text-muted-foreground text-sm">Loading statistics...</div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="secondary" onClick={() => setAutoAssignOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleAutoAssign}
+                disabled={autoAssigning || !autoAssignStats || autoAssignStats.unassignedCount === 0}
+              >
+                {autoAssigning ? "Assigning..." : "Auto Assign"}
               </Button>
             </DialogFooter>
           </DialogContent>
