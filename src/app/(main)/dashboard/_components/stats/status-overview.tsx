@@ -43,21 +43,34 @@ const statusConfig = [
   },
 ];
 
-export function StatusOverview({ statusCounts, totalApplicants }: StatusOverviewProps) {
+export function StatusOverview({
+  statusCounts,
+  totalApplicants,
+}: StatusOverviewProps) {
   const submittedCount = statusCounts.Submitted || 0;
   const processedPercentage =
-    totalApplicants > 0 ? (((totalApplicants - submittedCount) / totalApplicants) * 100).toFixed(2) : "0.00";
+    totalApplicants > 0
+      ? (((totalApplicants - submittedCount) / totalApplicants) * 100).toFixed(
+          2
+        )
+      : "0.00";
 
   return (
     <div className="space-y-4">
       <div className="text-muted-foreground text-sm">
-        Processed <span className="text-foreground font-semibold">{processedPercentage}%</span> submitted applications!
+        Processed{" "}
+        <span className="text-foreground font-semibold">
+          {processedPercentage}%
+        </span>{" "}
+        submitted applications!
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {statusConfig.map(({ key, label, icon: Icon, color, bgColor }) => (
           <div key={key} className="flex items-center gap-3">
-            <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${bgColor}`}>
+            <div
+              className={`flex h-10 w-10 items-center justify-center rounded-lg ${bgColor}`}
+            >
               <Icon className={`h-5 w-5 ${color}`} />
             </div>
             <div>

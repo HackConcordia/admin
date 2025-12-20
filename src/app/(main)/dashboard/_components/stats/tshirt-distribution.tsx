@@ -27,7 +27,10 @@ const sizeColors: Record<string, string> = {
   XXL: "bg-blue-500",
 };
 
-export function TShirtDistribution({ data, totalShirts }: TShirtDistributionProps) {
+export function TShirtDistribution({
+  data,
+  totalShirts,
+}: TShirtDistributionProps) {
   const maxCount = Math.max(...Object.values(data));
 
   return (
@@ -38,23 +41,29 @@ export function TShirtDistribution({ data, totalShirts }: TShirtDistributionProp
       </div>
 
       <div className="flex-1 space-y-4">
-        {(Object.keys(sizeLabels) as Array<keyof typeof sizeLabels>).map((size) => {
-          const count = data[size as keyof typeof data] || 0;
-          const percentage = maxCount > 0 ? (count / maxCount) * 100 : 0;
+        {(Object.keys(sizeLabels) as Array<keyof typeof sizeLabels>).map(
+          (size) => {
+            const count = data[size as keyof typeof data] || 0;
+            const percentage = maxCount > 0 ? (count / maxCount) * 100 : 0;
 
-          return (
-            <div key={size} className="flex items-center gap-3">
-              <div className="text-muted-foreground w-16 text-sm font-medium">{sizeLabels[size]}</div>
-              <div className="bg-muted h-3 flex-1 overflow-hidden rounded-full">
-                <div
-                  className={`h-full ${sizeColors[size]} rounded-full transition-all duration-500`}
-                  style={{ width: `${percentage}%` }}
-                />
+            return (
+              <div key={size} className="flex items-center gap-3">
+                <div className="text-muted-foreground w-16 text-sm font-medium">
+                  {sizeLabels[size]}
+                </div>
+                <div className="bg-muted h-3 flex-1 overflow-hidden rounded-full">
+                  <div
+                    className={`h-full ${sizeColors[size]} rounded-full transition-all duration-500`}
+                    style={{ width: `${percentage}%` }}
+                  />
+                </div>
+                <div className="text-muted-foreground w-24 text-right text-sm">
+                  {count} Applicants
+                </div>
               </div>
-              <div className="text-muted-foreground w-24 text-right text-sm">{count} Applicants</div>
-            </div>
-          );
-        })}
+            );
+          }
+        )}
       </div>
     </div>
   );

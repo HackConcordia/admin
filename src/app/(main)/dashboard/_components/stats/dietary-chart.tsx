@@ -51,8 +51,12 @@ export function DietaryChart({ data }: DietaryChartProps) {
                 className="h-3 w-3 flex-shrink-0 rounded-sm"
                 style={{ backgroundColor: getColor(item.restriction, index) }}
               />
-              <span className="text-muted-foreground flex-1 truncate text-sm">{item.restriction}</span>
-              <span className="text-sm font-semibold tabular-nums">{item.count.toLocaleString()}</span>
+              <span className="text-muted-foreground flex-1 truncate text-sm">
+                {item.restriction}
+              </span>
+              <span className="text-sm font-semibold tabular-nums">
+                {item.count.toLocaleString()}
+              </span>
             </div>
           ))}
         </div>
@@ -76,7 +80,7 @@ export function DietaryChart({ data }: DietaryChartProps) {
                   key={`cell-${index}`}
                   fill={getColor(
                     entry.restriction,
-                    data.findIndex((d) => d.restriction === entry.restriction),
+                    data.findIndex((d) => d.restriction === entry.restriction)
                   )}
                   strokeWidth={0}
                 />
@@ -88,7 +92,9 @@ export function DietaryChart({ data }: DietaryChartProps) {
                   return (
                     <div className="bg-background rounded-lg border px-3 py-2 shadow-lg">
                       <p className="text-sm font-medium">{payload[0].name}</p>
-                      <p className="text-muted-foreground text-sm">{payload[0].value?.toLocaleString()} applicants</p>
+                      <p className="text-muted-foreground text-sm">
+                        {payload[0].value?.toLocaleString()} applicants
+                      </p>
                     </div>
                   );
                 }
