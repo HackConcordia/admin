@@ -79,10 +79,9 @@ export const sidebarItems: NavGroup[] = [
         superAdminOnly: true,
       },
       {
-        title: "Logistics",
-        url: "/dashboard/logistics",
-        icon: Forklift,
-        comingSoon: true,
+        title: "Account",
+        url: "/dashboard/account",
+        icon: User,
       },
     ],
   },
