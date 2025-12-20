@@ -36,6 +36,9 @@ function MealCheckbox({ mealRow, date, mealType, onUpdate }: MealCheckboxProps) 
   const handleToggle = async (checked: boolean) => {
     setIsLoading(true);
 
+    // Save original state for potential revert
+    const originalMeals = mealRow.meals;
+
     // Optimistic update
     const updatedMeals = mealRow.meals.map((m) => {
       if (new Date(m.date).toDateString() === new Date(date).toDateString() && m.type === mealType) {
@@ -67,6 +70,13 @@ function MealCheckbox({ mealRow, date, mealType, onUpdate }: MealCheckboxProps) 
         throw new Error("Failed to update meal");
       }
 
+      const result = await response.json();
+
+      // Update with server response to ensure consistency
+      if (result.data && result.data.meals) {
+        onUpdate(mealRow._id, result.data.meals);
+      }
+
       toast.success(
         `${mealType.charAt(0).toUpperCase() + mealType.slice(1)} ${checked ? "marked as taken" : "unmarked"}`,
       );
@@ -75,7 +85,7 @@ function MealCheckbox({ mealRow, date, mealType, onUpdate }: MealCheckboxProps) 
       toast.error("Failed to update meal");
 
       // Revert optimistic update on error
-      onUpdate(mealRow._id, mealRow.meals);
+      onUpdate(mealRow._id, originalMeals);
     } finally {
       setIsLoading(false);
     }
