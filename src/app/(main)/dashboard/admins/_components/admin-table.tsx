@@ -31,6 +31,9 @@ export function AdminTable({
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
+  // Track the previous search value to detect actual user changes
+  const prevSearchRef = React.useRef(search);
+
   // Fetch data from API
   const fetchData = useCallback(
     async (page: number, searchTerm: string) => {
@@ -96,9 +99,15 @@ export function AdminTable({
     pageCount: pagination.totalPages,
   });
 
-  // Debounce search
+  // Debounce search - only fetch when search value actually changes from user input
   useEffect(() => {
+    // Skip if search value hasn't actually changed (handles initial mount and strict mode)
+    if (prevSearchRef.current === search) {
+      return;
+    }
+
     const timer = setTimeout(() => {
+      prevSearchRef.current = search;
       setCurrentPage(1);
       fetchData(1, search);
     }, 300);

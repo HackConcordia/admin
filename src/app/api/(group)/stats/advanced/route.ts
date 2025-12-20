@@ -31,7 +31,9 @@ const extractArrayValues = (value: unknown): string[] => {
       try {
         const parsed = JSON.parse(trimmed);
         if (Array.isArray(parsed)) {
-          result.push(...parsed.filter((v: unknown) => typeof v === "string" && v));
+          result.push(
+            ...parsed.filter((v: unknown) => typeof v === "string" && v)
+          );
           return result;
         }
       } catch {
@@ -64,7 +66,9 @@ const extractArrayValues = (value: unknown): string[] => {
           try {
             const parsed = JSON.parse(item);
             if (Array.isArray(parsed)) {
-              result.push(...parsed.filter((v: unknown) => typeof v === "string" && v));
+              result.push(
+                ...parsed.filter((v: unknown) => typeof v === "string" && v)
+              );
             }
           } catch {
             // Not valid JSON, use as-is
@@ -107,7 +111,7 @@ export const GET = async () => {
         isRegisteredForCoop: 1,
         nextCoopTerm: 1,
         country: 1,
-      },
+      }
     );
 
     if (!applications || applications.length === 0) {
@@ -125,7 +129,7 @@ export const GET = async () => {
         else acc.notSpecified++;
         return acc;
       },
-      { yes: 0, no: 0, notSpecified: 0 },
+      { yes: 0, no: 0, notSpecified: 0 }
     );
 
     // Faculty distribution
@@ -135,7 +139,7 @@ export const GET = async () => {
         acc[faculty] = (acc[faculty] || 0) + 1;
         return acc;
       },
-      {} as Record<string, number>,
+      {} as Record<string, number>
     );
 
     const facultyDistribution = Object.entries(facultyCounts)
@@ -152,7 +156,7 @@ export const GET = async () => {
         acc[level] = (acc[level] || 0) + 1;
         return acc;
       },
-      {} as Record<string, number>,
+      {} as Record<string, number>
     );
 
     const levelOfStudyDistribution = Object.entries(levelOfStudyCounts)
@@ -169,7 +173,7 @@ export const GET = async () => {
         acc[program] = (acc[program] || 0) + 1;
         return acc;
       },
-      {} as Record<string, number>,
+      {} as Record<string, number>
     );
 
     const programDistribution = Object.entries(programCounts)
@@ -187,7 +191,7 @@ export const GET = async () => {
         acc[year] = (acc[year] || 0) + 1;
         return acc;
       },
-      {} as Record<string, number>,
+      {} as Record<string, number>
     );
 
     const graduationYearDistribution = Object.entries(graduationYearCounts)
@@ -204,7 +208,7 @@ export const GET = async () => {
         else acc.notNeeded++;
         return acc;
       },
-      { needed: 0, notNeeded: 0 },
+      { needed: 0, notNeeded: 0 }
     );
 
     // Preferred language distribution
@@ -214,7 +218,7 @@ export const GET = async () => {
         acc[lang] = (acc[lang] || 0) + 1;
         return acc;
       },
-      {} as Record<string, number>,
+      {} as Record<string, number>
     );
 
     const preferredLanguageDistribution = Object.entries(languageCounts)
@@ -231,7 +235,7 @@ export const GET = async () => {
         acc[gender] = (acc[gender] || 0) + 1;
         return acc;
       },
-      {} as Record<string, number>,
+      {} as Record<string, number>
     );
 
     const genderDistribution = Object.entries(genderCounts)
@@ -248,7 +252,7 @@ export const GET = async () => {
         acc[country] = (acc[country] || 0) + 1;
         return acc;
       },
-      {} as Record<string, number>,
+      {} as Record<string, number>
     );
 
     const countryDistribution = Object.entries(countryCounts)
@@ -266,7 +270,7 @@ export const GET = async () => {
         else acc.notRegistered++;
         return acc;
       },
-      { registered: 0, notRegistered: 0 },
+      { registered: 0, notRegistered: 0 }
     );
 
     // Job types interested (flatten arrays and count)
@@ -276,7 +280,8 @@ export const GET = async () => {
       jobTypes.forEach((type: string) => {
         if (type) {
           const normalizedType = type.toLowerCase().trim();
-          jobTypeCounts[normalizedType] = (jobTypeCounts[normalizedType] || 0) + 1;
+          jobTypeCounts[normalizedType] =
+            (jobTypeCounts[normalizedType] || 0) + 1;
         }
       });
     });
@@ -295,7 +300,8 @@ export const GET = async () => {
       regions.forEach((region: string) => {
         if (region) {
           const normalizedRegion = region.toLowerCase().trim();
-          workRegionCounts[normalizedRegion] = (workRegionCounts[normalizedRegion] || 0) + 1;
+          workRegionCounts[normalizedRegion] =
+            (workRegionCounts[normalizedRegion] || 0) + 1;
         }
       });
     });
@@ -323,9 +329,16 @@ export const GET = async () => {
       workRegionsDistribution,
     };
 
-    return sendSuccessResponse("Advanced statistics retrieved successfully", responseData);
+    return sendSuccessResponse(
+      "Advanced statistics retrieved successfully",
+      responseData
+    );
   } catch (error) {
     console.error("Error during GET request:", error);
-    return sendErrorResponse("Failed to retrieve advanced statistics", error, 500);
+    return sendErrorResponse(
+      "Failed to retrieve advanced statistics",
+      error,
+      500
+    );
   }
 };

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   ChevronLeft,
   ChevronRight,
@@ -35,6 +35,7 @@ interface Pagination {
 }
 
 interface Filters {
+  search: string;
   memberCount: string;
   sortField: string;
   sortOrder: string;
@@ -47,6 +48,7 @@ interface TeamsGridProps {
 }
 
 const defaultFilters: Filters = {
+  search: "",
   memberCount: "",
   sortField: "memberCount",
   sortOrder: "desc",
@@ -68,17 +70,20 @@ const MEMBER_COUNT_OPTIONS = [
 
 export function TeamsGrid({ initialTeams, initialPagination, initialFilters }: TeamsGridProps) {
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   const [teams, setTeams] = React.useState<TeamCardProps[]>(initialTeams);
   const [pagination, setPagination] = React.useState<Pagination>(initialPagination);
-  const [searchValue, setSearchValue] = React.useState(searchParams.get("search") || "");
+  const [searchValue, setSearchValue] = React.useState(initialFilters?.search || "");
   const [isLoading, setIsLoading] = React.useState(false);
   const [filters, setFilters] = React.useState<Filters>({
-    memberCount: initialFilters?.memberCount || searchParams.get("memberCount") || "",
-    sortField: initialFilters?.sortField || searchParams.get("sortField") || "memberCount",
-    sortOrder: initialFilters?.sortOrder || searchParams.get("sortOrder") || "desc",
+    search: initialFilters?.search || "",
+    memberCount: initialFilters?.memberCount || "",
+    sortField: initialFilters?.sortField || "memberCount",
+    sortOrder: initialFilters?.sortOrder || "desc",
   });
+
+  // Track the previous search value to detect actual user changes
+  const prevSearchValue = React.useRef(searchValue);
 
   const activeFilterCount = React.useMemo(() => {
     let count = 0;
@@ -86,9 +91,15 @@ export function TeamsGrid({ initialTeams, initialPagination, initialFilters }: T
     return count;
   }, [filters]);
 
-  // Debounced search effect
+  // Debounced search effect - only fetch when search value actually changes from user input
   React.useEffect(() => {
+    // Skip if search value hasn't actually changed (handles initial mount and strict mode)
+    if (prevSearchValue.current === searchValue) {
+      return;
+    }
+
     const timeoutId = setTimeout(() => {
+      prevSearchValue.current = searchValue;
       fetchTeams(1, pagination.limit, searchValue, filters);
     }, 300);
 

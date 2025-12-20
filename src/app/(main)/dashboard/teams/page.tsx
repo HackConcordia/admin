@@ -57,6 +57,7 @@ async function getTeamsSSR(searchParams: {
     hasPrevPage: boolean;
   };
   filters: {
+    search: string;
     memberCount: string;
     sortField: string;
     sortOrder: string;
@@ -174,6 +175,7 @@ async function getTeamsSSR(searchParams: {
         hasPrevPage: page > 1,
       },
       filters: {
+        search,
         memberCount: memberCountFilter,
         sortField,
         sortOrder,
@@ -192,6 +194,7 @@ async function getTeamsSSR(searchParams: {
         hasPrevPage: false,
       },
       filters: {
+        search: "",
         memberCount: "",
         sortField: "memberCount",
         sortOrder: "desc",

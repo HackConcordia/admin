@@ -32,6 +32,9 @@ export function MealTable({ initialData, initialPagination }: MealTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [activeTab, setActiveTab] = useState("jan24");
 
+  // Track the previous search value to detect actual user changes
+  const prevSearchRef = React.useRef(search);
+
   // Check if January 25, 2026 is accessible (after midnight EST)
   const isJan25Accessible = useMemo(() => {
     const now = new Date();
@@ -90,9 +93,15 @@ export function MealTable({ initialData, initialPagination }: MealTableProps) {
     }
   };
 
-  // Debounce search
+  // Debounce search - only fetch when search value actually changes from user input
   useEffect(() => {
+    // Skip if search value hasn't actually changed (handles initial mount and strict mode)
+    if (prevSearchRef.current === search) {
+      return;
+    }
+
     const timer = setTimeout(() => {
+      prevSearchRef.current = search;
       setCurrentPage(1);
       fetchData(1, search);
     }, 300);
