@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+
 import type { Table } from "@tanstack/react-table";
 
 import { Input } from "@/components/ui/input";
@@ -37,17 +38,12 @@ export default function ApplicationsFilters({ table }: ApplicationsFiltersProps)
     table.getColumn("status")?.setFilterValue(status === ALL_VALUE ? undefined : status);
   }, [status, table]);
 
-  function reset() {
-    setEmail("");
-    setStatus(ALL_VALUE);
-  }
-
   return (
-    <div className="flex w-full flex-col gap-2 sm:flex-row">
+    <div className="flex w-full gap-3">
       <div className="flex-1">
         <Input placeholder="Filter by email…" value={email} onChange={(e) => setEmail(e.target.value)} />
       </div>
-      <div className="w-full sm:w-56">
+      <div className="flex">
         <Select value={status} onValueChange={setStatus}>
           <SelectTrigger aria-label="Filter by status">
             <SelectValue placeholder="All statuses" />
@@ -62,9 +58,6 @@ export default function ApplicationsFilters({ table }: ApplicationsFiltersProps)
           </SelectContent>
         </Select>
       </div>
-      <button type="button" className="text-muted-foreground self-start text-sm underline sm:self-auto" onClick={reset}>
-        Reset
-      </button>
     </div>
   );
 }
