@@ -5,23 +5,16 @@ import { COOKIE_NAME, verifyAuthToken } from "@/lib/auth-token";
 
 import { AdminTable } from "./_components/admin-table";
 import type { AdminTableRow } from "./_components/columns";
-import { CreateAdminForm } from "./_components/create-admin-form";
+import { CreateAdminDialog } from "./_components/create-admin-dialog";
 
 export const dynamic = "force-dynamic";
 
-async function getIsSuperAdminSSR(): Promise<boolean> {
-  try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get(COOKIE_NAME)?.value;
-    if (!token) return false;
-    const payload = await verifyAuthToken(token);
-    return !!payload?.isSuperAdmin;
-  } catch {
-    return false;
-  }
-}
+type AuthPayload = {
+  adminId?: string;
+  isSuperAdmin?: boolean;
+};
 
-async function getAdminsSSR(): Promise<{
+type AdminsResponse = {
   data: AdminTableRow[];
   pagination: {
     page: number;
@@ -29,7 +22,22 @@ async function getAdminsSSR(): Promise<{
     totalRecords: number;
     totalPages: number;
   };
-}> {
+};
+
+async function getIsSuperAdminSSR(): Promise<boolean> {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get(COOKIE_NAME)?.value;
+    if (!token) return false;
+
+    const payload = (await verifyAuthToken(token)) as AuthPayload | null;
+    return !!payload?.isSuperAdmin;
+  } catch {
+    return false;
+  }
+}
+
+async function getAdminsSSR(): Promise<AdminsResponse> {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get(COOKIE_NAME)?.value;
@@ -39,9 +47,11 @@ async function getAdminsSSR(): Promise<{
         process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
       }/api/admin?page=1&pageSize=10`,
       {
-        headers: {
-          Cookie: `${COOKIE_NAME}=${token}`,
-        },
+        headers: token
+          ? {
+              Cookie: `${COOKIE_NAME}=${token}`,
+            }
+          : {},
         cache: "no-store",
       }
     );
@@ -54,15 +64,17 @@ async function getAdminsSSR(): Promise<{
     }
 
     const result = await response.json();
+
     if (result.status === "success") {
       return {
-        data: result.data.data || [],
-        pagination: result.data.pagination || {
-          page: 1,
-          pageSize: 10,
-          totalRecords: 0,
-          totalPages: 0,
-        },
+        data: (result.data?.data as AdminTableRow[]) || [],
+        pagination:
+          result.data?.pagination || {
+            page: 1,
+            pageSize: 10,
+            totalRecords: 0,
+            totalPages: 0,
+          },
       };
     }
 
@@ -99,16 +111,12 @@ export default async function AdminsPage() {
             Manage admin accounts and permissions
           </p>
         </div>
+
+        {/* Create button that opens the modal */}
+        <CreateAdminDialog />
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <AdminTable initialData={data} initialPagination={pagination} />
-        </div>
-        <div className="lg:col-span-1">
-          <CreateAdminForm />
-        </div>
-      </div>
+      <AdminTable initialData={data} initialPagination={pagination} />
     </div>
   );
 }

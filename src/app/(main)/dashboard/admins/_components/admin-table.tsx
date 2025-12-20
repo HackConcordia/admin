@@ -11,25 +11,46 @@ import { useDataTableInstance } from "@/hooks/use-data-table-instance";
 
 import { AdminTableRow, getAdminColumns } from "./columns";
 
+type PaginationState = {
+  page: number;
+  pageSize: number;
+  totalRecords: number;
+  totalPages: number;
+};
+
 type AdminTableProps = {
   initialData: AdminTableRow[];
-  initialPagination: {
-    page: number;
-    pageSize: number;
-    totalRecords: number;
-    totalPages: number;
-  };
+  initialPagination: PaginationState;
 };
 
 export function AdminTable({
   initialData,
   initialPagination,
 }: AdminTableProps) {
-  const [data, setData] = useState<AdminTableRow[]>(initialData);
-  const [pagination, setPagination] = useState(initialPagination);
+  const [data, setData] = useState<AdminTableRow[]>(initialData ?? []);
+  const [pagination, setPagination] = useState<PaginationState>(
+    initialPagination ?? {
+      page: 1,
+      pageSize: 10,
+      totalRecords: 0,
+      totalPages: 0,
+    }
+  );
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(
+    initialPagination?.page ?? 1
+  );
+
+  useEffect(() => {
+    setData(initialData ?? []);
+    if (initialPagination) {
+      setPagination(initialPagination);
+      setCurrentPage(initialPagination.page ?? 1);
+    }
+  }, [initialData, initialPagination]);
+
+  const pageSize = pagination?.pageSize ?? 10;
 
   // Track the previous search value to detect actual user changes
   const prevSearchRef = React.useRef(search);
@@ -41,7 +62,7 @@ export function AdminTable({
       try {
         const params = new URLSearchParams({
           page: page.toString(),
-          pageSize: pagination.pageSize.toString(),
+          pageSize: pageSize.toString(),
         });
 
         if (searchTerm) {
@@ -65,7 +86,7 @@ export function AdminTable({
         setLoading(false);
       }
     },
-    [pagination.pageSize]
+    [pageSize]
   );
 
   const handleDelete = async (adminId: string) => {
@@ -79,7 +100,7 @@ export function AdminTable({
       }
 
       toast.success("Admin deleted successfully");
-      // Refresh data
+      // Refresh data on the same page with current search
       fetchData(currentPage, search);
     } catch (error) {
       console.error("Error deleting admin:", error);
@@ -87,21 +108,19 @@ export function AdminTable({
     }
   };
 
-  const columns = useMemo(() => getAdminColumns(handleDelete), []);
+  const columns = useMemo(() => getAdminColumns(handleDelete), [handleDelete]);
 
   const table = useDataTableInstance({
     data,
     columns,
     getRowId: (row) => row._id,
     enableRowSelection: false,
-    defaultPageSize: pagination.pageSize,
+    defaultPageSize: pageSize,
     manualPagination: true,
     pageCount: pagination.totalPages,
   });
 
-  // Debounce search - only fetch when search value actually changes from user input
   useEffect(() => {
-    // Skip if search value hasn't actually changed (handles initial mount and strict mode)
     if (prevSearchRef.current === search) {
       return;
     }
@@ -132,7 +151,7 @@ export function AdminTable({
           placeholder="Search by name or email..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="max-w-sm"
+          className="w-full"
         />
       </div>
       <div className="rounded-md border">

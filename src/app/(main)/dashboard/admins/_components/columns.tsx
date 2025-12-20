@@ -23,9 +23,9 @@ function PasswordCell({ password }: { password: string }) {
 
   return (
     <div className="flex items-center gap-2">
-      <span className="font-mono">
-        {showPassword ? password : "•".repeat(Math.min(password.length, 8))}
-      </span>
+      <div className="font-mono w-[330px]">
+        {showPassword ? password : "•".repeat(40)}
+      </div>
       <Button
         variant="ghost"
         size="icon"
