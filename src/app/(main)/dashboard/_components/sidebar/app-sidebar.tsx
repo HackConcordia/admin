@@ -17,6 +17,7 @@ import { sidebarItems, type NavGroup } from "@/navigation/sidebar/sidebar-items"
 
 import { NavMain } from "./nav-main";
 import { NavUser } from "./nav-user";
+import Link from "next/link";
 
 const data = {
   navSecondary: [
@@ -90,10 +91,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:!p-1.5">
-              <a href="/dashboard/conuhacks">
+              <Link href="/dashboard/conuhacks">
                 <Command />
                 <span className="text-base font-semibold">{APP_CONFIG.name}</span>
-              </a>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
@@ -103,9 +104,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         {/* <NavDocuments items={data.documents} /> */}
         {/* <NavSecondary items={data.navSecondary} className="mt-auto" /> */}
       </SidebarContent>
-      <SidebarFooter>
-        <NavUser user={{ name: "Current User", email: "", avatar: "" }} />
-      </SidebarFooter>
     </Sidebar>
   );
 }
