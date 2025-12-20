@@ -48,8 +48,8 @@ interface TeamsGridProps {
 
 const defaultFilters: Filters = {
   memberCount: "",
-  sortField: "teamName",
-  sortOrder: "asc",
+  sortField: "memberCount",
+  sortOrder: "desc",
 };
 
 const SORT_OPTIONS = [
@@ -76,8 +76,8 @@ export function TeamsGrid({ initialTeams, initialPagination, initialFilters }: T
   const [isLoading, setIsLoading] = React.useState(false);
   const [filters, setFilters] = React.useState<Filters>({
     memberCount: initialFilters?.memberCount || searchParams.get("memberCount") || "",
-    sortField: initialFilters?.sortField || searchParams.get("sortField") || "teamName",
-    sortOrder: initialFilters?.sortOrder || searchParams.get("sortOrder") || "asc",
+    sortField: initialFilters?.sortField || searchParams.get("sortField") || "memberCount",
+    sortOrder: initialFilters?.sortOrder || searchParams.get("sortOrder") || "desc",
   });
 
   const activeFilterCount = React.useMemo(() => {
