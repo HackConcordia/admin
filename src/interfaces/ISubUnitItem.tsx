@@ -1,7 +1,7 @@
-import type { IFile } from './IApplication'
+import type { IFile } from "./IApplication";
 
 export interface ISubUnitItem {
-  title: string
-  value: string | IFile
-  type: 'text' | 'link' | 'file' | 'empty'
+  title: string;
+  value: string | IFile;
+  type: "text" | "link" | "file" | "empty";
 }

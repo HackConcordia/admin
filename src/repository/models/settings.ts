@@ -6,7 +6,7 @@ const settingsSchema = new mongoose.Schema(
     registrationClosingDate: Date,
     confirmationDate: Date,
   },
-  { timestamps: { createdAt: "createdAt", updatedAt: "timestamp" } }
+  { timestamps: { createdAt: "createdAt", updatedAt: "timestamp" } },
 );
 
 const Settings = mongoose.models.Settings || mongoose.model("Settings", settingsSchema);

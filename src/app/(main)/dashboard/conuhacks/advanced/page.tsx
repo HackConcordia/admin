@@ -6,21 +6,33 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { IAdvancedStats } from "@/interfaces/IAdvancedStats";
 import Link from "next/link";
+import { ArrowLeft, Users, GraduationCap, Globe, Briefcase, Languages, Plane, UserCheck, Building } from "lucide-react";
 import {
-  ArrowLeft,
-  Users,
-  GraduationCap,
-  Globe,
-  Briefcase,
-  Languages,
-  Plane,
-  UserCheck,
-  Building,
-} from "lucide-react";
-import { Bar, BarChart, XAxis, YAxis, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+  Bar,
+  BarChart,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+} from "recharts";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 
-const COLORS = ["#3b82f6", "#22c55e", "#f97316", "#ef4444", "#8b5cf6", "#06b6d4", "#eab308", "#ec4899", "#14b8a6", "#f43f5e"];
+const COLORS = [
+  "#3b82f6",
+  "#22c55e",
+  "#f97316",
+  "#ef4444",
+  "#8b5cf6",
+  "#06b6d4",
+  "#eab308",
+  "#ec4899",
+  "#14b8a6",
+  "#f43f5e",
+];
 
 export default function AdvancedAnalyticsPage() {
   const [stats, setStats] = useState<IAdvancedStats | null>(null);
@@ -108,12 +120,7 @@ export default function AdvancedAnalyticsPage() {
           icon={Briefcase}
           color="#3b82f6"
         />
-        <QuickStatCard
-          title="Countries"
-          value={stats.countryDistribution.length}
-          icon={Globe}
-          color="#8b5cf6"
-        />
+        <QuickStatCard title="Countries" value={stats.countryDistribution.length} icon={Globe} color="#8b5cf6" />
       </div>
 
       {/* Row 1: Gender & Language */}
@@ -241,10 +248,7 @@ export default function AdvancedAnalyticsPage() {
         <CardContent>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
             {stats.countryDistribution.map((country, index) => (
-              <div
-                key={country.code}
-                className="flex items-center justify-between rounded-lg border p-3"
-              >
+              <div key={country.code} className="flex items-center justify-between rounded-lg border p-3">
                 <span className="text-sm font-medium">{country.code}</span>
                 <span className="text-muted-foreground text-sm">{country.count}</span>
               </div>
@@ -286,9 +290,7 @@ function QuickStatCard({
             <p className="text-muted-foreground text-xs">{title}</p>
             <div className="flex items-baseline gap-1">
               <p className="text-xl font-bold">{value.toLocaleString()}</p>
-              {percentage && (
-                <span className="text-muted-foreground text-xs">({percentage}%)</span>
-              )}
+              {percentage && <span className="text-muted-foreground text-xs">({percentage}%)</span>}
             </div>
           </div>
         </div>
@@ -342,9 +344,7 @@ function PieChartComponent({ data }: { data: { name: string; count: number }[] }
                   return (
                     <div className="bg-background rounded-lg border px-3 py-2 shadow-lg">
                       <p className="text-sm font-medium">{payload[0].name}</p>
-                      <p className="text-muted-foreground text-sm">
-                        {payload[0].value?.toLocaleString()} applicants
-                      </p>
+                      <p className="text-muted-foreground text-sm">{payload[0].value?.toLocaleString()} applicants</p>
                     </div>
                   );
                 }
@@ -366,9 +366,7 @@ function HorizontalBarChart({ data }: { data: { name: string; count: number }[] 
     <div className="space-y-3">
       {data.map((item, index) => (
         <div key={item.name} className="flex items-center gap-3" title={item.name}>
-          <div className="text-muted-foreground w-36 truncate text-sm md:w-44">
-            {item.name}
-          </div>
+          <div className="text-muted-foreground w-36 truncate text-sm md:w-44">{item.name}</div>
           <div className="bg-muted h-6 flex-1 overflow-hidden rounded">
             <div
               className="h-full rounded transition-all duration-500"
@@ -437,4 +435,3 @@ function AdvancedAnalyticsSkeleton() {
     </div>
   );
 }
-

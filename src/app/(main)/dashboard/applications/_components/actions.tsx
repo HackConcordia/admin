@@ -28,7 +28,7 @@ export function Actions({
   onOpenExport,
 }: ActionsProps) {
   return (
-    <div className="flex w-full gap-3 my-3">
+    <div className="my-3 flex w-full gap-3">
       <ApplicationsFilters table={table} />
       <div className="flex items-center gap-2">
         <DataTableViewOptions table={table} />

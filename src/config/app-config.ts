@@ -8,7 +8,6 @@ export const APP_CONFIG = {
   copyright: `© ${currentYear}, HackConcordia.`,
   meta: {
     title: "HackConcordia",
-    description:
-      "HackConcordia admin website.",
+    description: "HackConcordia admin website.",
   },
 };

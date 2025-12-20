@@ -14,7 +14,7 @@ export type MealTableRow = {
   email: string;
   meals: Array<{
     date: Date;
-    type: 'breakfast' | 'lunch' | 'snacks' | 'dinner';
+    type: "breakfast" | "lunch" | "snacks" | "dinner";
     taken: boolean;
   }>;
 };
@@ -34,7 +34,7 @@ async function getMealsSSR(): Promise<{
     if (!token) {
       return {
         data: [],
-        pagination: { page: 1, pageSize: 10, totalRecords: 0, totalPages: 0 }
+        pagination: { page: 1, pageSize: 10, totalRecords: 0, totalPages: 0 },
       };
     }
 
@@ -42,7 +42,7 @@ async function getMealsSSR(): Promise<{
     if (!payload) {
       return {
         data: [],
-        pagination: { page: 1, pageSize: 10, totalRecords: 0, totalPages: 0 }
+        pagination: { page: 1, pageSize: 10, totalRecords: 0, totalPages: 0 },
       };
     }
 
@@ -52,15 +52,13 @@ async function getMealsSSR(): Promise<{
     const totalRecords = await Meal.countDocuments({});
     const totalPages = Math.ceil(totalRecords / pageSize);
 
-    const meals = await Meal.find({})
-      .limit(pageSize)
-      .lean();
+    const meals = await Meal.find({}).limit(pageSize).lean();
 
     const data = (meals ?? []).map((m: any) => ({
       _id: String(m._id),
       name: m.name,
       email: m.email,
-      meals: m.meals || []
+      meals: m.meals || [],
     }));
 
     return {
@@ -69,14 +67,14 @@ async function getMealsSSR(): Promise<{
         page: 1,
         pageSize,
         totalRecords,
-        totalPages
-      }
+        totalPages,
+      },
     };
   } catch (error) {
-    console.error('Error fetching meals SSR:', error);
+    console.error("Error fetching meals SSR:", error);
     return {
       data: [],
-      pagination: { page: 1, pageSize: 10, totalRecords: 0, totalPages: 0 }
+      pagination: { page: 1, pageSize: 10, totalRecords: 0, totalPages: 0 },
     };
   }
 }
@@ -86,11 +84,7 @@ export default async function Page() {
 
   return (
     <div className="flex flex-col gap-4 md:gap-6">
-      <MealTable
-        initialData={initialData.data}
-        initialPagination={initialData.pagination}
-      />
+      <MealTable initialData={initialData.data} initialPagination={initialData.pagination} />
     </div>
   );
 }
-

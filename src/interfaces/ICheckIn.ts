@@ -1,5 +1,5 @@
 export interface ICheckIn {
-  _id:string
-  email: string
-  isCheckedIn: boolean
+  _id: string;
+  email: string;
+  isCheckedIn: boolean;
 }

@@ -35,17 +35,13 @@ export function MealTable({ initialData, initialPagination }: MealTableProps) {
   // Check if January 25, 2026 is accessible (after midnight EST)
   const isJan25Accessible = useMemo(() => {
     const now = new Date();
-    const jan25Start = new Date('2026-01-25T00:00:00-05:00');
+    const jan25Start = new Date("2026-01-25T00:00:00-05:00");
     return now >= jan25Start;
   }, []);
 
   // Handle meal update callback
-  const handleMealUpdate = (mealId: string, updatedMeals: MealTableRow['meals']) => {
-    setData((prevData) =>
-      prevData.map((meal) =>
-        meal._id === mealId ? { ...meal, meals: updatedMeals } : meal
-      )
-    );
+  const handleMealUpdate = (mealId: string, updatedMeals: MealTableRow["meals"]) => {
+    setData((prevData) => prevData.map((meal) => (meal._id === mealId ? { ...meal, meals: updatedMeals } : meal)));
   };
 
   // Get appropriate columns based on active tab
@@ -74,19 +70,19 @@ export function MealTable({ initialData, initialPagination }: MealTableProps) {
       });
 
       if (searchTerm) {
-        params.append('search', searchTerm);
+        params.append("search", searchTerm);
       }
 
       const response = await fetch(`/api/meals?${params.toString()}`);
       if (!response.ok) {
-        throw new Error('Failed to fetch meals');
+        throw new Error("Failed to fetch meals");
       }
 
       const result = await response.json();
       setData(result.data || []);
       setPagination(result.pagination || pagination);
     } catch (error) {
-      console.error('Error fetching meals:', error);
+      console.error("Error fetching meals:", error);
     } finally {
       setLoading(false);
     }
@@ -125,20 +121,12 @@ export function MealTable({ initialData, initialPagination }: MealTableProps) {
             <CardContent>
               <TooltipProvider>
                 <TabsList className="grid w-full max-w-md grid-cols-2">
-                  <TabsTrigger value="jan24">
-                    January 24, 2026
-                  </TabsTrigger>
+                  <TabsTrigger value="jan24">January 24, 2026</TabsTrigger>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <div className="relative">
-                        <TabsTrigger
-                          value="jan25"
-                          disabled={!isJan25Accessible}
-                          className="w-full"
-                        >
-                          {!isJan25Accessible && (
-                            <Lock className="mr-2 h-4 w-4" />
-                          )}
+                        <TabsTrigger value="jan25" disabled={!isJan25Accessible} className="w-full">
+                          {!isJan25Accessible && <Lock className="mr-2 h-4 w-4" />}
                           January 25, 2026
                         </TabsTrigger>
                       </div>
@@ -157,7 +145,7 @@ export function MealTable({ initialData, initialPagination }: MealTableProps) {
           <TabsContent value="jan24" className="mt-4">
             <CardContent>
               <div className="mb-4">
-                <h2 className="text-center text-lg font-semibold text-muted-foreground mb-4">
+                <h2 className="text-muted-foreground mb-4 text-center text-lg font-semibold">
                   MEALS FOR JANUARY 24, 2026
                 </h2>
                 <Input
@@ -186,7 +174,7 @@ export function MealTable({ initialData, initialPagination }: MealTableProps) {
           <TabsContent value="jan25" className="mt-4">
             <CardContent>
               <div className="mb-4">
-                <h2 className="text-center text-lg font-semibold text-muted-foreground mb-4">
+                <h2 className="text-muted-foreground mb-4 text-center text-lg font-semibold">
                   MEALS FOR JANUARY 25, 2026
                 </h2>
                 <Input
@@ -216,4 +204,3 @@ export function MealTable({ initialData, initialPagination }: MealTableProps) {
     </div>
   );
 }
-

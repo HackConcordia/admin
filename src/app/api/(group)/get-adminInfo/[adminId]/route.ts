@@ -6,9 +6,9 @@ import Admin from "@/repository/models/admin";
 
 import type { IAdmin } from "@/interfaces/IAdmin";
 
-export const GET = async (req: NextRequest, { params }: { params: { adminId: string } }) => {
+export const GET = async (req: NextRequest, { params }: { params: Promise<{ adminId: string }> }) => {
   try {
-    const adminId = params.adminId;
+    const { adminId } = await params;
 
     console.log("adminId", adminId);
 

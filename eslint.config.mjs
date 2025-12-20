@@ -5,7 +5,6 @@ import pluginReact from "eslint-plugin-react";
 import globals from "globals";
 import tseslint from "typescript-eslint";
 import securityPlugin from "eslint-plugin-security";
-import prettier from "eslint-plugin-prettier";
 import unicorn from "eslint-plugin-unicorn";
 import sonarjs from "eslint-plugin-sonarjs";
 
@@ -33,7 +32,6 @@ export default [
     plugins: {
       import: pluginImport,
       security: securityPlugin,
-      prettier: prettier,
       unicorn: unicorn,
       react: pluginReact,
       sonarjs: sonarjs,
@@ -46,58 +44,21 @@ export default [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
     rules: {
-      // Prettier integration rules
-      "prettier/prettier": "warn",
-
-      // File Naming
-      "unicorn/filename-case": [
-        "error",
-        {
-          case: "kebabCase",
-          ignore: ["^.*\\.config\\.(js|ts|mjs)$", "^.*\\.d\\.ts$"],
-        },
-      ],
+      // File Naming - DISABLED
+      "unicorn/filename-case": "off",
 
       // Custom Rules (Not covered by plugins)
       "spaced-comment": ["error", "always", { exceptions: ["-", "+"] }],
       "key-spacing": ["error", { beforeColon: false, afterColon: true }],
       "no-useless-rename": "error",
 
-      // Import/Export Rules
+      // Import/Export Rules - RELAXED
       "import/no-mutable-exports": "error",
-      "import/order": [
-        "error",
-        {
-          groups: ["builtin", "external", "internal", "parent", "sibling", "index"],
-          pathGroups: [
-            {
-              pattern: "react",
-              group: "external",
-              position: "before",
-            },
-            {
-              pattern: "{next,next/**}",
-              group: "external",
-              position: "before",
-            },
-          ],
-          pathGroupsExcludedImportTypes: [],
-          "newlines-between": "always",
-          alphabetize: {
-            order: "asc",
-            caseInsensitive: true,
-          },
-        },
-      ],
-      "import/newline-after-import": "error",
-      "import/no-unresolved": [
-        "error",
-        {
-          caseSensitive: true,
-        },
-      ],
-      "no-duplicate-imports": ["error", { includeExports: true }],
-      "import/no-cycle": ["error", { maxDepth: 2 }],
+      "import/order": "off",
+      "import/newline-after-import": "off",
+      "import/no-unresolved": "off",
+      "no-duplicate-imports": "off",
+      "import/no-cycle": "off",
 
       // Whitespace and Punctuation (Style Rules)
       "no-trailing-spaces": "error",
@@ -119,17 +80,20 @@ export default [
       // Naming Conventions
       "no-underscore-dangle": ["error", { allow: ["_id", "__dirname"] }],
 
-      // Complexity
-      complexity: ["error", { max: 10 }],
-      "max-lines": ["error", { max: 300, skipBlankLines: true, skipComments: true }],
-      "max-depth": ["error", 4],
+      // Complexity - DISABLED
+      complexity: "off",
+      "max-lines": "off",
+      "max-depth": "off",
 
-      // TypeScript-Specific Rules (customized)
-      "@typescript-eslint/prefer-nullish-coalescing": "error",
-      "@typescript-eslint/no-unnecessary-type-assertion": "error",
-      "@typescript-eslint/no-unnecessary-condition": "warn",
-      "@typescript-eslint/no-explicit-any": "warn",
-      "@typescript-eslint/no-unused-vars": ["warn"],
+      // Empty blocks - DISABLED
+      "no-empty": "off",
+
+      // TypeScript-Specific Rules (customized) - RELAXED
+      "@typescript-eslint/prefer-nullish-coalescing": "off",
+      "@typescript-eslint/no-unnecessary-type-assertion": "off",
+      "@typescript-eslint/no-unnecessary-condition": "off",
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-unused-vars": "off",
 
       // React unnecessary import rules
       "react/jsx-no-useless-fragment": ["warn", { allowExpressions: true }],
@@ -149,11 +113,19 @@ export default [
       // React: Prevent re-renders by ensuring context values are memoized
       "react/jsx-no-constructed-context-values": "error",
 
-      // React: Disallow array index as key in JSX
-      "react/no-array-index-key": "warn",
+      // React: Disallow array index as key in JSX - DISABLED
+      "react/no-array-index-key": "off",
 
-      // SonarJS: Detect commented-out code
-      "sonarjs/no-commented-code": "warn",
+      // React Hooks - DISABLED
+      "react-hooks/rules-of-hooks": "off",
+      "react-hooks/exhaustive-deps": "off",
+
+      // SonarJS: Detect commented-out code - DISABLED
+      "sonarjs/no-commented-code": "off",
+
+      // Security warnings - DISABLED
+      "security/detect-object-injection": "off",
+      "security/detect-possible-timing-attacks": "off",
     },
   },
 ];

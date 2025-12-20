@@ -11,7 +11,7 @@ export type MealTableRow = {
   email: string;
   meals: Array<{
     date: Date;
-    type: 'breakfast' | 'lunch' | 'snacks' | 'dinner';
+    type: "breakfast" | "lunch" | "snacks" | "dinner";
     taken: boolean;
   }>;
 };
@@ -19,8 +19,8 @@ export type MealTableRow = {
 type MealCheckboxProps = {
   mealRow: MealTableRow;
   date: string;
-  mealType: 'breakfast' | 'lunch' | 'snacks' | 'dinner';
-  onUpdate: (mealId: string, updatedMeals: MealTableRow['meals']) => void;
+  mealType: "breakfast" | "lunch" | "snacks" | "dinner";
+  onUpdate: (mealId: string, updatedMeals: MealTableRow["meals"]) => void;
 };
 
 function MealCheckbox({ mealRow, date, mealType, onUpdate }: MealCheckboxProps) {
@@ -28,9 +28,7 @@ function MealCheckbox({ mealRow, date, mealType, onUpdate }: MealCheckboxProps) 
 
   // Find the specific meal by date and type
   const meal = mealRow.meals.find(
-    (m) =>
-      new Date(m.date).toDateString() === new Date(date).toDateString() &&
-      m.type === mealType
+    (m) => new Date(m.date).toDateString() === new Date(date).toDateString() && m.type === mealType,
   );
 
   const isChecked = meal?.taken ?? false;
@@ -40,10 +38,7 @@ function MealCheckbox({ mealRow, date, mealType, onUpdate }: MealCheckboxProps) 
 
     // Optimistic update
     const updatedMeals = mealRow.meals.map((m) => {
-      if (
-        new Date(m.date).toDateString() === new Date(date).toDateString() &&
-        m.type === mealType
-      ) {
+      if (new Date(m.date).toDateString() === new Date(date).toDateString() && m.type === mealType) {
         return { ...m, taken: checked };
       }
       return m;
@@ -56,27 +51,29 @@ function MealCheckbox({ mealRow, date, mealType, onUpdate }: MealCheckboxProps) 
         {
           date: new Date(date),
           type: mealType,
-          taken: checked
-        }
+          taken: checked,
+        },
       ];
 
-      const response = await fetch('/api/meals', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/meals", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id: mealRow._id,
-          mealData
-        })
+          mealData,
+        }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update meal');
+        throw new Error("Failed to update meal");
       }
 
-      toast.success(`${mealType.charAt(0).toUpperCase() + mealType.slice(1)} ${checked ? 'marked as taken' : 'unmarked'}`);
+      toast.success(
+        `${mealType.charAt(0).toUpperCase() + mealType.slice(1)} ${checked ? "marked as taken" : "unmarked"}`,
+      );
     } catch (error) {
-      console.error('Error updating meal:', error);
-      toast.error('Failed to update meal');
+      console.error("Error updating meal:", error);
+      toast.error("Failed to update meal");
 
       // Revert optimistic update on error
       onUpdate(mealRow._id, mealRow.meals);
@@ -99,9 +96,9 @@ function MealCheckbox({ mealRow, date, mealType, onUpdate }: MealCheckboxProps) 
 
 // January 24, 2026 columns
 export function getJan24Columns(
-  onUpdate: (mealId: string, updatedMeals: MealTableRow['meals']) => void
+  onUpdate: (mealId: string, updatedMeals: MealTableRow["meals"]) => void,
 ): ColumnDef<MealTableRow>[] {
-  const jan24Date = '2026-01-24';
+  const jan24Date = "2026-01-24";
 
   return [
     {
@@ -119,52 +116,26 @@ export function getJan24Columns(
       id: "breakfast",
       header: ({ column }) => <DataTableColumnHeader column={column} title="Breakfast" />,
       cell: ({ row }) => (
-        <MealCheckbox
-          mealRow={row.original}
-          date={jan24Date}
-          mealType="breakfast"
-          onUpdate={onUpdate}
-        />
+        <MealCheckbox mealRow={row.original} date={jan24Date} mealType="breakfast" onUpdate={onUpdate} />
       ),
       enableSorting: false,
     },
     {
       id: "lunch",
       header: ({ column }) => <DataTableColumnHeader column={column} title="Lunch" />,
-      cell: ({ row }) => (
-        <MealCheckbox
-          mealRow={row.original}
-          date={jan24Date}
-          mealType="lunch"
-          onUpdate={onUpdate}
-        />
-      ),
+      cell: ({ row }) => <MealCheckbox mealRow={row.original} date={jan24Date} mealType="lunch" onUpdate={onUpdate} />,
       enableSorting: false,
     },
     {
       id: "snacks",
       header: ({ column }) => <DataTableColumnHeader column={column} title="Snacks" />,
-      cell: ({ row }) => (
-        <MealCheckbox
-          mealRow={row.original}
-          date={jan24Date}
-          mealType="snacks"
-          onUpdate={onUpdate}
-        />
-      ),
+      cell: ({ row }) => <MealCheckbox mealRow={row.original} date={jan24Date} mealType="snacks" onUpdate={onUpdate} />,
       enableSorting: false,
     },
     {
       id: "dinner",
       header: ({ column }) => <DataTableColumnHeader column={column} title="Dinner" />,
-      cell: ({ row }) => (
-        <MealCheckbox
-          mealRow={row.original}
-          date={jan24Date}
-          mealType="dinner"
-          onUpdate={onUpdate}
-        />
-      ),
+      cell: ({ row }) => <MealCheckbox mealRow={row.original} date={jan24Date} mealType="dinner" onUpdate={onUpdate} />,
       enableSorting: false,
     },
   ];
@@ -172,9 +143,9 @@ export function getJan24Columns(
 
 // January 25, 2026 columns
 export function getJan25Columns(
-  onUpdate: (mealId: string, updatedMeals: MealTableRow['meals']) => void
+  onUpdate: (mealId: string, updatedMeals: MealTableRow["meals"]) => void,
 ): ColumnDef<MealTableRow>[] {
-  const jan25Date = '2026-01-25';
+  const jan25Date = "2026-01-25";
 
   return [
     {
@@ -192,28 +163,15 @@ export function getJan25Columns(
       id: "breakfast",
       header: ({ column }) => <DataTableColumnHeader column={column} title="Breakfast" />,
       cell: ({ row }) => (
-        <MealCheckbox
-          mealRow={row.original}
-          date={jan25Date}
-          mealType="breakfast"
-          onUpdate={onUpdate}
-        />
+        <MealCheckbox mealRow={row.original} date={jan25Date} mealType="breakfast" onUpdate={onUpdate} />
       ),
       enableSorting: false,
     },
     {
       id: "lunch",
       header: ({ column }) => <DataTableColumnHeader column={column} title="Lunch" />,
-      cell: ({ row }) => (
-        <MealCheckbox
-          mealRow={row.original}
-          date={jan25Date}
-          mealType="lunch"
-          onUpdate={onUpdate}
-        />
-      ),
+      cell: ({ row }) => <MealCheckbox mealRow={row.original} date={jan25Date} mealType="lunch" onUpdate={onUpdate} />,
       enableSorting: false,
     },
   ];
 }
-

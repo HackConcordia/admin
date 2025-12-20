@@ -1,17 +1,14 @@
-import type { NextRequest} from "next/server";
+import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
 import mongoose from "mongoose";
 import { GridFSBucket } from "mongodb";
 
-import connectMongoDB from '@/repository/mongoose';
+import connectMongoDB from "@/repository/mongoose";
 
-export const GET = async (
-  req: NextRequest,
-  { params }: { params: { fileId: string } }
-) => {
+export const GET = async (req: NextRequest, { params }: { params: Promise<{ fileId: string }> }) => {
   try {
-    const fileId = params.fileId;
+    const { fileId } = await params;
 
     if (!fileId) {
       return new NextResponse("Invalid fileId", { status: 400 });
@@ -28,7 +25,7 @@ export const GET = async (
     const files = await gridFSBucket.find({ _id: objectId }).toArray();
 
     if (files.length === 0) {
-      return new NextResponse('File not found', { status: 404 });
+      return new NextResponse("File not found", { status: 404 });
     }
 
     const file = files[0];
@@ -44,19 +41,18 @@ export const GET = async (
     });
 
     // Provide default values for Content-Type and Content-Disposition if metadata is undefined
-    const contentType = file.metadata?.mimetype || 'application/octet-stream';
-    const filename = file.filename || 'file';
+    const contentType = file.metadata?.mimetype || "application/octet-stream";
+    const filename = file.filename || "file";
 
     return new NextResponse(stream, {
       headers: {
-        'Content-Type': contentType, // Adjust according to the file type
-        'Content-Disposition': `inline; filename="${filename}"`, // Display file in the browser with the original filename
+        "Content-Type": contentType, // Adjust according to the file type
+        "Content-Disposition": `inline; filename="${filename}"`, // Display file in the browser with the original filename
       },
     });
   } catch (error) {
     console.error("Error during file download:", error);
 
-return new NextResponse("Failed to retrieve file", { status: 500 });
+    return new NextResponse("Failed to retrieve file", { status: 500 });
   }
 };
-

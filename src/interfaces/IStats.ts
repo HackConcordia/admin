@@ -1,15 +1,15 @@
 export interface IStats {
   totalApplicants: number;
   statusCounts: {
-    Unverified: number
-    Submitted: number
-    Incomplete: number
-    Waitlisted: number
-    Admitted: number
-    Refused: number
-    Confirmed: number
-    Declined: number
-    'Checked-in': number
+    Unverified: number;
+    Submitted: number;
+    Incomplete: number;
+    Waitlisted: number;
+    Admitted: number;
+    Refused: number;
+    Confirmed: number;
+    Declined: number;
+    "Checked-in": number;
   };
   newApplicantsLast24Hours: number;
   newApplicants24To48Hours: number;
