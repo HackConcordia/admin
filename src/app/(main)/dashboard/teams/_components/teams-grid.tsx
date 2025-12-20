@@ -18,12 +18,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 
 import { TeamCard, type TeamCardProps } from "./team-card";
+import { CreateTeamDialog } from "./create-team-dialog";
 
 interface Pagination {
   page: number;
@@ -155,13 +155,22 @@ export function TeamsGrid({ initialTeams, initialPagination, initialFilters }: T
     fetchTeams(1, pagination.limit, searchValue, newFilters);
   };
 
+  const handleRefresh = () => {
+    fetchTeams(pagination.page, pagination.limit, searchValue, filters);
+  };
+
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
-      <CardHeader className="px-0">
-        <CardTitle className="text-2xl">Teams</CardTitle>
-        <CardDescription>Manage and view all registered teams. Total: {pagination.totalTeams} teams</CardDescription>
-      </CardHeader>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Teams</h1>
+          <p className="text-muted-foreground text-sm">
+            Manage and view all registered teams. Total: {pagination.totalTeams} teams
+          </p>
+        </div>
+        <CreateTeamDialog onTeamCreated={handleRefresh} />
+      </div>
 
       {/* Search, Filter & Sort Controls */}
       <div className="flex flex-col gap-4">
