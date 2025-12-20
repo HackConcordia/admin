@@ -1,97 +1,79 @@
 import * as React from "react";
+
 import { ColumnDef } from "@tanstack/react-table";
-import { EllipsisVertical, Trash2, Eye, UserPlus } from "lucide-react";
+import { CircleCheck, Eye, Loader, Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 
-import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
-import { Badge } from "@/components/ui/badge";
-import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { Badge } from "@/components/ui/badge";
+import { getStatusColor, getStatusFillColor, getStatusStrokeColor } from "@/utils/statusColors";
 
 export type ApplicationTableRow = {
   _id: string;
-  firstName: string;
-  lastName: string;
   email: string;
   status: string;
+  createdAt?: string;
   processedBy?: string;
 };
 
-function AssignRowDialog({
-  applicationId,
+// Assign single
+function AssignDialog({
   open,
   onOpenChange,
   onAssigned,
+  applicationId,
 }: {
-  applicationId: string;
   open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onAssigned?: (email: string) => void;
+  onOpenChange: (o: boolean) => void;
+  onAssigned: (email: string) => void;
+  applicationId: string;
 }) {
   const [adminEmails, setAdminEmails] = React.useState<string[]>([]);
-  const [selectedEmail, setSelectedEmail] = React.useState<string>("");
+  const [selected, setSelected] = React.useState("");
   const [loading, setLoading] = React.useState(false);
 
   React.useEffect(() => {
     if (!open) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch("/api/admin/get-emails");
-        if (!res.ok) throw new Error("Failed to load admin emails");
-        const data = await res.json();
-        const emails: string[] = Array.isArray(data?.data) ? data.data : [];
-        if (!cancelled) setAdminEmails(emails);
-      } catch (_e) {
-        toast.error("Failed to load admins");
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+    fetch("/api/admin/get-emails")
+      .then((r) => r.json())
+      .then((d) => setAdminEmails(Array.isArray(d.data) ? d.data : []))
+      .catch(() => toast.error("Failed to load admins"));
   }, [open]);
 
-  async function handleAssign() {
-    if (!selectedEmail) {
-      toast.error("Please select an admin");
-      return;
-    }
+  async function assign() {
+    if (!selected) return toast.error("Pick an admin");
+
     setLoading(true);
     try {
-      const promise = fetch("/api/admin/assign-applications", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ selectedAdminEmail: selectedEmail, selectedApplicants: [applicationId] }),
-      }).then(async (r) => {
-        if (!r.ok) {
-          const err = await r.json().catch(() => ({}));
-          throw new Error(err?.message || "Failed to assign");
-        }
-      });
+      await toast.promise(
+        fetch("/api/admin/assign-applications", {
+          method: "POST",
+          body: JSON.stringify({
+            selectedAdminEmail: selected,
+            selectedApplicants: [applicationId],
+          }),
+          headers: { "Content-Type": "application/json" },
+        }),
+        {
+          loading: "Assigning...",
+          success: "Assigned",
+          error: "Failed",
+        },
+      );
 
-      await toast.promise(promise, {
-        loading: "Assigning...",
-        success: "Application assigned",
-        error: (e) => e.message || "Failed to assign",
-      });
-      onAssigned?.(selectedEmail);
+      onAssigned(selected);
       onOpenChange(false);
     } finally {
       setLoading(false);
@@ -100,21 +82,21 @@ function AssignRowDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent>
         <DialogHeader>
-          <DialogTitle>Assign application</DialogTitle>
-          <DialogDescription>Select an admin to assign this application.</DialogDescription>
+          <DialogTitle>Assign</DialogTitle>
+          <DialogDescription>Select an admin</DialogDescription>
         </DialogHeader>
-        <div className="grid gap-2">
-          <Label htmlFor="assign-admin-email">Admin</Label>
-          <Select value={selectedEmail} onValueChange={setSelectedEmail}>
-            <SelectTrigger id="assign-admin-email">
-              <SelectValue placeholder="Select admin email" />
+        <div className="space-y-2 py-2">
+          <Label>Admin</Label>
+          <Select value={selected} onValueChange={setSelected}>
+            <SelectTrigger>
+              <SelectValue placeholder="Pick admin" />
             </SelectTrigger>
             <SelectContent>
-              {adminEmails.map((email) => (
-                <SelectItem key={email} value={email}>
-                  {email}
+              {adminEmails.map((e) => (
+                <SelectItem key={e} value={e}>
+                  {e}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -124,12 +106,49 @@ function AssignRowDialog({
           <Button variant="secondary" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleAssign} disabled={loading}>
-            Assign
+          <Button onClick={assign} disabled={loading}>
+            {loading ? "Assigning..." : "Assign"}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// Inline actions
+function RowActions({ row, isSuperAdmin }: any) {
+  const [open, setOpen] = React.useState(false);
+  const id = row.original._id;
+
+  return (
+    <>
+      <div className="flex gap-2">
+        {isSuperAdmin && (
+          <Button size="icon" variant="outline" onClick={() => setOpen(true)}>
+            <UserPlus className="h-4 w-4" />
+          </Button>
+        )}
+
+        <Button size="icon" variant="outline" onClick={() => window.open(`/dashboard/applications/${id}`)}>
+          <Eye className="h-4 w-4" />
+        </Button>
+
+        {isSuperAdmin && (
+          <Button size="icon" variant="outline" className="text-destructive">
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
+
+      {isSuperAdmin && (
+        <AssignDialog
+          open={open}
+          onOpenChange={setOpen}
+          applicationId={id}
+          onAssigned={(email) => (row.original.processedBy = email)}
+        />
+      )}
+    </>
   );
 }
 
@@ -138,107 +157,61 @@ export function getApplicationsColumns(isSuperAdmin: boolean): ColumnDef<Applica
     {
       id: "select",
       header: ({ table }) => (
-        <div className="flex items-center justify-center">
-          <Checkbox
-            checked={table.getIsAllPageRowsSelected()}
-            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-            aria-label="Select all"
-          />
-        </div>
+        <Checkbox
+          checked={table.getIsAllPageRowsSelected()}
+          onCheckedChange={(x) => table.toggleAllPageRowsSelected(!!x)}
+        />
       ),
-      cell: ({ row }) => (
-        <div className="flex items-center justify-center">
-          <Checkbox
-            checked={row.getIsSelected()}
-            onCheckedChange={(value) => row.toggleSelected(!!value)}
-            aria-label="Select row"
-          />
-        </div>
-      ),
-      enableSorting: false,
-      enableHiding: false,
-    },
-    {
-      accessorKey: "firstName",
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
-      cell: ({ row }) => (
-        <span>
-          {row.original.firstName} {row.original.lastName}
-        </span>
-      ),
-      enableHiding: false,
+      cell: ({ row }) => <Checkbox checked={row.getIsSelected()} onCheckedChange={(x) => row.toggleSelected(!!x)} />,
     },
     {
       accessorKey: "email",
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Email" />,
-      cell: ({ row }) => <span className="tabular-nums">{row.original.email}</span>,
+      header: "Email",
+      minSize: 600,
     },
     {
-      accessorKey: "status",
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
-      cell: ({ row }) => <StatusBadge status={row.original.status} />,
+  accessorKey: "status",
+  header: "Status",
+  cell: ({ row }) => {
+    const strokeColor = getStatusStrokeColor(row.original.status);
+    const fillColor = getStatusFillColor(row.original.status);
+
+    return (
+      <Badge variant="outline" className="flex items-center gap-1 px-1.5 text-xs text-muted-foreground">
+        <CircleCheck
+          className="h-3 w-3"
+          style={{ stroke: strokeColor, fill: fillColor }}
+        />
+        {row.original.status}
+      </Badge>
+    );
+  },
+},
+
+    {
+      accessorKey: "assignedTo",
+      header: "Assigned To",
+      cell: ({ row }) => row.original.processedBy && "Not assigned",
     },
     {
       accessorKey: "processedBy",
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Processed By" />,
-      cell: ({ row }) => <span>{row.original.processedBy ?? "Not processed"}</span>,
-      enableSorting: false,
+      header: "Processed By",
+      cell: ({ row }) => row.original.processedBy && "Not assigned",
+    },
+    {
+      accessorKey: "processedAt",
+      header: "Processed At",
+      cell: ({ row }) => row.original.processedBy && "--",
+    },
+    {
+      accessorKey: "createdAt",
+      header: "Created At",
+      cell: ({ row }) => row.original.createdAt,
     },
     {
       id: "actions",
-      cell: ({ row }) => {
-        const [assignOpen, setAssignOpen] = React.useState(false);
-        return (
-          <>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="text-muted-foreground flex size-8" size="icon">
-                  <EllipsisVertical />
-                  <span className="sr-only">Open menu</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {isSuperAdmin && (
-                  <DropdownMenuItem
-                    onSelect={(e) => {
-                      e.preventDefault();
-                      setAssignOpen(true);
-                    }}
-                  >
-                    <UserPlus /> Assign to admin
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuItem
-                  onClick={() => {
-                    window.open(`/dashboard/applications/${row.original._id}`, "_blank", "noopener,noreferrer");
-                  }}
-                >
-                  <Eye /> Review
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  variant="destructive"
-                  onClick={() => {
-                    console.log("Delete", row.original._id);
-                  }}
-                >
-                  <Trash2 /> Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            {isSuperAdmin && (
-              <AssignRowDialog
-                applicationId={row.original._id}
-                open={assignOpen}
-                onOpenChange={setAssignOpen}
-                onAssigned={(email) => {
-                  row.original.processedBy = email;
-                }}
-              />
-            )}
-          </>
-        );
-      },
-      enableSorting: false,
+      header: "Actions",
+      cell: ({ row }) => <RowActions row={row} isSuperAdmin={isSuperAdmin} />,
     },
   ];
 }

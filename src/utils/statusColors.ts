@@ -22,3 +22,16 @@ export const STATUS_COLORS: Record<string, string> = {
 export function getStatusColor(status: string): string {
   return STATUS_COLORS[status] || "#6b7280"; // Default to gray-500 if status not found
 }
+/**
+ * Return hex or named color for stroke
+ */
+export function getStatusStrokeColor(status: string): string {
+  return STATUS_COLORS[status] || "#6b7280"; // gray-500
+}
+
+/**
+ * Return hex or named color for fill
+ */
+export function getStatusFillColor(status: string): string {
+  return STATUS_COLORS[status] || "#6b7280"; // gray-500
+}
