@@ -53,9 +53,9 @@ export const GET = async (req: NextRequest) => {
     // Query applications with resumes - lean() for better performance
     const applications = await Application.find({
       ...statusQuery,
-      "resume.id": { $ne: null, $ne: "" },
+      "resume.id": { $exists: true, $nin: [null, ""] },
     })
-      .select("firstName lastName resume._id resume.id _id")
+      .select("firstName lastName resume.id _id")
       .lean()
       .exec();
 

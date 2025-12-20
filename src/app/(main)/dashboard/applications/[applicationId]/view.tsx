@@ -5,6 +5,7 @@ import { CheckCircle2, Hourglass, XCircle } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useRouter } from "next/navigation";
@@ -249,7 +250,7 @@ export default function ApplicationView({
                     </div>
                     <div className="text-muted-foreground text-sm">{application.email}</div>
                   </div>
-                  <Badge variant="secondary">{application.status}</Badge>
+                  <StatusBadge status={application.status} />
                 </div>
 
                 <Separator />
