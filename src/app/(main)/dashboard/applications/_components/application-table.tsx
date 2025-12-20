@@ -29,6 +29,7 @@ type TableCardsProps = {
   pagination: PaginationInfo;
   initialSearch: string;
   initialStatus: string;
+  initialTravelReimbursement: string;
 };
 
 type AutoAssignStats = {
@@ -42,6 +43,7 @@ export function ApplicationTable({
   pagination,
   initialSearch,
   initialStatus,
+  initialTravelReimbursement,
 }: TableCardsProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -125,6 +127,14 @@ export function ApplicationTable({
   const handleStatusChange = useCallback(
     (newStatus: string) => {
       updateUrlParams({ status: newStatus, page: "1" });
+    },
+    [updateUrlParams]
+  );
+
+  // Handle travel reimbursement filter change
+  const handleTravelReimbursementChange = useCallback(
+    (newValue: string) => {
+      updateUrlParams({ travelReimbursement: newValue, page: "1" });
     },
     [updateUrlParams]
   );
@@ -326,8 +336,10 @@ export function ApplicationTable({
           onOpenExport={() => setExportOpen(true)}
           initialSearch={initialSearch}
           initialStatus={initialStatus}
+          initialTravelReimbursement={initialTravelReimbursement}
           onSearchChange={handleSearchChange}
           onStatusChange={handleStatusChange}
+          onTravelReimbursementChange={handleTravelReimbursementChange}
         />
         <div className="mb-2 rounded-md border">
           <DataTable table={table} columns={columns} />

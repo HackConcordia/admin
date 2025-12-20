@@ -19,8 +19,10 @@ type ActionsProps = {
   onOpenExport: () => void;
   initialSearch: string;
   initialStatus: string;
+  initialTravelReimbursement: string;
   onSearchChange: (search: string) => void;
   onStatusChange: (status: string) => void;
+  onTravelReimbursementChange: (value: string) => void;
 };
 
 export function Actions({
@@ -32,16 +34,20 @@ export function Actions({
   onOpenExport,
   initialSearch,
   initialStatus,
+  initialTravelReimbursement,
   onSearchChange,
   onStatusChange,
+  onTravelReimbursementChange,
 }: ActionsProps) {
   return (
     <div className="my-3 flex w-full gap-3">
       <ApplicationsFilters
         initialSearch={initialSearch}
         initialStatus={initialStatus}
+        initialTravelReimbursement={initialTravelReimbursement}
         onSearchChange={onSearchChange}
         onStatusChange={onStatusChange}
+        onTravelReimbursementChange={onTravelReimbursementChange}
       />
       <div className="flex items-center gap-2">
         <DataTableViewOptions table={table} />
