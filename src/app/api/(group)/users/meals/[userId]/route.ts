@@ -26,6 +26,7 @@ export const PATCH = async (
     }
 
     console.log("userId:", userId);
+    console.log("Received mealData:", mealData);
 
     // Ensure the id is converted to ObjectId if it's a string
     const mealDocumentId = new mongoose.Types.ObjectId(userId);
@@ -57,6 +58,8 @@ export const PATCH = async (
     // Update the meal document in the database
     userMeal.meals = updatedMeals;
     await userMeal.save();
+
+    console.log("Meal updated successfully");
 
     return sendSuccessResponse(
       "User meals information updated successfully",

@@ -33,13 +33,16 @@ function MealCheckbox({ mealRow, date, mealType, onUpdate }: MealCheckboxProps) 
 
   const isChecked = meal?.taken ?? false;
 
-  const handleToggle = async (checked: boolean) => {
+  const handleToggle = async (checked: boolean | "indeterminate") => {
+    // Handle indeterminate state
+    if (checked === "indeterminate") return;
+
     setIsLoading(true);
 
     // Save original state for potential revert
-    const originalMeals = mealRow.meals;
+    const originalMeals = [...mealRow.meals];
 
-    // Optimistic update
+    // Update local meals data first (like the working example)
     const updatedMeals = mealRow.meals.map((m) => {
       if (new Date(m.date).toDateString() === new Date(date).toDateString() && m.type === mealType) {
         return { ...m, taken: checked };
@@ -47,30 +50,31 @@ function MealCheckbox({ mealRow, date, mealType, onUpdate }: MealCheckboxProps) 
       return m;
     });
 
+    // Update local state immediately
     onUpdate(mealRow._id, updatedMeals);
 
     try {
-      const mealData = [
-        {
-          date: new Date(date),
-          type: mealType,
-          taken: checked,
-        },
-      ];
+      // Send the ENTIRE meals array to the backend (like the working example)
+      console.log("Meal Data to be sent:", updatedMeals);
 
       const response = await fetch(`/api/users/meals/${mealRow._id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          mealData,
+          mealData: updatedMeals,
         }),
       });
 
+      console.log("Response status:", response.status);
+
       if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Error response:", errorData);
         throw new Error("Failed to update meal");
       }
 
       const result = await response.json();
+      console.log("Success response:", result);
 
       // Update with server response to ensure consistency
       if (result.data && result.data.meals) {
