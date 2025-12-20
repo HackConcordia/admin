@@ -177,22 +177,35 @@ export function ApplicationTable({
     };
   }, [bulkOpen, autoAssignOpen, isSuperAdmin]);
 
-  // Auto-assign statistics (uses already-loaded admin emails)
+  // Auto-assign statistics (fetch from API for accurate count)
   useEffect(() => {
     if (!autoAssignOpen) return;
 
-    const unassignedCount = table
-      .getCoreRowModel()
-      .rows.filter(
-        (row) =>
-          row.original.status === "Submitted" &&
-          row.original.processedBy === "Not processed"
-      ).length;
+    let cancelled = false;
 
-    const reviewerCount = adminEmails.length;
+    (async () => {
+      try {
+        const res = await fetch("/api/admin/auto-assign-applications");
+        if (!res.ok) throw new Error("Failed to load auto-assign statistics");
+        const json = await res.json();
+        if (!cancelled && json?.data) {
+          setAutoAssignStats({
+            unassignedCount: json.data.unassignedCount || 0,
+            reviewerCount: json.data.reviewerCount || 0,
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch auto-assign stats:", error);
+        if (!cancelled) {
+          toast.error("Failed to load auto-assign statistics");
+        }
+      }
+    })();
 
-    setAutoAssignStats({ unassignedCount, reviewerCount });
-  }, [autoAssignOpen, adminEmails, table]);
+    return () => {
+      cancelled = true;
+    };
+  }, [autoAssignOpen]);
 
   async function handleBulkAssign() {
     if (!selectedCount) {
@@ -261,7 +274,9 @@ export function ApplicationTable({
         a.href = url;
 
         const contentDisposition = response.headers.get("Content-Disposition");
-        let filename = `resumes_${exportFilter}_${new Date().toISOString().slice(0, 10)}.zip`;
+        let filename = `resumes_${exportFilter}_${new Date()
+          .toISOString()
+          .slice(0, 10)}.zip`;
         if (contentDisposition) {
           const filenameMatch = contentDisposition.match(
             /filename[^;=\n]*=\s*(['"]?)([^'"\n]*)\1/i
