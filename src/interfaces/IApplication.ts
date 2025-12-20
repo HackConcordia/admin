@@ -53,9 +53,9 @@ export interface IApplication {
   pronouns: string;
   underrepresented: string;
   jobRolesLookingFor: string;
-  workRegions: string;
+  workRegions: string[];
   workRegionsOther: string;
-  jobTypesInterested: string;
+  jobTypesInterested: string[];
   jobTypesInterestedOther: string;
   isRegisteredForCoop: boolean;
   nextCoopTerm: string;

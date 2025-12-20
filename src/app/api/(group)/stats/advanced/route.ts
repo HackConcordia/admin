@@ -15,32 +15,67 @@ const formatDisplayName = (value: string) => {
     .trim();
 };
 
-// Helper function to extract values from array fields that may contain JSON strings
-const extractArrayValues = (arr: unknown): string[] => {
-  if (!arr || !Array.isArray(arr)) return [];
+// Helper function to extract values from fields that may be strings, JSON strings, or arrays
+const extractArrayValues = (value: unknown): string[] => {
+  if (!value) return [];
 
   const result: string[] = [];
 
-  for (const item of arr) {
-    if (!item) continue;
+  // Handle string input (single value, JSON array, or comma-separated)
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return [];
 
-    // If item is a string that looks like JSON array, parse it
-    if (typeof item === "string") {
-      if (item.startsWith("[")) {
-        try {
-          const parsed = JSON.parse(item);
-          if (Array.isArray(parsed)) {
-            result.push(...parsed.filter((v: unknown) => typeof v === "string" && v));
+    // If string looks like JSON array, parse it
+    if (trimmed.startsWith("[")) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) {
+          result.push(...parsed.filter((v: unknown) => typeof v === "string" && v));
+          return result;
+        }
+      } catch {
+        // Not valid JSON, continue to other parsing methods
+      }
+    }
+
+    // Check if it's comma-separated values
+    if (trimmed.includes(",")) {
+      const parts = trimmed
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      result.push(...parts);
+      return result;
+    }
+
+    // Single value
+    result.push(trimmed);
+    return result;
+  }
+
+  // Handle array input
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      if (!item) continue;
+
+      if (typeof item === "string") {
+        if (item.startsWith("[")) {
+          try {
+            const parsed = JSON.parse(item);
+            if (Array.isArray(parsed)) {
+              result.push(...parsed.filter((v: unknown) => typeof v === "string" && v));
+            }
+          } catch {
+            // Not valid JSON, use as-is
+            result.push(item);
           }
-        } catch {
-          // Not valid JSON, use as-is
+        } else {
           result.push(item);
         }
-      } else {
-        result.push(item);
+      } else if (Array.isArray(item)) {
+        result.push(...item.filter((v: unknown) => typeof v === "string" && v));
       }
-    } else if (Array.isArray(item)) {
-      result.push(...item.filter((v: unknown) => typeof v === "string" && v));
     }
   }
 
@@ -54,10 +89,25 @@ export const GET = async () => {
     // Fetch all applications with the new fields
     const applications = await Application.find(
       {},
-      `isEighteenOrAbove faculty levelOfStudy program graduationYear 
-       travelReimbursement preferredLanguage workingLanguages gender 
-       pronouns underrepresented jobRolesLookingFor workRegions 
-       jobTypesInterested isRegisteredForCoop nextCoopTerm country`,
+      {
+        isEighteenOrAbove: 1,
+        faculty: 1,
+        levelOfStudy: 1,
+        program: 1,
+        graduationYear: 1,
+        travelReimbursement: 1,
+        preferredLanguage: 1,
+        workingLanguages: 1,
+        gender: 1,
+        pronouns: 1,
+        underrepresented: 1,
+        jobRolesLookingFor: 1,
+        workRegions: 1,
+        jobTypesInterested: 1,
+        isRegisteredForCoop: 1,
+        nextCoopTerm: 1,
+        country: 1,
+      },
     );
 
     if (!applications || applications.length === 0) {

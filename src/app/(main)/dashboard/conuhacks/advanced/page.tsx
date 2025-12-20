@@ -201,7 +201,13 @@ export default function AdvancedAnalyticsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <HorizontalBarChart data={stats.jobTypesDistribution.slice(0, 6)} />
+            {stats.jobTypesDistribution.length > 0 ? (
+              <HorizontalBarChart data={stats.jobTypesDistribution.slice(0, 6)} />
+            ) : (
+              <div className="text-muted-foreground flex h-32 items-center justify-center text-sm">
+                No data available for job types
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -213,7 +219,13 @@ export default function AdvancedAnalyticsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <HorizontalBarChart data={stats.workRegionsDistribution.slice(0, 6)} />
+            {stats.workRegionsDistribution.length > 0 ? (
+              <HorizontalBarChart data={stats.workRegionsDistribution.slice(0, 6)} />
+            ) : (
+              <div className="text-muted-foreground flex h-32 items-center justify-center text-sm">
+                No data available for work regions
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
