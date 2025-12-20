@@ -31,13 +31,23 @@ function PasswordCell({ password }: { password: string }) {
         onClick={() => setShowPassword(!showPassword)}
         title={showPassword ? "Hide password" : "Show password"}
       >
-        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        {showPassword ? (
+          <EyeOff className="h-4 w-4" />
+        ) : (
+          <Eye className="h-4 w-4" />
+        )}
       </Button>
     </div>
   );
 }
 
-function ActionsCell({ admin, onDelete }: { admin: AdminTableRow; onDelete: (adminId: string) => Promise<void> }) {
+function ActionsCell({
+  admin,
+  onDelete,
+}: {
+  admin: AdminTableRow;
+  onDelete: (adminId: string) => Promise<void>;
+}) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const handleDeleteConfirm = async () => {
@@ -67,24 +77,34 @@ function ActionsCell({ admin, onDelete }: { admin: AdminTableRow; onDelete: (adm
   );
 }
 
-export function getAdminColumns(onDelete: (adminId: string) => Promise<void>): ColumnDef<AdminTableRow>[] {
+export function getAdminColumns(
+  onDelete: (adminId: string) => Promise<void>
+): ColumnDef<AdminTableRow>[] {
   return [
     {
       accessorKey: "firstName",
-      header: ({ column }) => <DataTableColumnHeader column={column} title="First Name" />,
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="First Name" />
+      ),
       cell: ({ row }) => <span>{row.original.firstName}</span>,
       enableHiding: false,
     },
     {
       accessorKey: "lastName",
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Last Name" />,
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Last Name" />
+      ),
       cell: ({ row }) => <span>{row.original.lastName}</span>,
       enableHiding: false,
     },
     {
       accessorKey: "email",
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Email" />,
-      cell: ({ row }) => <span className="tabular-nums">{row.original.email}</span>,
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Email" />
+      ),
+      cell: ({ row }) => (
+        <span className="tabular-nums">{row.original.email}</span>
+      ),
     },
     {
       accessorKey: "password",
@@ -95,10 +115,11 @@ export function getAdminColumns(onDelete: (adminId: string) => Promise<void>): C
     {
       id: "actions",
       header: "Actions",
-      cell: ({ row }) => <ActionsCell admin={row.original} onDelete={onDelete} />,
+      cell: ({ row }) => (
+        <ActionsCell admin={row.original} onDelete={onDelete} />
+      ),
       enableSorting: false,
       enableHiding: false,
     },
   ];
 }
-

@@ -34,12 +34,17 @@ async function getAdminsSSR(): Promise<{
     const cookieStore = await cookies();
     const token = cookieStore.get(COOKIE_NAME)?.value;
 
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"}/api/admin?page=1&pageSize=10`, {
-      headers: {
-        Cookie: `${COOKIE_NAME}=${token}`,
-      },
-      cache: "no-store",
-    });
+    const response = await fetch(
+      `${
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000"
+      }/api/admin?page=1&pageSize=10`,
+      {
+        headers: {
+          Cookie: `${COOKIE_NAME}=${token}`,
+        },
+        cache: "no-store",
+      }
+    );
 
     if (!response.ok) {
       return {
@@ -52,7 +57,12 @@ async function getAdminsSSR(): Promise<{
     if (result.status === "success") {
       return {
         data: result.data.data || [],
-        pagination: result.data.pagination || { page: 1, pageSize: 10, totalRecords: 0, totalPages: 0 },
+        pagination: result.data.pagination || {
+          page: 1,
+          pageSize: 10,
+          totalRecords: 0,
+          totalPages: 0,
+        },
       };
     }
 
@@ -82,8 +92,12 @@ export default async function AdminsPage() {
     <div className="flex flex-col gap-4 md:gap-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Admin Management</h1>
-          <p className="text-muted-foreground">Manage admin accounts and permissions</p>
+          <h1 className="text-2xl font-bold tracking-tight">
+            Admin Management
+          </h1>
+          <p className="text-muted-foreground">
+            Manage admin accounts and permissions
+          </p>
         </div>
       </div>
 
@@ -98,4 +112,3 @@ export default async function AdminsPage() {
     </div>
   );
 }
-

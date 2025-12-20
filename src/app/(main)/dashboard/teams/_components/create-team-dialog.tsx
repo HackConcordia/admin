@@ -40,6 +40,97 @@ function getInitials(firstName?: string, lastName?: string): string {
   return `${firstName?.[0] || ""}${lastName?.[0] || ""}`.toUpperCase();
 }
 
+/**
+ * Component to display a user suggestion item in the dropdown
+ */
+const UserSuggestionItem = ({
+  user,
+  onClick,
+}: {
+  user: UserSuggestion;
+  onClick: () => void;
+}) => (
+  <button
+    type="button"
+    className={cn(
+      "hover:bg-accent flex w-full items-center gap-3 px-3 py-2 text-left transition-colors",
+      !user.isEligible && "opacity-60"
+    )}
+    onClick={onClick}
+    disabled={!user.isEligible}
+  >
+    <Avatar className="h-8 w-8">
+      <AvatarFallback className="text-xs">{getInitials(user.firstName, user.lastName)}</AvatarFallback>
+    </Avatar>
+    <div className="min-w-0 flex-1">
+      <div className="flex items-center gap-2">
+        <span className="truncate text-sm font-medium">
+          {user.firstName} {user.lastName}
+        </span>
+        {user.isEligible ? (
+          <Badge variant="outline" className="border-green-500 text-xs text-green-500">
+            Available
+          </Badge>
+        ) : user.isInTeam ? (
+          <Badge variant="outline" className="border-orange-500 text-xs text-orange-500">
+            In team
+          </Badge>
+        ) : (
+          <Badge variant="outline" className="border-red-500 text-xs text-red-500">
+            Ineligible
+          </Badge>
+        )}
+      </div>
+      <p className="text-muted-foreground truncate text-xs">{user.email}</p>
+      {user.isInTeam && user.teamName && (
+        <p className="truncate text-xs text-orange-500">Member of: {user.teamName}</p>
+      )}
+      {!user.isEligible && !user.isInTeam && (
+        <p className="truncate text-xs text-red-500">Status: {user.status}</p>
+      )}
+    </div>
+  </button>
+);
+
+/**
+ * Component to display a selected user badge
+ */
+const SelectedUserBadge = ({
+  user,
+  onRemove,
+  isLeader,
+}: {
+  user: UserSuggestion;
+  onRemove?: () => void;
+  isLeader?: boolean;
+}) => (
+  <div className="bg-muted flex items-center gap-2 rounded-md border px-2 py-1.5">
+    <Avatar className="h-6 w-6">
+      <AvatarFallback className="text-xs">{getInitials(user.firstName, user.lastName)}</AvatarFallback>
+    </Avatar>
+    <div className="min-w-0 flex-1">
+      <p className="truncate text-sm font-medium">
+        {user.firstName} {user.lastName}
+      </p>
+      <p className="text-muted-foreground truncate text-xs">{user.email}</p>
+    </div>
+    {isLeader && (
+      <Badge variant="secondary" className="shrink-0 text-xs">
+        Leader
+      </Badge>
+    )}
+    {onRemove && (
+      <button
+        type="button"
+        onClick={onRemove}
+        className="text-muted-foreground hover:text-foreground shrink-0 transition-colors"
+      >
+        <X className="h-4 w-4" />
+      </button>
+    )}
+  </div>
+);
+
 export function CreateTeamDialog({ onTeamCreated }: CreateTeamDialogProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const [teamName, setTeamName] = React.useState("");
@@ -188,91 +279,6 @@ export function CreateTeamDialog({ onTeamCreated }: CreateTeamDialogProps) {
       if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
     };
   }, []);
-
-  const UserSuggestionItem = ({
-    user,
-    onClick,
-  }: {
-    user: UserSuggestion;
-    onClick: () => void;
-  }) => (
-    <button
-      type="button"
-      className={cn(
-        "hover:bg-accent flex w-full items-center gap-3 px-3 py-2 text-left transition-colors",
-        !user.isEligible && "opacity-60"
-      )}
-      onClick={onClick}
-      disabled={!user.isEligible}
-    >
-      <Avatar className="h-8 w-8">
-        <AvatarFallback className="text-xs">{getInitials(user.firstName, user.lastName)}</AvatarFallback>
-      </Avatar>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <span className="truncate text-sm font-medium">
-            {user.firstName} {user.lastName}
-          </span>
-          {user.isEligible ? (
-            <Badge variant="outline" className="border-green-500 text-xs text-green-500">
-              Available
-            </Badge>
-          ) : user.isInTeam ? (
-            <Badge variant="outline" className="border-orange-500 text-xs text-orange-500">
-              In team
-            </Badge>
-          ) : (
-            <Badge variant="outline" className="border-red-500 text-xs text-red-500">
-              Ineligible
-            </Badge>
-          )}
-        </div>
-        <p className="text-muted-foreground truncate text-xs">{user.email}</p>
-        {user.isInTeam && user.teamName && (
-          <p className="truncate text-xs text-orange-500">Member of: {user.teamName}</p>
-        )}
-        {!user.isEligible && !user.isInTeam && (
-          <p className="truncate text-xs text-red-500">Status: {user.status}</p>
-        )}
-      </div>
-    </button>
-  );
-
-  const SelectedUserBadge = ({
-    user,
-    onRemove,
-    isLeader,
-  }: {
-    user: UserSuggestion;
-    onRemove?: () => void;
-    isLeader?: boolean;
-  }) => (
-    <div className="bg-muted flex items-center gap-2 rounded-md border px-2 py-1.5">
-      <Avatar className="h-6 w-6">
-        <AvatarFallback className="text-xs">{getInitials(user.firstName, user.lastName)}</AvatarFallback>
-      </Avatar>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium">
-          {user.firstName} {user.lastName}
-        </p>
-        <p className="text-muted-foreground truncate text-xs">{user.email}</p>
-      </div>
-      {isLeader && (
-        <Badge variant="secondary" className="shrink-0 text-xs">
-          Leader
-        </Badge>
-      )}
-      {onRemove && (
-        <button
-          type="button"
-          onClick={onRemove}
-          className="text-muted-foreground hover:text-foreground shrink-0 transition-colors"
-        >
-          <X className="h-4 w-4" />
-        </button>
-      )}
-    </div>
-  );
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>

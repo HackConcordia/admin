@@ -33,8 +33,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 // Request handler function
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export const GET = async (req: NextRequest): Promise<NextResponse> => {
+export const GET = async (): Promise<NextResponse> => {
   try {
     // Connect to MongoDB
     await connectMongoDB();

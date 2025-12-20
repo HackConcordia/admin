@@ -11,12 +11,12 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-import type { AdminData } from "./admin-list";
+import type { AdminTableRow } from "./columns";
 
 type DeleteAdminDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  admin: AdminData;
+  admin: AdminTableRow;
   onConfirm: () => void;
 };
 

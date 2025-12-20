@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { DataTable } from "@/components/data-table/data-table";
@@ -21,12 +21,49 @@ type AdminTableProps = {
   };
 };
 
-export function AdminTable({ initialData, initialPagination }: AdminTableProps) {
+export function AdminTable({
+  initialData,
+  initialPagination,
+}: AdminTableProps) {
   const [data, setData] = useState<AdminTableRow[]>(initialData);
   const [pagination, setPagination] = useState(initialPagination);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Fetch data from API
+  const fetchData = useCallback(
+    async (page: number, searchTerm: string) => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams({
+          page: page.toString(),
+          pageSize: pagination.pageSize.toString(),
+        });
+
+        if (searchTerm) {
+          params.append("search", searchTerm);
+        }
+
+        const response = await fetch(`/api/admin?${params.toString()}`);
+        if (!response.ok) {
+          throw new Error("Failed to fetch admins");
+        }
+
+        const result = await response.json();
+        if (result.status === "success") {
+          setData(result.data.data || []);
+          setPagination(result.data.pagination);
+        }
+      } catch (error) {
+        console.error("Error fetching admins:", error);
+        toast.error("Failed to load admins");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [pagination.pageSize]
+  );
 
   const handleDelete = async (adminId: string) => {
     try {
@@ -59,37 +96,6 @@ export function AdminTable({ initialData, initialPagination }: AdminTableProps) 
     pageCount: pagination.totalPages,
   });
 
-  // Fetch data from API
-  const fetchData = async (page: number, searchTerm: string) => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams({
-        page: page.toString(),
-        pageSize: pagination.pageSize.toString(),
-      });
-
-      if (searchTerm) {
-        params.append("search", searchTerm);
-      }
-
-      const response = await fetch(`/api/admin?${params.toString()}`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch admins");
-      }
-
-      const result = await response.json();
-      if (result.status === "success") {
-        setData(result.data.data || []);
-        setPagination(result.data.pagination);
-      }
-    } catch (error) {
-      console.error("Error fetching admins:", error);
-      toast.error("Failed to load admins");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Debounce search
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -98,8 +104,7 @@ export function AdminTable({ initialData, initialPagination }: AdminTableProps) 
     }, 300);
 
     return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search]);
+  }, [search, fetchData]);
 
   // Handle page change
   useEffect(() => {
@@ -109,32 +114,28 @@ export function AdminTable({ initialData, initialPagination }: AdminTableProps) 
       setCurrentPage(newPage);
       fetchData(newPage, search);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [table.getState().pagination.pageIndex]);
+  }, [table.getState().pagination.pageIndex, currentPage, search, fetchData]);
 
   return (
-    <>
-      <div className="flex flex-col gap-3">
-        <div className="mb-4">
-          <Input
-            placeholder="Search by name or email..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="max-w-sm"
-          />
-        </div>
-        <div className="rounded-md border">
-          {loading ? (
-            <div className="flex h-24 items-center justify-center">
-              <p className="text-muted-foreground">Loading...</p>
-            </div>
-          ) : (
-            <DataTable table={table} columns={columns} />
-          )}
-        </div>
-        <DataTablePagination table={table} />
+    <div className="flex flex-col gap-3">
+      <div className="mb-4">
+        <Input
+          placeholder="Search by name or email..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="max-w-sm"
+        />
       </div>
-    </>
+      <div className="rounded-md border">
+        {loading ? (
+          <div className="flex h-24 items-center justify-center">
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
+        ) : (
+          <DataTable table={table} columns={columns} />
+        )}
+      </div>
+      <DataTablePagination table={table} />
+    </div>
   );
 }
-

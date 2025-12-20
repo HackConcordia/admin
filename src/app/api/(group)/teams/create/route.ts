@@ -14,7 +14,13 @@ function generateTeamCode(): string {
 }
 
 // Statuses that allow a user to join a team (Submitted and beyond, excluding declined/refused)
-const ALLOWED_STATUSES = ["Submitted", "Admitted", "Waitlisted", "Confirmed", "CheckedIn"];
+const ALLOWED_STATUSES = [
+  "Submitted",
+  "Admitted",
+  "Waitlisted",
+  "Confirmed",
+  "CheckedIn",
+];
 
 interface CreateTeamRequest {
   teamName: string;
@@ -40,7 +46,11 @@ export const POST = async (req: NextRequest): Promise<NextResponse> => {
 
     // Validate max members (1 leader + 3 additional = 4 max)
     if (additionalMemberEmails.length > 3) {
-      return sendErrorResponse("A team can have a maximum of 4 members", {}, 400);
+      return sendErrorResponse(
+        "A team can have a maximum of 4 members",
+        {},
+        400
+      );
     }
 
     // Check if team name already exists
@@ -50,9 +60,15 @@ export const POST = async (req: NextRequest): Promise<NextResponse> => {
     }
 
     // Find the team leader
-    const teamLeader = await Application.findOne({ email: teamLeaderEmail.toLowerCase().trim() });
+    const teamLeader = await Application.findOne({
+      email: teamLeaderEmail.toLowerCase().trim(),
+    });
     if (!teamLeader) {
-      return sendErrorResponse("Team leader not found with this email", {}, 404);
+      return sendErrorResponse(
+        "Team leader not found with this email",
+        {},
+        404
+      );
     }
 
     // Check leader's status
@@ -67,7 +83,9 @@ export const POST = async (req: NextRequest): Promise<NextResponse> => {
     const teamLeaderId = String(teamLeader._id);
 
     // Check if leader is already in a team
-    const leaderExistingTeam = await Team.findOne({ "members.userId": teamLeaderId });
+    const leaderExistingTeam = await Team.findOne({
+      "members.userId": teamLeaderId,
+    });
     if (leaderExistingTeam) {
       return sendErrorResponse(
         `Team leader is already a member of team "${leaderExistingTeam.teamName}"`,
@@ -87,8 +105,14 @@ export const POST = async (req: NextRequest): Promise<NextResponse> => {
     }
 
     // Process additional members
-    const additionalMembers: Array<{ userId: string; isAdmitted: boolean; email: string }> = [];
-    const processedEmails = new Set<string>([teamLeaderEmail.toLowerCase().trim()]);
+    const additionalMembers: Array<{
+      userId: string;
+      isAdmitted: boolean;
+      email: string;
+    }> = [];
+    const processedEmails = new Set<string>([
+      teamLeaderEmail.toLowerCase().trim(),
+    ]);
 
     for (const email of additionalMemberEmails) {
       const normalizedEmail = email.toLowerCase().trim();
@@ -98,14 +122,22 @@ export const POST = async (req: NextRequest): Promise<NextResponse> => {
 
       // Check for duplicate emails in the request
       if (processedEmails.has(normalizedEmail)) {
-        return sendErrorResponse(`Duplicate email in request: ${email}`, {}, 400);
+        return sendErrorResponse(
+          `Duplicate email in request: ${email}`,
+          {},
+          400
+        );
       }
       processedEmails.add(normalizedEmail);
 
       // Find the member
       const member = await Application.findOne({ email: normalizedEmail });
       if (!member) {
-        return sendErrorResponse(`User not found with email: ${email}`, {}, 404);
+        return sendErrorResponse(
+          `User not found with email: ${email}`,
+          {},
+          404
+        );
       }
 
       // Check member's status
@@ -120,7 +152,9 @@ export const POST = async (req: NextRequest): Promise<NextResponse> => {
       const memberId = String(member._id);
 
       // Check if member is already in a team
-      const memberExistingTeam = await Team.findOne({ "members.userId": memberId });
+      const memberExistingTeam = await Team.findOne({
+        "members.userId": memberId,
+      });
       if (memberExistingTeam) {
         return sendErrorResponse(
           `User "${email}" is already a member of team "${memberExistingTeam.teamName}"`,
@@ -131,6 +165,7 @@ export const POST = async (req: NextRequest): Promise<NextResponse> => {
 
       additionalMembers.push({
         userId: memberId,
+        isAdmitted: true,
         email: member.email,
       });
     }
@@ -142,7 +177,11 @@ export const POST = async (req: NextRequest): Promise<NextResponse> => {
       teamCode = generateTeamCode();
       codeAttempts++;
       if (codeAttempts > 10) {
-        return sendErrorResponse("Failed to generate unique team code. Please try again.", {}, 500);
+        return sendErrorResponse(
+          "Failed to generate unique team code. Please try again.",
+          {},
+          500
+        );
       }
     }
 
@@ -169,8 +208,14 @@ export const POST = async (req: NextRequest): Promise<NextResponse> => {
     await newTeam.save();
 
     // Update teamId for all members' applications
-    const allMemberIds = [teamLeaderId, ...additionalMembers.map((m) => m.userId)];
-    await Application.updateMany({ _id: { $in: allMemberIds } }, { teamId: String(newTeam._id) });
+    const allMemberIds = [
+      teamLeaderId,
+      ...additionalMembers.map((m) => m.userId),
+    ];
+    await Application.updateMany(
+      { _id: { $in: allMemberIds } },
+      { teamId: String(newTeam._id) }
+    );
 
     return sendSuccessResponse(
       "Team created successfully",
@@ -187,9 +232,12 @@ export const POST = async (req: NextRequest): Promise<NextResponse> => {
     // Handle MongoDB duplicate key error
     if (error.code === 11000) {
       const field = Object.keys(error.keyPattern || {})[0];
-      return sendErrorResponse(`A team with this ${field} already exists`, {}, 400);
+      return sendErrorResponse(
+        `A team with this ${field} already exists`,
+        {},
+        400
+      );
     }
     return sendErrorResponse("Failed to create team", error, 500);
   }
 };
-
