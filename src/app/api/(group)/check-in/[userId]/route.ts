@@ -43,12 +43,12 @@ export const PATCH = async (req: NextRequest, { params }: { params: Promise<{ us
         name: application.firstName + " " + application.lastName,
         email: application.email,
         meals: [
-          { date: new Date("2025-02-01"), type: "breakfast", taken: false },
-          { date: new Date("2025-02-01"), type: "lunch", taken: false },
-          { date: new Date("2025-02-01"), type: "snacks", taken: false },
-          { date: new Date("2025-02-01"), type: "dinner", taken: false },
-          { date: new Date("2025-02-02"), type: "breakfast", taken: false },
-          { date: new Date("2025-02-02"), type: "lunch", taken: false },
+          { date: new Date("2026-01-24"), type: "breakfast", taken: false },
+          { date: new Date("2026-01-24"), type: "lunch", taken: false },
+          { date: new Date("2026-01-24"), type: "snacks", taken: false },
+          { date: new Date("2026-01-24"), type: "dinner", taken: false },
+          { date: new Date("2026-01-25"), type: "breakfast", taken: false },
+          { date: new Date("2026-01-25"), type: "lunch", taken: false },
         ],
       });
       await newMealRecord.save();
