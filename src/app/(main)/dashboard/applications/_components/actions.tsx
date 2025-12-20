@@ -17,6 +17,10 @@ type ActionsProps = {
   onOpenBulkAssign: () => void;
   onOpenAutoAssign: () => void;
   onOpenExport: () => void;
+  initialSearch: string;
+  initialStatus: string;
+  onSearchChange: (search: string) => void;
+  onStatusChange: (status: string) => void;
 };
 
 export function Actions({
@@ -26,10 +30,19 @@ export function Actions({
   onOpenBulkAssign,
   onOpenAutoAssign,
   onOpenExport,
+  initialSearch,
+  initialStatus,
+  onSearchChange,
+  onStatusChange,
 }: ActionsProps) {
   return (
     <div className="my-3 flex w-full gap-3">
-      <ApplicationsFilters table={table} />
+      <ApplicationsFilters
+        initialSearch={initialSearch}
+        initialStatus={initialStatus}
+        onSearchChange={onSearchChange}
+        onStatusChange={onStatusChange}
+      />
       <div className="flex items-center gap-2">
         <DataTableViewOptions table={table} />
         {isSuperAdmin && (

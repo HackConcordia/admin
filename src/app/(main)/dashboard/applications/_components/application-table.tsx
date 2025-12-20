@@ -1,12 +1,12 @@
 "use client";
 
 import * as React from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 
 import { toast } from "sonner";
 
 import { DataTable } from "@/components/data-table/data-table";
-import { DataTablePagination } from "@/components/data-table/data-table-pagination";
 import { useDataTableInstance } from "@/hooks/use-data-table-instance";
 
 import { Actions } from "./actions";
@@ -14,10 +14,21 @@ import { AutoAssignDialog } from "./auto-assign-dialog";
 import { BulkAssignDialog } from "./bulk-assign-dialog";
 import { ApplicationTableRow, getApplicationsColumns } from "./columns";
 import { ExportDialog } from "./export-dialog";
+import { ServerPagination } from "./server-pagination";
+
+type PaginationInfo = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
 
 type TableCardsProps = {
   initialData: ApplicationTableRow[];
   isSuperAdmin: boolean;
+  pagination: PaginationInfo;
+  initialSearch: string;
+  initialStatus: string;
 };
 
 type AutoAssignStats = {
@@ -25,13 +36,27 @@ type AutoAssignStats = {
   reviewerCount: number;
 } | null;
 
-export function ApplicationTable({ initialData, isSuperAdmin }: TableCardsProps) {
+export function ApplicationTable({
+  initialData,
+  isSuperAdmin,
+  pagination,
+  initialSearch,
+  initialStatus,
+}: TableCardsProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
   const columns = useMemo(() => getApplicationsColumns(isSuperAdmin), [isSuperAdmin]);
 
   const table = useDataTableInstance({
     data: initialData,
     columns,
     getRowId: (row) => row._id,
+    manualPagination: true,
+    pageCount: pagination.totalPages,
+    defaultPageIndex: pagination.page - 1,
+    defaultPageSize: pagination.limit,
   });
 
   const [bulkOpen, setBulkOpen] = useState(false);
@@ -52,6 +77,57 @@ export function ApplicationTable({ initialData, isSuperAdmin }: TableCardsProps)
   const selectedRows = table.getSelectedRowModel().rows;
   const selectedIds = useMemo(() => selectedRows.map((r) => r.original._id), [selectedRows]);
   const selectedCount = selectedIds.length;
+
+  // Function to update URL params
+  const updateUrlParams = useCallback(
+    (updates: Record<string, string | undefined>) => {
+      const params = new URLSearchParams(searchParams.toString());
+      
+      Object.entries(updates).forEach(([key, value]) => {
+        if (value === undefined || value === "" || (key === "page" && value === "1") || (key === "limit" && value === "10")) {
+          params.delete(key);
+        } else {
+          params.set(key, value);
+        }
+      });
+
+      const newUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname;
+      router.push(newUrl, { scroll: false });
+    },
+    [pathname, router, searchParams]
+  );
+
+  // Handle page change
+  const handlePageChange = useCallback(
+    (newPage: number) => {
+      updateUrlParams({ page: String(newPage) });
+    },
+    [updateUrlParams]
+  );
+
+  // Handle page size change
+  const handlePageSizeChange = useCallback(
+    (newSize: number) => {
+      updateUrlParams({ limit: String(newSize), page: "1" });
+    },
+    [updateUrlParams]
+  );
+
+  // Handle search change (debounced in the filter component)
+  const handleSearchChange = useCallback(
+    (newSearch: string) => {
+      updateUrlParams({ search: newSearch, page: "1" });
+    },
+    [updateUrlParams]
+  );
+
+  // Handle status filter change
+  const handleStatusChange = useCallback(
+    (newStatus: string) => {
+      updateUrlParams({ status: newStatus, page: "1" });
+    },
+    [updateUrlParams]
+  );
 
   // Shared admin email loading (used for bulk assign and auto-assign)
   useEffect(() => {
@@ -248,11 +324,20 @@ export function ApplicationTable({ initialData, isSuperAdmin }: TableCardsProps)
           onOpenBulkAssign={() => setBulkOpen(true)}
           onOpenAutoAssign={() => setAutoAssignOpen(true)}
           onOpenExport={() => setExportOpen(true)}
+          initialSearch={initialSearch}
+          initialStatus={initialStatus}
+          onSearchChange={handleSearchChange}
+          onStatusChange={handleStatusChange}
         />
         <div className="mb-2 rounded-md border">
           <DataTable table={table} columns={columns} />
         </div>
-        <DataTablePagination table={table} />
+        <ServerPagination
+          pagination={pagination}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+          selectedCount={table.getFilteredSelectedRowModel().rows.length}
+        />
       </div>
 
       {isSuperAdmin && (

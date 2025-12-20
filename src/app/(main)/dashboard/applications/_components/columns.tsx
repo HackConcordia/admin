@@ -15,13 +15,25 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Badge } from "@/components/ui/badge";
-import { getStatusColor, getStatusFillColor, getStatusStrokeColor } from "@/utils/statusColors";
+import {
+  getStatusColor,
+  getStatusFillColor,
+  getStatusStrokeColor,
+} from "@/utils/statusColors";
 
 export type ApplicationTableRow = {
   _id: string;
+  firstName?: string;
+  lastName?: string;
   email: string;
   status: string;
   createdAt?: string;
@@ -70,7 +82,7 @@ function AssignDialog({
           loading: "Assigning...",
           success: "Assigned",
           error: "Failed",
-        },
+        }
       );
 
       onAssigned(selected);
@@ -129,7 +141,11 @@ function RowActions({ row, isSuperAdmin }: any) {
           </Button>
         )}
 
-        <Button size="icon" variant="outline" onClick={() => window.open(`/dashboard/applications/${id}`)}>
+        <Button
+          size="icon"
+          variant="outline"
+          onClick={() => window.open(`/dashboard/applications/${id}`)}
+        >
           <Eye className="h-4 w-4" />
         </Button>
 
@@ -152,7 +168,9 @@ function RowActions({ row, isSuperAdmin }: any) {
   );
 }
 
-export function getApplicationsColumns(isSuperAdmin: boolean): ColumnDef<ApplicationTableRow>[] {
+export function getApplicationsColumns(
+  isSuperAdmin: boolean
+): ColumnDef<ApplicationTableRow>[] {
   return [
     {
       id: "select",
@@ -162,7 +180,12 @@ export function getApplicationsColumns(isSuperAdmin: boolean): ColumnDef<Applica
           onCheckedChange={(x) => table.toggleAllPageRowsSelected(!!x)}
         />
       ),
-      cell: ({ row }) => <Checkbox checked={row.getIsSelected()} onCheckedChange={(x) => row.toggleSelected(!!x)} />,
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(x) => row.toggleSelected(!!x)}
+        />
+      ),
     },
     {
       accessorKey: "email",
@@ -170,23 +193,26 @@ export function getApplicationsColumns(isSuperAdmin: boolean): ColumnDef<Applica
       minSize: 600,
     },
     {
-  accessorKey: "status",
-  header: "Status",
-  cell: ({ row }) => {
-    const strokeColor = getStatusStrokeColor(row.original.status);
-    const fillColor = getStatusFillColor(row.original.status);
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => {
+        const strokeColor = getStatusStrokeColor(row.original.status);
+        const fillColor = getStatusFillColor(row.original.status);
 
-    return (
-      <Badge variant="outline" className="flex items-center gap-1 px-1.5 text-xs text-muted-foreground">
-        <CircleCheck
-          className="h-3 w-3"
-          style={{ stroke: strokeColor, fill: fillColor }}
-        />
-        {row.original.status}
-      </Badge>
-    );
-  },
-},
+        return (
+          <Badge
+            variant="outline"
+            className="flex items-center gap-1 px-1.5 text-xs text-muted-foreground"
+          >
+            <CircleCheck
+              className="h-3 w-3"
+              style={{ stroke: strokeColor, fill: fillColor }}
+            />
+            {row.original.status}
+          </Badge>
+        );
+      },
+    },
 
     {
       accessorKey: "assignedTo",
