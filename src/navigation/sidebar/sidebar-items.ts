@@ -18,6 +18,7 @@ import {
   GraduationCap,
   type LucideIcon,
   User,
+  Shield,
 } from "lucide-react";
 
 export interface NavSubItem {
@@ -37,6 +38,7 @@ export interface NavMainItem {
   comingSoon?: boolean;
   newTab?: boolean;
   isNew?: boolean;
+  superAdminOnly?: boolean;
 }
 
 export interface NavGroup {
@@ -71,10 +73,10 @@ export const sidebarItems: NavGroup[] = [
         icon: UtensilsCrossed,
       },
       {
-        title: "Users",
-        url: "/users",
-        icon: User,
-        comingSoon: true,
+        title: "Admins",
+        url: "/dashboard/admins",
+        icon: Shield,
+        superAdminOnly: true,
       },
       {
         title: "Logistics",

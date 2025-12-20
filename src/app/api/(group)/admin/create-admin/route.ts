@@ -3,7 +3,6 @@ import type { NextRequest } from "next/server";
 import connectMongoDB from "@/repository/mongoose";
 import { sendErrorResponse, sendSuccessResponse } from "@/repository/response";
 import Admin from "@/repository/models/admin";
-import bcrypt from "bcryptjs";
 
 export const POST = async (req: NextRequest) => {
   try {
@@ -20,13 +19,11 @@ export const POST = async (req: NextRequest) => {
       return sendErrorResponse("An admin with this email already exists", null, 409);
     }
 
-    const hashed = await bcrypt.hash(password, 10);
-
     const newAdmin = await Admin.create({
       firstName,
       lastName,
       email,
-      password: hashed,
+      password,
     });
 
     return sendSuccessResponse("Admin created successfully", newAdmin, 200);

@@ -11,13 +11,49 @@ export const GET = async (req: NextRequest) => {
   try {
     await connectMongoDB();
 
-    const admins = await Admin.find({ isSuperAdmin: false });
+    // Extract query parameters
+    const { searchParams } = new URL(req.url);
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const pageSize = parseInt(searchParams.get("pageSize") || "10", 10);
+    const search = searchParams.get("search") || "";
 
-    if (!admins) {
-      return sendErrorResponse("No admins were found", null, 404);
+    // Build match query for search
+    const matchQuery: any = { isSuperAdmin: false };
+    if (search) {
+      matchQuery.$or = [
+        { firstName: { $regex: search, $options: "i" } },
+        { lastName: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
+      ];
     }
 
-    const response = sendSuccessResponse("Admins found", admins, 200);
+    // Calculate skip value for pagination
+    const skip = (page - 1) * pageSize;
+
+    // Get total count for pagination metadata
+    const totalRecords = await Admin.countDocuments(matchQuery);
+    const totalPages = Math.ceil(totalRecords / pageSize);
+
+    // Fetch paginated admins
+    const admins = await Admin.find(matchQuery)
+      .select("firstName lastName email password")
+      .skip(skip)
+      .limit(pageSize)
+      .lean();
+
+    const response = sendSuccessResponse(
+      "Admins found",
+      {
+        data: admins,
+        pagination: {
+          page,
+          pageSize,
+          totalRecords,
+          totalPages,
+        },
+      },
+      200,
+    );
     response.headers.set("Cache-Control", "no-store");
 
     return response;
