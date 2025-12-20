@@ -93,7 +93,6 @@ export function TeamsGrid({ initialTeams, initialPagination, initialFilters }: T
     }, 300);
 
     return () => clearTimeout(timeoutId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchValue]);
 
   const fetchTeams = React.useCallback(

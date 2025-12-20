@@ -20,9 +20,7 @@ async function getAdminDataSSR(): Promise<AdminData | null> {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get(COOKIE_NAME)?.value;
-    
     if (!token) return null;
-    
     const payload = await verifyAuthToken(token);
     if (!payload) return null;
 
