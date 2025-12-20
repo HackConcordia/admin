@@ -1,11 +1,15 @@
 import type { NextRequest } from "next/server";
 
-import User from "@/repository/models/user";
+import mongoose from "mongoose";
+
+import Meal from "@/repository/models/meal";
 import connectMongoDB from "@/repository/mongoose";
 import { sendErrorResponse, sendSuccessResponse } from "@/repository/response";
-import Meal from "@/repository/models/meal";
 
-export const PATCH = async (req: NextRequest, { params }: { params: Promise<{ userId: string }> }) => {
+export const PATCH = async (
+  req: NextRequest,
+  { params }: { params: Promise<{ userId: string }> }
+) => {
   try {
     const { userId } = await params;
 
@@ -15,49 +19,55 @@ export const PATCH = async (req: NextRequest, { params }: { params: Promise<{ us
 
     await connectMongoDB();
 
-    const meal = await Meal.findById(userId);
+    const { mealData } = await req.json();
 
-    if (!meal) {
-      return sendErrorResponse("No matching user found for the provided user ID", {}, 404);
+    if (!mealData || !Array.isArray(mealData)) {
+      return sendErrorResponse("Invalid mealData format", {}, 400);
     }
 
-    const body = await req.json();
-    const mealNumber = body.mealNumber;
+    console.log("userId:", userId);
+    console.log("Received mealData:", mealData);
 
-    if (mealNumber == null) {
-      return sendErrorResponse("Invalid meal number", { mealNumber }, 404);
+    // Ensure the id is converted to ObjectId if it's a string
+    const mealDocumentId = new mongoose.Types.ObjectId(userId);
+
+    // Fetch the current meal data to update it based on checkbox selection
+    const userMeal = await Meal.findOne({ _id: mealDocumentId });
+
+    if (!userMeal) {
+      return sendErrorResponse("Meal record not found for this user", {}, 404);
     }
 
-    const meals = meal.meals;
+    // Update meals for the user based on the provided mealData
+    const updatedMeals = userMeal.meals.map(
+      (meal: { date: string | number | Date; type: any }) => {
+        const updatedMeal = mealData.find(
+          (newMeal: { date: string | number | Date; type: any }) =>
+            new Date(newMeal.date).toDateString() ===
+              new Date(meal.date).toDateString() && newMeal.type === meal.type
+        );
 
-    if (!meals) {
-      return sendErrorResponse("Meals list not found for this user", { meals }, 404);
-    }
+        if (updatedMeal) {
+          return { ...meal, taken: updatedMeal.taken };
+        }
 
-    if (meals[mealNumber] == true) {
-      return sendErrorResponse("User have already consumed the meal", { consumed: true }, 404);
-    }
-
-    meals[mealNumber] = true;
-
-    const updatedUser = await Meal.findByIdAndUpdate(
-      userId,
-      {
-        meals: {
-          taken: meals,
-        },
-      },
-      { new: true },
+        return meal;
+      }
     );
 
-    if (!updatedUser) {
-      return sendErrorResponse("Failed to update user meals information", null, 500);
-    }
+    // Update the meal document in the database
+    userMeal.meals = updatedMeals;
+    await userMeal.save();
 
-    return sendSuccessResponse("User meals information updated successfully", updatedUser.meals, 200);
+    console.log("Meal updated successfully");
+
+    return sendSuccessResponse(
+      "User meals information updated successfully",
+      userMeal,
+      200
+    );
   } catch (error) {
-    console.error("Error during PUT request:", error);
-
-    return sendErrorResponse("Failed to retrieve user information", error, 500);
+    console.error("Error updating meal:", error);
+    return sendErrorResponse("Failed to update meal", error, 500);
   }
 };

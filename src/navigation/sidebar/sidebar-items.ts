@@ -62,9 +62,8 @@ export const sidebarItems: NavGroup[] = [
       },
       {
         title: "Teams",
-        url: "/dashboard/finance",
+        url: "/dashboard/teams",
         icon: Users,
-        comingSoon: true,
       },
       {
         title: "Meals",
