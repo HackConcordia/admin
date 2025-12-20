@@ -18,15 +18,25 @@ const getInitials = (name: string): string => {
     .toUpperCase();
 };
 
-const schoolColors: string[] = ["bg-blue-600", "bg-emerald-600", "bg-violet-600", "bg-amber-600", "bg-rose-600"];
+const schoolColors: string[] = [
+  "bg-blue-600",
+  "bg-emerald-600",
+  "bg-violet-600",
+  "bg-amber-600",
+  "bg-rose-600",
+];
 
 export function TopSchools({ schools }: TopSchoolsProps) {
   return (
     <div className="space-y-4">
       {schools.map((school, index) => (
         <div key={school.university} className="group flex items-center gap-3">
-          <Avatar className={`h-10 w-10 ${schoolColors[index % schoolColors.length]}`}>
-            <AvatarFallback className={`${schoolColors[index % schoolColors.length]} text-xs font-semibold text-white`}>
+          <Avatar
+            className={`h-10 w-10 ${schoolColors[index % schoolColors.length]}`}
+          >
+            <AvatarFallback
+              className={`${schoolColors[index % schoolColors.length]} text-xs font-semibold text-white`}
+            >
               {getInitials(school.university)}
             </AvatarFallback>
           </Avatar>
@@ -35,7 +45,9 @@ export function TopSchools({ schools }: TopSchoolsProps) {
               {school.university}
             </p>
           </div>
-          <div className="text-sm font-semibold tabular-nums">{school.count.toLocaleString()}</div>
+          <div className="text-sm font-semibold tabular-nums">
+            {school.count.toLocaleString()}
+          </div>
         </div>
       ))}
     </div>

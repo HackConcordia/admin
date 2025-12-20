@@ -48,8 +48,8 @@ interface TeamsGridProps {
 
 const defaultFilters: Filters = {
   memberCount: "",
-  sortField: "teamName",
-  sortOrder: "asc",
+  sortField: "memberCount",
+  sortOrder: "desc",
 };
 
 const SORT_OPTIONS = [
@@ -76,8 +76,8 @@ export function TeamsGrid({ initialTeams, initialPagination, initialFilters }: T
   const [isLoading, setIsLoading] = React.useState(false);
   const [filters, setFilters] = React.useState<Filters>({
     memberCount: initialFilters?.memberCount || searchParams.get("memberCount") || "",
-    sortField: initialFilters?.sortField || searchParams.get("sortField") || "teamName",
-    sortOrder: initialFilters?.sortOrder || searchParams.get("sortOrder") || "asc",
+    sortField: initialFilters?.sortField || searchParams.get("sortField") || "memberCount",
+    sortOrder: initialFilters?.sortOrder || searchParams.get("sortOrder") || "desc",
   });
 
   const activeFilterCount = React.useMemo(() => {
@@ -85,6 +85,16 @@ export function TeamsGrid({ initialTeams, initialPagination, initialFilters }: T
     if (filters.memberCount) count++;
     return count;
   }, [filters]);
+
+  // Debounced search effect
+  React.useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchTeams(1, pagination.limit, searchValue, filters);
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchValue]);
 
   const fetchTeams = React.useCallback(
     async (page: number, limit: number, search: string, currentFilters: Filters) => {
@@ -115,11 +125,6 @@ export function TeamsGrid({ initialTeams, initialPagination, initialFilters }: T
     },
     [router],
   );
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    fetchTeams(1, pagination.limit, searchValue, filters);
-  };
 
   const handlePageChange = (newPage: number) => {
     fetchTeams(newPage, pagination.limit, searchValue, filters);
@@ -176,20 +181,15 @@ export function TeamsGrid({ initialTeams, initialPagination, initialFilters }: T
       <div className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center gap-2">
           {/* Search */}
-          <form onSubmit={handleSearch} className="flex min-w-[200px] flex-1 items-center gap-2">
-            <div className="relative max-w-md flex-1">
-              <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-              <Input
-                placeholder="Search teams by name or code..."
-                value={searchValue}
-                onChange={(e) => setSearchValue(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            <Button type="submit" variant="secondary" disabled={isLoading}>
-              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Search"}
-            </Button>
-          </form>
+          <div className="relative min-w-[200px] max-w-md flex-1">
+            <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+            <Input
+              placeholder="Search teams by name or code..."
+              value={searchValue}
+              onChange={(e) => setSearchValue(e.target.value)}
+              className="pl-9"
+            />
+          </div>
 
           {/* Filters Popover */}
           <Popover>
@@ -278,10 +278,7 @@ export function TeamsGrid({ initialTeams, initialPagination, initialFilters }: T
               <Badge variant="secondary" className="gap-1">
                 Search: {searchValue}
                 <button
-                  onClick={() => {
-                    setSearchValue("");
-                    fetchTeams(1, pagination.limit, "", filters);
-                  }}
+                  onClick={() => setSearchValue("")}
                   className="hover:text-foreground ml-1"
                 >
                   <X className="h-3 w-3" />
