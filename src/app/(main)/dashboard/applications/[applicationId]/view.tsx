@@ -4,15 +4,47 @@ import * as React from "react";
 
 import { useRouter } from "next/navigation";
 
-import { CheckCircle2, Hourglass, XCircle } from "lucide-react";
+import {
+  CheckCircle2,
+  Hourglass,
+  XCircle,
+  Check,
+  ChevronsUpDown,
+  X,
+} from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { TravelReimbursementDialog, type TravelReimbursementData } from "@/components/ui/travel-reimbursement-dialog";
+import {
+  TravelReimbursementDialog,
+  type TravelReimbursementData,
+} from "@/components/ui/travel-reimbursement-dialog";
 import { NoTravelConfirmationDialog } from "@/components/ui/no-travel-confirmation-dialog";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { toast } from "sonner";
+import { getAllSkillTags, getSkillTagsByCategory } from "@/lib/skill-tags";
 
 /**
  * Helper function to format array values for display
@@ -74,7 +106,9 @@ function formatArrayValue(value: string | string[] | undefined | null): string {
   }
 
   // Filter out empty values and join with " | "
-  const filtered = arrayValue.filter((item) => item && item !== "none" && item !== "None");
+  const filtered = arrayValue.filter(
+    (item) => item && item !== "none" && item !== "None"
+  );
   return filtered.length > 0 ? filtered.join(" | ") : "—";
 }
 
@@ -126,6 +160,8 @@ export type ApplicationDetails = {
   isTravelReimbursementApproved?: boolean;
   travelReimbursementAmount?: number;
   travelReimbursementCurrency?: string;
+  comments?: string;
+  skillTags?: string[];
 };
 
 export default function ApplicationView({
@@ -137,13 +173,38 @@ export default function ApplicationView({
 }) {
   const router = useRouter();
 
-  const [application, setApplication] = React.useState<ApplicationDetails>(initial);
-  const [adminEmail, setAdminEmail] = React.useState<string | null>(initialAdminEmail);
+  const [application, setApplication] =
+    React.useState<ApplicationDetails>(initial);
+  const [adminEmail, setAdminEmail] = React.useState<string | null>(
+    initialAdminEmail
+  );
   const [error, setError] = React.useState<string | null>(null);
-  const [isSaving, setIsSaving] = React.useState<null | "admit" | "waitlist" | "reject" | "checkin">(null);
-  const [travelReimbursementDialogOpen, setTravelReimbursementDialogOpen] = React.useState(false);
-  const [noTravelConfirmationOpen, setNoTravelConfirmationOpen] = React.useState(false);
-  const [pendingAction, setPendingAction] = React.useState<"admit" | "waitlist" | "reject" | null>(null);
+  const [isSaving, setIsSaving] = React.useState<
+    null | "admit" | "waitlist" | "reject" | "checkin"
+  >(null);
+  const [travelReimbursementDialogOpen, setTravelReimbursementDialogOpen] =
+    React.useState(false);
+  const [noTravelConfirmationOpen, setNoTravelConfirmationOpen] =
+    React.useState(false);
+  const [pendingAction, setPendingAction] = React.useState<
+    "admit" | "waitlist" | "reject" | null
+  >(null);
+
+  // Comments and Skill Tags state
+  const [comments, setComments] = React.useState<string>(
+    application.comments || ""
+  );
+  const [skillTags, setSkillTags] = React.useState<string[]>(
+    application.skillTags || []
+  );
+  const [isSavingMetadata, setIsSavingMetadata] = React.useState(false);
+  const [skillTagsOpen, setSkillTagsOpen] = React.useState(false);
+
+  // Update local state when application prop changes
+  React.useEffect(() => {
+    setComments(application.comments || "");
+    setSkillTags(application.skillTags || []);
+  }, [application.comments, application.skillTags]);
 
   React.useEffect(() => {
     let active = true;
@@ -165,7 +226,7 @@ export default function ApplicationView({
 
   async function updateStatus(
     action: "admit" | "waitlist" | "reject",
-    travelReimbursementData?: TravelReimbursementData,
+    travelReimbursementData?: TravelReimbursementData
   ) {
     try {
       setIsSaving(action);
@@ -262,13 +323,60 @@ export default function ApplicationView({
     }
   }
 
+  async function saveMetadata() {
+    try {
+      setIsSavingMetadata(true);
+      setError(null);
+
+      const res = await fetch(`/api/application/${application._id}/metadata`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          comments: comments || null,
+          skillTags: skillTags.length > 0 ? skillTags : null,
+        }),
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || `Failed to save metadata with ${res.status}`);
+      }
+
+      const json = await res.json();
+      setApplication((prev) => ({
+        ...prev,
+        comments: json?.data?.comments,
+        skillTags: json?.data?.skillTags,
+      }));
+
+      toast.success("Comments and skill tags saved successfully");
+    } catch (e: any) {
+      setError(e?.message ?? "Failed to save metadata");
+      toast.error(e?.message ?? "Failed to save metadata");
+    } finally {
+      setIsSavingMetadata(false);
+    }
+  }
+
+  function toggleSkillTag(tag: string) {
+    setSkillTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    );
+  }
+
+  function removeSkillTag(tag: string) {
+    setSkillTags((prev) => prev.filter((t) => t !== tag));
+  }
+
   return (
     <div className="grid grid-cols-1 gap-4 md:gap-6">
       <div className="mt-2">
         <div className="flex flex-col gap-3">
           <CardHeader>
             <CardTitle>Applicant Details</CardTitle>
-            <CardDescription>Review application and take action.</CardDescription>
+            <CardDescription>
+              Review application and take action.
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {error ? (
@@ -280,7 +388,9 @@ export default function ApplicationView({
                     <div className="text-lg font-semibold">
                       {application.firstName} {application.lastName}
                     </div>
-                    <div className="text-muted-foreground text-sm">{application.email}</div>
+                    <div className="text-muted-foreground text-sm">
+                      {application.email}
+                    </div>
                   </div>
                   <StatusBadge status={application.status} />
                 </div>
@@ -290,26 +400,38 @@ export default function ApplicationView({
                 <div className="space-y-6">
                   {/* Personal Information */}
                   <div>
-                    <h3 className="mb-3 text-sm font-semibold">Personal Information</h3>
+                    <h3 className="mb-3 text-sm font-semibold">
+                      Personal Information
+                    </h3>
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">18 or Above</div>
+                        <div className="text-muted-foreground text-xs">
+                          18 or Above
+                        </div>
                         <div>{application.isEighteenOrAbove || "—"}</div>
                       </div>
                       <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">Phone Number</div>
+                        <div className="text-muted-foreground text-xs">
+                          Phone Number
+                        </div>
                         <div>{application.phoneNumber || "—"}</div>
                       </div>
                       <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">Gender</div>
+                        <div className="text-muted-foreground text-xs">
+                          Gender
+                        </div>
                         <div>{application.gender || "—"}</div>
                       </div>
                       <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">Pronouns</div>
+                        <div className="text-muted-foreground text-xs">
+                          Pronouns
+                        </div>
                         <div>{application.pronouns || "—"}</div>
                       </div>
                       <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">Underrepresented</div>
+                        <div className="text-muted-foreground text-xs">
+                          Underrepresented
+                        </div>
                         <div>{application.underrepresented || "—"}</div>
                       </div>
                     </div>
@@ -322,43 +444,63 @@ export default function ApplicationView({
                     <h3 className="mb-3 text-sm font-semibold">Education</h3>
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">School</div>
+                        <div className="text-muted-foreground text-xs">
+                          School
+                        </div>
                         <div>{application.school || "—"}</div>
                       </div>
                       <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">School (Other)</div>
+                        <div className="text-muted-foreground text-xs">
+                          School (Other)
+                        </div>
                         <div>{application.schoolOther || "—"}</div>
                       </div>
                       <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">Faculty</div>
+                        <div className="text-muted-foreground text-xs">
+                          Faculty
+                        </div>
                         <div>{application.faculty || "—"}</div>
                       </div>
                       <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">Faculty (Other)</div>
+                        <div className="text-muted-foreground text-xs">
+                          Faculty (Other)
+                        </div>
                         <div>{application.facultyOther || "—"}</div>
                       </div>
                       <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">Level of Study</div>
+                        <div className="text-muted-foreground text-xs">
+                          Level of Study
+                        </div>
                         <div>{application.levelOfStudy || "—"}</div>
                       </div>
                       <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">Level of Study (Other)</div>
+                        <div className="text-muted-foreground text-xs">
+                          Level of Study (Other)
+                        </div>
                         <div>{application.levelOfStudyOther || "—"}</div>
                       </div>
                       <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">Program</div>
+                        <div className="text-muted-foreground text-xs">
+                          Program
+                        </div>
                         <div>{application.program || "—"}</div>
                       </div>
                       <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">Program (Other)</div>
+                        <div className="text-muted-foreground text-xs">
+                          Program (Other)
+                        </div>
                         <div>{application.programOther || "—"}</div>
                       </div>
                       <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">Graduation Semester</div>
+                        <div className="text-muted-foreground text-xs">
+                          Graduation Semester
+                        </div>
                         <div>{application.graduationSemester || "—"}</div>
                       </div>
                       <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">Graduation Year</div>
+                        <div className="text-muted-foreground text-xs">
+                          Graduation Year
+                        </div>
                         <div>{application.graduationYear || "—"}</div>
                       </div>
                     </div>
@@ -368,15 +510,25 @@ export default function ApplicationView({
 
                   {/* Project Experience */}
                   <div>
-                    <h3 className="mb-3 text-sm font-semibold">Project Experience</h3>
+                    <h3 className="mb-3 text-sm font-semibold">
+                      Project Experience
+                    </h3>
                     <div className="space-y-4">
                       <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">Cool Project</div>
-                        <div className="whitespace-pre-wrap">{application.coolProject || "—"}</div>
+                        <div className="text-muted-foreground text-xs">
+                          Cool Project
+                        </div>
+                        <div className="whitespace-pre-wrap">
+                          {application.coolProject || "—"}
+                        </div>
                       </div>
                       <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">What are you excited about?</div>
-                        <div className="whitespace-pre-wrap">{application.excitedAbout || "—"}</div>
+                        <div className="text-muted-foreground text-xs">
+                          What are you excited about?
+                        </div>
+                        <div className="whitespace-pre-wrap">
+                          {application.excitedAbout || "—"}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -385,38 +537,62 @@ export default function ApplicationView({
 
                   {/* Career Interests */}
                   <div>
-                    <h3 className="mb-3 text-sm font-semibold">Career Interests</h3>
+                    <h3 className="mb-3 text-sm font-semibold">
+                      Career Interests
+                    </h3>
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">Job Roles Looking For</div>
-                        <div>{formatArrayValue(application.jobRolesLookingFor)}</div>
+                        <div className="text-muted-foreground text-xs">
+                          Job Roles Looking For
+                        </div>
+                        <div>
+                          {formatArrayValue(application.jobRolesLookingFor)}
+                        </div>
                       </div>
                       <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">Work Regions</div>
+                        <div className="text-muted-foreground text-xs">
+                          Work Regions
+                        </div>
                         <div>{formatArrayValue(application.workRegions)}</div>
                       </div>
                       <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">Work Regions (Other)</div>
+                        <div className="text-muted-foreground text-xs">
+                          Work Regions (Other)
+                        </div>
                         <div>{application.workRegionsOther || "—"}</div>
                       </div>
                       <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">Job Types Interested</div>
-                        <div>{formatArrayValue(application.jobTypesInterested)}</div>
+                        <div className="text-muted-foreground text-xs">
+                          Job Types Interested
+                        </div>
+                        <div>
+                          {formatArrayValue(application.jobTypesInterested)}
+                        </div>
                       </div>
                       <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">Job Types (Other)</div>
+                        <div className="text-muted-foreground text-xs">
+                          Job Types (Other)
+                        </div>
                         <div>{application.jobTypesInterestedOther || "—"}</div>
                       </div>
                       <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">Registered for Co-op</div>
-                        <div>{application.isRegisteredForCoop ? "Yes" : "No"}</div>
+                        <div className="text-muted-foreground text-xs">
+                          Registered for Co-op
+                        </div>
+                        <div>
+                          {application.isRegisteredForCoop ? "Yes" : "No"}
+                        </div>
                       </div>
                       <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">Next Co-op Term</div>
+                        <div className="text-muted-foreground text-xs">
+                          Next Co-op Term
+                        </div>
                         <div>{application.nextCoopTerm || "—"}</div>
                       </div>
                       <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">Next Co-op Term (Other)</div>
+                        <div className="text-muted-foreground text-xs">
+                          Next Co-op Term (Other)
+                        </div>
                         <div>{application.nextCoopTermOther || "—"}</div>
                       </div>
                     </div>
@@ -429,32 +605,50 @@ export default function ApplicationView({
                     <h3 className="mb-3 text-sm font-semibold">Preferences</h3>
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">Preferred Language</div>
+                        <div className="text-muted-foreground text-xs">
+                          Preferred Language
+                        </div>
                         <div>{application.preferredLanguage || "—"}</div>
                       </div>
                       <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">Working Languages</div>
-                        <div>{formatArrayValue(application.workingLanguages)}</div>
+                        <div className="text-muted-foreground text-xs">
+                          Working Languages
+                        </div>
+                        <div>
+                          {formatArrayValue(application.workingLanguages)}
+                        </div>
                       </div>
                       <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">Working Languages (Other)</div>
+                        <div className="text-muted-foreground text-xs">
+                          Working Languages (Other)
+                        </div>
                         <div>{application.workingLanguagesOther || "—"}</div>
                       </div>
                       <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">Travel Reimbursement</div>
-                        <div>{application.travelReimbursement ? "Yes" : "No"}</div>
+                        <div className="text-muted-foreground text-xs">
+                          Travel Reimbursement
+                        </div>
+                        <div>
+                          {application.travelReimbursement ? "Yes" : "No"}
+                        </div>
                       </div>
-                      {application.isTravelReimbursementApproved !== undefined && (
+                      {application.isTravelReimbursementApproved !==
+                        undefined && (
                         <div className="space-y-1 md:col-span-2">
-                          <div className="text-muted-foreground text-xs">Travel Reimbursement Status</div>
+                          <div className="text-muted-foreground text-xs">
+                            Travel Reimbursement Status
+                          </div>
                           <div>
                             {application.isTravelReimbursementApproved ? (
                               <span className="font-semibold text-green-600">
-                                Approved: {application.travelReimbursementAmount}{" "}
+                                Approved:{" "}
+                                {application.travelReimbursementAmount}{" "}
                                 {application.travelReimbursementCurrency}
                               </span>
                             ) : (
-                              <span className="text-muted-foreground">Not Approved</span>
+                              <span className="text-muted-foreground">
+                                Not Approved
+                              </span>
                             )}
                           </div>
                         </div>
@@ -469,25 +663,39 @@ export default function ApplicationView({
                     <h3 className="mb-3 text-sm font-semibold">Logistics</h3>
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">Country</div>
+                        <div className="text-muted-foreground text-xs">
+                          Country
+                        </div>
                         <div>{application.country || "—"}</div>
                       </div>
                       <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">City</div>
+                        <div className="text-muted-foreground text-xs">
+                          City
+                        </div>
                         <div>{application.city || "—"}</div>
                       </div>
                       <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">Shirt Size</div>
+                        <div className="text-muted-foreground text-xs">
+                          Shirt Size
+                        </div>
                         <div>{application.shirtSize || "—"}</div>
                       </div>
                       <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">Dietary Restrictions</div>
-                        <div>{formatArrayValue(application.dietaryRestrictions)}</div>
+                        <div className="text-muted-foreground text-xs">
+                          Dietary Restrictions
+                        </div>
+                        <div>
+                          {formatArrayValue(application.dietaryRestrictions)}
+                        </div>
                       </div>
                       {application.dietaryRestrictionsDescription && (
                         <div className="space-y-1 md:col-span-2">
-                          <div className="text-muted-foreground text-xs">Dietary Restrictions Description</div>
-                          <div>{application.dietaryRestrictionsDescription}</div>
+                          <div className="text-muted-foreground text-xs">
+                            Dietary Restrictions Description
+                          </div>
+                          <div>
+                            {application.dietaryRestrictionsDescription}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -497,10 +705,14 @@ export default function ApplicationView({
 
                   {/* Links */}
                   <div>
-                    <h3 className="mb-3 text-sm font-semibold">Links & Documents</h3>
+                    <h3 className="mb-3 text-sm font-semibold">
+                      Links & Documents
+                    </h3>
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">GitHub</div>
+                        <div className="text-muted-foreground text-xs">
+                          GitHub
+                        </div>
                         <div>
                           {application.github ? (
                             <a
@@ -517,7 +729,9 @@ export default function ApplicationView({
                         </div>
                       </div>
                       <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">LinkedIn</div>
+                        <div className="text-muted-foreground text-xs">
+                          LinkedIn
+                        </div>
                         <div>
                           {application.linkedin ? (
                             <a
@@ -534,7 +748,9 @@ export default function ApplicationView({
                         </div>
                       </div>
                       <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">Resume</div>
+                        <div className="text-muted-foreground text-xs">
+                          Resume
+                        </div>
                         <div>
                           {application.hasResume ? (
                             <a
@@ -556,16 +772,137 @@ export default function ApplicationView({
 
                 <Separator />
 
+                {/* Comments Section */}
+                <div>
+                  <h3 className="mb-3 text-sm font-semibold">Admin Comments</h3>
+                  <div className="space-y-3">
+                    <Textarea
+                      placeholder="Add comments about this application..."
+                      value={comments}
+                      onChange={(e) => setComments(e.target.value)}
+                      className="min-h-24"
+                    />
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Skill Tags Section */}
+                <div>
+                  <h3 className="mb-3 text-sm font-semibold">Skill Tags</h3>
+                  <div className="space-y-3">
+                    <Popover
+                      open={skillTagsOpen}
+                      onOpenChange={setSkillTagsOpen}
+                    >
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={skillTagsOpen}
+                          className="w-full justify-between font-normal"
+                        >
+                          <span className="text-sm">
+                            {skillTags.length > 0
+                              ? `${skillTags.length} tag${
+                                  skillTags.length !== 1 ? "s" : ""
+                                } selected`
+                              : "Select skill tags..."}
+                          </span>
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[400px] p-0" align="start">
+                        <Command>
+                          <CommandInput
+                            placeholder="Search skill tags..."
+                            className="h-9"
+                          />
+                          <CommandList className="max-h-[300px]">
+                            <CommandEmpty>No skill tag found.</CommandEmpty>
+                            {Object.entries(getSkillTagsByCategory()).map(
+                              ([category, tags]) => (
+                                <CommandGroup key={category} heading={category}>
+                                  {tags.map((tag) => (
+                                    <CommandItem
+                                      key={tag}
+                                      value={tag}
+                                      onSelect={() => {
+                                        toggleSkillTag(tag);
+                                      }}
+                                      className="text-sm"
+                                    >
+                                      <Check
+                                        className={
+                                          skillTags.includes(tag)
+                                            ? "mr-2 h-4 w-4 opacity-100"
+                                            : "mr-2 h-4 w-4 opacity-0"
+                                        }
+                                      />
+                                      {tag}
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              )
+                            )}
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+
+                    {/* Selected Tags Display */}
+                    {skillTags.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {skillTags.map((tag) => (
+                          <Badge
+                            key={tag}
+                            variant="secondary"
+                            className="gap-1 pr-1.5 text-xs"
+                          >
+                            <span>{tag}</span>
+                            <button
+                              type="button"
+                              onClick={() => removeSkillTag(tag)}
+                              className="ml-0.5 rounded-sm hover:bg-muted-foreground/20 transition-colors"
+                              aria-label={`Remove ${tag}`}
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    onClick={saveMetadata}
+                    disabled={isSavingMetadata}
+                    variant="default"
+                    className="flex-1"
+                  >
+                    {isSavingMetadata ? "Saving..." : "Save Comments & Tags"}
+                  </Button>
+                </div>
+
+                <Separator />
+
                 {(() => {
                   const status = application.status;
                   const isSubmitted = status === "Submitted";
                   const isConfirmed = status === "Confirmed";
-                  const isCheckedIn = status === "CheckedIn" || status === "Checked-in";
+                  const isCheckedIn =
+                    status === "CheckedIn" || status === "Checked-in";
 
                   if (isSubmitted) {
                     return (
                       <div className="flex flex-wrap items-center gap-2">
-                        <Button onClick={handleAdmitClick} disabled={isSaving !== null} variant="default">
+                        <Button
+                          onClick={handleAdmitClick}
+                          disabled={isSaving !== null}
+                          variant="default"
+                        >
                           <CheckCircle2 className="mr-2" /> Admit
                         </Button>
                         <Button
@@ -589,7 +926,11 @@ export default function ApplicationView({
                   if (isConfirmed) {
                     return (
                       <div className="flex flex-wrap items-center gap-2">
-                        <Button onClick={checkIn} disabled={isSaving !== null} variant="default">
+                        <Button
+                          onClick={checkIn}
+                          disabled={isSaving !== null}
+                          variant="default"
+                        >
                           <CheckCircle2 className="mr-2" /> Check In
                         </Button>
                       </div>

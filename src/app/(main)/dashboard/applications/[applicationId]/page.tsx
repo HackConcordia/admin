@@ -58,6 +58,11 @@ export default async function Page({ params }: { params: Promise<{ applicationId
     processedBy: app.processedBy,
     processedAt: app.processedAt?.toISOString?.() ?? undefined,
     hasResume: Boolean(app?.resume?.id),
+    isTravelReimbursementApproved: app.isTravelReimbursementApproved,
+    travelReimbursementAmount: app.travelReimbursementAmount,
+    travelReimbursementCurrency: app.travelReimbursementCurrency,
+    comments: app.comments,
+    skillTags: app.skillTags,
   };
 
   return <ApplicationView application={application} adminEmail={null} />;

@@ -70,4 +70,6 @@ export interface IApplication {
   isTravelReimbursementApproved?: boolean;
   travelReimbursementAmount?: number;
   travelReimbursementCurrency?: string;
+  comments?: string;
+  skillTags?: string[];
 }
