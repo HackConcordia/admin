@@ -66,7 +66,7 @@ const EDITABLE_FIELDS = [
   "lastName",
   "isEighteenOrAbove",
   "phoneNumber",
-  "email",
+  // "email" is intentionally excluded - email should not be editable
   "country",
   "city",
   "school",
@@ -192,22 +192,8 @@ export const PUT = async (
       return sendErrorResponse("Application not found", null, 404);
     }
 
-    // If email is being changed, check for uniqueness
-    if (body.email && body.email !== existingApplication.email) {
-      const emailExists = await Application.findOne({
-        email: body.email,
-        _id: { $ne: applicationId },
-      });
-      if (emailExists) {
-        return sendErrorResponse(
-          "Email already in use by another application",
-          null,
-          400
-        );
-      }
-    }
-
     // Build update object with only editable fields
+    // Note: email is intentionally not editable to maintain data integrity
     const updateFields: Record<string, any> = {};
     for (const field of EDITABLE_FIELDS) {
       if (body[field] !== undefined) {
@@ -313,7 +299,7 @@ export const PUT = async (
     // Handle duplicate key error (MongoDB error code 11000)
     if (error.code === 11000) {
       return sendErrorResponse(
-        "Email already in use by another application",
+        "A unique field constraint was violated",
         null,
         400
       );

@@ -103,7 +103,7 @@ const APPLICATION_STATUSES = statuses.map((s) => ({
 }));
 
 // Critical fields that require confirmation before saving
-const CRITICAL_FIELDS = ["email", "status", "firstName", "lastName"];
+const CRITICAL_FIELDS = ["status", "firstName", "lastName"];
 
 /**
  * Helper function to format array values for display
@@ -1063,11 +1063,13 @@ export default function ApplicationView({
 
                 {isEditMode && (
                   <div className="space-y-2">
-                    <Label className="text-xs">Email *</Label>
+                    <Label className="text-xs">Email (read-only)</Label>
                     <Input
                       type="email"
                       value={editedApplication.email}
-                      onChange={(e) => updateField("email", e.target.value)}
+                      readOnly
+                      disabled
+                      className="bg-muted cursor-not-allowed"
                     />
                   </div>
                 )}
