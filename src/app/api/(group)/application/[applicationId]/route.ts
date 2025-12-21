@@ -170,12 +170,12 @@ export const PUT = async (
 
     // Validate required fields
     for (const field of REQUIRED_FIELDS) {
-      if (body[field] === undefined || body[field] === null || body[field] === "") {
-        return sendErrorResponse(
-          `Missing required field: ${field}`,
-          null,
-          400
-        );
+      if (
+        body[field] === undefined ||
+        body[field] === null ||
+        body[field] === ""
+      ) {
+        return sendErrorResponse(`Missing required field: ${field}`, null, 400);
       }
     }
 
@@ -198,13 +198,17 @@ export const PUT = async (
     for (const field of EDITABLE_FIELDS) {
       if (body[field] !== undefined) {
         let value = body[field];
-        
+
         // Special handling for JSON string fields (stored as JSON string in a String field)
         // e.g., workingLanguages: '["english","french"]'
         if (JSON_STRING_FIELDS.includes(field)) {
           if (Array.isArray(value)) {
             // If it's ['["value1","value2"]'] format, extract the JSON string
-            if (value.length === 1 && typeof value[0] === "string" && value[0].startsWith("[")) {
+            if (
+              value.length === 1 &&
+              typeof value[0] === "string" &&
+              value[0].startsWith("[")
+            ) {
               value = value[0]; // Store the JSON string directly
             } else if (value.length === 0) {
               value = "[]";
@@ -213,7 +217,10 @@ export const PUT = async (
               value = JSON.stringify(value);
             }
           } else if (typeof value !== "string") {
-            value = value === null || value === undefined ? "[]" : JSON.stringify([value]);
+            value =
+              value === null || value === undefined
+                ? "[]"
+                : JSON.stringify([value]);
           }
           // If it's already a string, keep it as-is
         }
@@ -228,10 +235,15 @@ export const PUT = async (
               const singleValue = value[0];
               if (typeof singleValue === "string") {
                 // Try to parse if it looks like JSON
-                if (singleValue.startsWith("[") || singleValue.startsWith("{")) {
+                if (
+                  singleValue.startsWith("[") ||
+                  singleValue.startsWith("{")
+                ) {
                   try {
                     const parsed = JSON.parse(singleValue);
-                    value = Array.isArray(parsed) ? parsed.join(", ") : String(parsed);
+                    value = Array.isArray(parsed)
+                      ? parsed.join(", ")
+                      : String(parsed);
                   } catch {
                     value = singleValue;
                   }
@@ -249,7 +261,7 @@ export const PUT = async (
             value = String(value);
           }
         }
-        
+
         // Normalize array fields - ensure they are arrays
         if (ARRAY_FIELDS.includes(field)) {
           if (!Array.isArray(value)) {
@@ -265,14 +277,17 @@ export const PUT = async (
                 }
               } else {
                 // Split by comma if it's a comma-separated string
-                value = value.split(",").map((s: string) => s.trim()).filter(Boolean);
+                value = value
+                  .split(",")
+                  .map((s: string) => s.trim())
+                  .filter(Boolean);
               }
             } else {
               value = [value];
             }
           }
         }
-        
+
         updateFields[field] = value;
       }
     }
@@ -295,7 +310,7 @@ export const PUT = async (
     );
   } catch (error: any) {
     console.error("Error in PUT /api/application/[applicationId]:", error);
-    
+
     // Handle duplicate key error (MongoDB error code 11000)
     if (error.code === 11000) {
       return sendErrorResponse(
@@ -304,8 +319,7 @@ export const PUT = async (
         400
       );
     }
-    
+
     return sendErrorResponse("Failed to update application", error, 500);
   }
 };
-

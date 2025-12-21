@@ -1,8 +1,132 @@
 "use client";
 
 import * as React from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useRouter } from "next/navigation";
+
+// Debounced Input component to prevent lag on text inputs
+function DebouncedInput({
+  value: initialValue,
+  onChange,
+  debounceMs = 300,
+  ...props
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  debounceMs?: number;
+} & Omit<React.InputHTMLAttributes<HTMLInputElement>, "onChange">) {
+  const [value, setValue] = useState(initialValue);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Sync with external value changes (e.g., when entering edit mode)
+  useEffect(() => {
+    setValue(initialValue);
+  }, [initialValue]);
+
+  const handleChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const newValue = e.target.value;
+      setValue(newValue);
+
+      // Clear existing timeout
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+
+      // Set new timeout to sync with parent
+      timeoutRef.current = setTimeout(() => {
+        onChange(newValue);
+      }, debounceMs);
+    },
+    [onChange, debounceMs]
+  );
+
+  // Sync immediately on blur
+  const handleBlur = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    onChange(value);
+  }, [onChange, value]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
+  return (
+    <Input
+      {...props}
+      value={value}
+      onChange={handleChange}
+      onBlur={handleBlur}
+    />
+  );
+}
+
+// Debounced Textarea component
+function DebouncedTextarea({
+  value: initialValue,
+  onChange,
+  debounceMs = 300,
+  ...props
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  debounceMs?: number;
+} & Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, "onChange">) {
+  const [value, setValue] = useState(initialValue);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    setValue(initialValue);
+  }, [initialValue]);
+
+  const handleChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      const newValue = e.target.value;
+      setValue(newValue);
+
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+
+      timeoutRef.current = setTimeout(() => {
+        onChange(newValue);
+      }, debounceMs);
+    },
+    [onChange, debounceMs]
+  );
+
+  const handleBlur = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    onChange(value);
+  }, [onChange, value]);
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
+  return (
+    <Textarea
+      {...props}
+      value={value}
+      onChange={handleChange}
+      onBlur={handleBlur}
+    />
+  );
+}
 
 import {
   CheckCircle2,
@@ -804,9 +928,9 @@ export default function ApplicationView({
       return (
         <div className="space-y-2">
           <Label className="text-xs">{label}</Label>
-          <Textarea
+          <DebouncedTextarea
             value={textareaValue}
-            onChange={(e) => updateField(field, e.target.value as any)}
+            onChange={(v) => updateField(field, v as any)}
             className="min-h-24"
           />
         </div>
@@ -930,9 +1054,9 @@ export default function ApplicationView({
     return (
       <div className="space-y-2">
         <Label className="text-xs">{label}</Label>
-        <Input
+        <DebouncedInput
           value={textValue}
-          onChange={(e) => updateField(field, e.target.value as any)}
+          onChange={(v) => updateField(field, v as any)}
         />
       </div>
     );
@@ -996,16 +1120,16 @@ export default function ApplicationView({
                     <div className="grid grid-cols-2 gap-4 flex-1">
                       <div className="space-y-2">
                         <Label className="text-xs">First Name *</Label>
-                        <Input
+                        <DebouncedInput
                           value={editedApplication.firstName}
-                          onChange={(e) => updateField("firstName", e.target.value)}
+                          onChange={(v) => updateField("firstName", v)}
                         />
                       </div>
                       <div className="space-y-2">
                         <Label className="text-xs">Last Name *</Label>
-                        <Input
+                        <DebouncedInput
                           value={editedApplication.lastName}
-                          onChange={(e) => updateField("lastName", e.target.value)}
+                          onChange={(v) => updateField("lastName", v)}
                         />
                       </div>
                     </div>
@@ -1282,17 +1406,17 @@ export default function ApplicationView({
                         <>
                           <div className="space-y-2">
                             <Label className="text-xs">GitHub</Label>
-                            <Input
+                            <DebouncedInput
                               value={editedApplication.github || ""}
-                              onChange={(e) => updateField("github", e.target.value)}
+                              onChange={(v) => updateField("github", v)}
                               placeholder="https://github.com/username"
                             />
                           </div>
                           <div className="space-y-2">
                             <Label className="text-xs">LinkedIn</Label>
-                            <Input
+                            <DebouncedInput
                               value={editedApplication.linkedin || ""}
-                              onChange={(e) => updateField("linkedin", e.target.value)}
+                              onChange={(v) => updateField("linkedin", v)}
                               placeholder="https://linkedin.com/in/username"
                             />
                           </div>
