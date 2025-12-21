@@ -5,124 +5,73 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useRouter } from "next/navigation";
 
-// Debounced Input component to prevent lag on text inputs
+// Uncontrolled Input component - only syncs to parent on blur
+// This completely avoids re-renders during typing
 function DebouncedInput({
   value: initialValue,
   onChange,
-  debounceMs = 300,
   ...props
 }: {
   value: string;
   onChange: (value: string) => void;
-  debounceMs?: number;
-} & Omit<React.InputHTMLAttributes<HTMLInputElement>, "onChange">) {
-  const [value, setValue] = useState(initialValue);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+} & Omit<React.InputHTMLAttributes<HTMLInputElement>, "onChange" | "defaultValue">) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const initialValueRef = useRef(initialValue);
 
-  // Sync with external value changes (e.g., when entering edit mode)
+  // Update the input value when initialValue changes (e.g., entering edit mode)
   useEffect(() => {
-    setValue(initialValue);
+    if (inputRef.current && initialValue !== initialValueRef.current) {
+      inputRef.current.value = initialValue;
+      initialValueRef.current = initialValue;
+    }
   }, [initialValue]);
 
-  const handleChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const newValue = e.target.value;
-      setValue(newValue);
-
-      // Clear existing timeout
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-
-      // Set new timeout to sync with parent
-      timeoutRef.current = setTimeout(() => {
-        onChange(newValue);
-      }, debounceMs);
-    },
-    [onChange, debounceMs]
-  );
-
-  // Sync immediately on blur
   const handleBlur = useCallback(() => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
+    if (inputRef.current) {
+      onChange(inputRef.current.value);
     }
-    onChange(value);
-  }, [onChange, value]);
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, []);
+  }, [onChange]);
 
   return (
     <Input
       {...props}
-      value={value}
-      onChange={handleChange}
+      ref={inputRef}
+      defaultValue={initialValue}
       onBlur={handleBlur}
     />
   );
 }
 
-// Debounced Textarea component
+// Uncontrolled Textarea component - only syncs to parent on blur
 function DebouncedTextarea({
   value: initialValue,
   onChange,
-  debounceMs = 300,
   ...props
 }: {
   value: string;
   onChange: (value: string) => void;
-  debounceMs?: number;
-} & Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, "onChange">) {
-  const [value, setValue] = useState(initialValue);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+} & Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, "onChange" | "defaultValue">) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const initialValueRef = useRef(initialValue);
 
   useEffect(() => {
-    setValue(initialValue);
+    if (textareaRef.current && initialValue !== initialValueRef.current) {
+      textareaRef.current.value = initialValue;
+      initialValueRef.current = initialValue;
+    }
   }, [initialValue]);
 
-  const handleChange = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      const newValue = e.target.value;
-      setValue(newValue);
-
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-
-      timeoutRef.current = setTimeout(() => {
-        onChange(newValue);
-      }, debounceMs);
-    },
-    [onChange, debounceMs]
-  );
-
   const handleBlur = useCallback(() => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
+    if (textareaRef.current) {
+      onChange(textareaRef.current.value);
     }
-    onChange(value);
-  }, [onChange, value]);
-
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, []);
+  }, [onChange]);
 
   return (
     <Textarea
       {...props}
-      value={value}
-      onChange={handleChange}
+      ref={textareaRef}
+      defaultValue={initialValue}
       onBlur={handleBlur}
     />
   );
@@ -716,7 +665,7 @@ export default function ApplicationView({
   }
 
   // Fields that use JSON string in array format: ['["value1","value2"]']
-  const JSON_STRING_ARRAY_FIELDS = ["workRegions", "jobTypesInterested"];
+  const JSON_STRING_ARRAY_FIELDS = ["workRegions", "jobTypesInterested", "dietaryRestrictions"];
   
   // Fields that use JSON string format directly: '["value1","value2"]'
   const JSON_STRING_DIRECT_FIELDS = ["workingLanguages"];
