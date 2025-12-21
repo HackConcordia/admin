@@ -5,7 +5,10 @@ import { FileText, Clock, CheckCircle, UserCheck } from "lucide-react";
 interface StatusOverviewProps {
   statusCounts: {
     Submitted: number;
+    Admitted: number;
+    Refused: number;
     Waitlisted: number;
+    Declined: number;
     Confirmed: number;
     "Checked-in": number;
   };
@@ -47,13 +50,16 @@ export function StatusOverview({
   statusCounts,
   totalApplicants,
 }: StatusOverviewProps) {
-  const submittedCount = statusCounts.Submitted || 0;
-  const processedPercentage =
-    totalApplicants > 0
-      ? (((totalApplicants - submittedCount) / totalApplicants) * 100).toFixed(
-          2
-        )
-      : "0.00";
+  const totalProcessedCount =
+    (statusCounts.Admitted ?? 0) +
+    (statusCounts.Refused ?? 0) +
+    (statusCounts.Waitlisted ?? 0) +
+    (statusCounts.Declined ?? 0) +
+    (statusCounts.Confirmed ?? 0) +
+    (statusCounts["Checked-in"] ?? 0);
+
+  console.log(totalProcessedCount, totalApplicants);
+  const processedPercentage = totalProcessedCount > 0 ? ((totalProcessedCount / totalApplicants) * 100).toFixed(2) : "0.00";
 
   return (
     <div className="space-y-4">

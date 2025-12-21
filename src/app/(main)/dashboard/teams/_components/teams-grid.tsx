@@ -17,8 +17,18 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 
@@ -68,12 +78,19 @@ const MEMBER_COUNT_OPTIONS = [
   { value: "4", label: "4 members" },
 ];
 
-export function TeamsGrid({ initialTeams, initialPagination, initialFilters }: TeamsGridProps) {
+export function TeamsGrid({
+  initialTeams,
+  initialPagination,
+  initialFilters,
+}: TeamsGridProps) {
   const router = useRouter();
 
   const [teams, setTeams] = React.useState<TeamCardProps[]>(initialTeams);
-  const [pagination, setPagination] = React.useState<Pagination>(initialPagination);
-  const [searchValue, setSearchValue] = React.useState(initialFilters?.search || "");
+  const [pagination, setPagination] =
+    React.useState<Pagination>(initialPagination);
+  const [searchValue, setSearchValue] = React.useState(
+    initialFilters?.search || ""
+  );
   const [isLoading, setIsLoading] = React.useState(false);
   const [filters, setFilters] = React.useState<Filters>({
     search: initialFilters?.search || "",
@@ -107,14 +124,20 @@ export function TeamsGrid({ initialTeams, initialPagination, initialFilters }: T
   }, [searchValue]);
 
   const fetchTeams = React.useCallback(
-    async (page: number, limit: number, search: string, currentFilters: Filters) => {
+    async (
+      page: number,
+      limit: number,
+      search: string,
+      currentFilters: Filters
+    ) => {
       setIsLoading(true);
       try {
         const params = new URLSearchParams();
         params.set("page", String(page));
         params.set("limit", String(limit));
         if (search) params.set("search", search);
-        if (currentFilters.memberCount) params.set("memberCount", currentFilters.memberCount);
+        if (currentFilters.memberCount)
+          params.set("memberCount", currentFilters.memberCount);
         params.set("sortField", currentFilters.sortField);
         params.set("sortOrder", currentFilters.sortOrder);
 
@@ -133,7 +156,7 @@ export function TeamsGrid({ initialTeams, initialPagination, initialFilters }: T
         setIsLoading(false);
       }
     },
-    [router],
+    [router]
   );
 
   const handlePageChange = (newPage: number) => {
@@ -151,7 +174,10 @@ export function TeamsGrid({ initialTeams, initialPagination, initialFilters }: T
   };
 
   const handleSortChange = (field: string) => {
-    const newOrder = filters.sortField === field && filters.sortOrder === "asc" ? "desc" : "asc";
+    const newOrder =
+      filters.sortField === field && filters.sortOrder === "asc"
+        ? "desc"
+        : "asc";
     const newFilters = { ...filters, sortField: field, sortOrder: newOrder };
     setFilters(newFilters);
     fetchTeams(1, pagination.limit, searchValue, newFilters);
@@ -194,7 +220,7 @@ export function TeamsGrid({ initialTeams, initialPagination, initialFilters }: T
           <div className="relative w-full flex-1">
             <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
             <Input
-              placeholder="Search teams by name or code..."
+              placeholder="Search by team name, code, or member name/email..."
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
               className="pl-9"
@@ -208,7 +234,10 @@ export function TeamsGrid({ initialTeams, initialPagination, initialFilters }: T
                 <SlidersHorizontal className="h-4 w-4" />
                 Filters
                 {activeFilterCount > 0 && (
-                  <Badge variant="secondary" className="ml-1 h-5 w-5 rounded-full p-0 text-xs">
+                  <Badge
+                    variant="secondary"
+                    className="ml-1 h-5 w-5 rounded-full p-0 text-xs"
+                  >
                     {activeFilterCount}
                   </Badge>
                 )}
@@ -218,19 +247,29 @@ export function TeamsGrid({ initialTeams, initialPagination, initialFilters }: T
               <div className="grid gap-4">
                 <div className="space-y-2">
                   <h4 className="leading-none font-medium">Filters</h4>
-                  <p className="text-muted-foreground text-sm">Narrow down your team search</p>
+                  <p className="text-muted-foreground text-sm">
+                    Narrow down your team search
+                  </p>
                 </div>
                 <Separator />
                 <div className="grid gap-3">
                   <div className="grid gap-1.5">
                     <Label htmlFor="member-count-filter">Member Count</Label>
-                    <Select value={filters.memberCount} onValueChange={(v) => handleFilterChange("memberCount", v)}>
+                    <Select
+                      value={filters.memberCount}
+                      onValueChange={(v) =>
+                        handleFilterChange("memberCount", v)
+                      }
+                    >
                       <SelectTrigger id="member-count-filter">
                         <SelectValue placeholder="Select member count" />
                       </SelectTrigger>
                       <SelectContent>
                         {MEMBER_COUNT_OPTIONS.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value || "all"}>
+                          <SelectItem
+                            key={opt.value}
+                            value={opt.value || "all"}
+                          >
                             {opt.label}
                           </SelectItem>
                         ))}
@@ -264,14 +303,18 @@ export function TeamsGrid({ initialTeams, initialPagination, initialFilters }: T
                 {SORT_OPTIONS.map((opt) => (
                   <Button
                     key={opt.value}
-                    variant={filters.sortField === opt.value ? "secondary" : "ghost"}
+                    variant={
+                      filters.sortField === opt.value ? "secondary" : "ghost"
+                    }
                     size="sm"
                     className="justify-between"
                     onClick={() => handleSortChange(opt.value)}
                   >
                     {opt.label}
                     {filters.sortField === opt.value && (
-                      <span className="text-muted-foreground text-xs">{filters.sortOrder === "asc" ? "↑" : "↓"}</span>
+                      <span className="text-muted-foreground text-xs">
+                        {filters.sortOrder === "asc" ? "↑" : "↓"}
+                      </span>
                     )}
                   </Button>
                 ))}
@@ -325,7 +368,9 @@ export function TeamsGrid({ initialTeams, initialPagination, initialFilters }: T
         {/* Active Filters Display */}
         {(activeFilterCount > 0 || searchValue) && (
           <div className="flex flex-wrap items-center gap-2 mt-4">
-            <span className="text-muted-foreground text-sm">Active filters:</span>
+            <span className="text-muted-foreground text-sm">
+              Active filters:
+            </span>
             {searchValue && (
               <Badge variant="secondary" className="gap-1">
                 Search: {searchValue}
@@ -339,8 +384,16 @@ export function TeamsGrid({ initialTeams, initialPagination, initialFilters }: T
             )}
             {filters.memberCount && (
               <Badge variant="secondary" className="gap-1">
-                Members: {MEMBER_COUNT_OPTIONS.find((o) => o.value === filters.memberCount)?.label}
-                <button onClick={() => clearFilter("memberCount")} className="hover:text-foreground ml-1">
+                Members:{" "}
+                {
+                  MEMBER_COUNT_OPTIONS.find(
+                    (o) => o.value === filters.memberCount
+                  )?.label
+                }
+                <button
+                  onClick={() => clearFilter("memberCount")}
+                  className="hover:text-foreground ml-1"
+                >
                   <X className="h-3 w-3" />
                 </button>
               </Badge>
@@ -350,7 +403,8 @@ export function TeamsGrid({ initialTeams, initialPagination, initialFilters }: T
       </div>
 
       <div className="text-muted-foreground text-sm mb-6">
-        Showing page {pagination.page} of {pagination.totalPages} ({pagination.totalTeams} teams)
+        Showing page {pagination.page} of {pagination.totalPages} (
+        {pagination.totalTeams} teams)
       </div>
 
       {/* Teams Grid */}
@@ -360,14 +414,21 @@ export function TeamsGrid({ initialTeams, initialPagination, initialFilters }: T
         </div>
       ) : teams.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
-          <p className="text-muted-foreground text-lg font-medium">No teams found</p>
+          <p className="text-muted-foreground text-lg font-medium">
+            No teams found
+          </p>
           <p className="text-muted-foreground text-sm">
             {searchValue || activeFilterCount > 0
               ? "Try adjusting your filters or search term"
               : "No teams have been created yet"}
           </p>
           {(searchValue || activeFilterCount > 0) && (
-            <Button variant="outline" size="sm" className="mt-4" onClick={clearAllFilters}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-4"
+              onClick={clearAllFilters}
+            >
               Clear all filters
             </Button>
           )}
@@ -378,7 +439,14 @@ export function TeamsGrid({ initialTeams, initialPagination, initialFilters }: T
             <TeamCard
               key={team._id}
               {...team}
-              onMemberAdded={() => fetchTeams(pagination.page, pagination.limit, searchValue, filters)}
+              onMemberAdded={() =>
+                fetchTeams(
+                  pagination.page,
+                  pagination.limit,
+                  searchValue,
+                  filters
+                )
+              }
             />
           ))}
         </div>

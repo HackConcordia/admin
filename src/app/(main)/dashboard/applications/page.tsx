@@ -133,7 +133,7 @@ async function getPaginatedApplications(
   const skip = (page - 1) * limit;
 
   const apps = await Application.find(query, "email firstName lastName status createdAt processedBy")
-    .sort({ createdAt: -1 })
+    .sort({ createdAt: 1 })
     .skip(skip)
     .limit(limit)
     .lean()
@@ -186,7 +186,7 @@ async function getPaginatedAssignedApplications(
   const skip = (page - 1) * limit;
 
   const apps = await Application.find(query, "email firstName lastName status createdAt processedBy")
-    .sort({ createdAt: -1 })
+    .sort({ createdAt: 1 })
     .skip(skip)
     .limit(limit)
     .lean()
