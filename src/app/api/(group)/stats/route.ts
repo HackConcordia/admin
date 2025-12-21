@@ -54,7 +54,7 @@ export const GET = async () => {
 
     // unassigned applications count
     const unassignedApplications = applications.filter(
-      (a) => a.processedBy === "Not processed"
+      (a) => (a.processedBy === "Not processed" && a.status === "Submitted")
     ).length;
 
     // Group by status
