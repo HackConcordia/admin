@@ -284,8 +284,7 @@ export function CreateTeamDialog({ onTeamCreated }: CreateTeamDialogProps) {
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Create New Team
+          <Plus className="mr-2 h-4 w-4" />New Team
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
