@@ -372,8 +372,7 @@ export default function ApplicationView({
 
   return (
     <div className="grid grid-cols-1 gap-4 md:gap-6">
-      <div className="mt-2">
-        <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3">
           <div>
             <h2>Applicant Details</h2>
             <p className="text-xs text-muted-foreground">
@@ -953,7 +952,6 @@ export default function ApplicationView({
             )}
           </div>
         </div>
-      </div>
 
       <TravelReimbursementDialog
         open={travelReimbursementDialogOpen}
