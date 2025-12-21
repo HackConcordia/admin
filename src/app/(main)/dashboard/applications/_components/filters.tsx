@@ -33,8 +33,8 @@ const STATUS_OPTIONS = [
 ];
 
 const TRAVEL_REIMBURSEMENT_OPTIONS = [
-  { value: "true", label: "Requires Travel Reimbursement" },
-  { value: "false", label: "No Travel Reimbursement Required" },
+  { value: "true", label: "Required" },
+  { value: "false", label: "Not Required" },
 ];
 
 export default function ApplicationsFilters({
@@ -144,10 +144,10 @@ export default function ApplicationsFilters({
             aria-label="Filter by travel reimbursement"
             className="w-[160px]"
           >
-            <SelectValue placeholder="All travel" />
+            <SelectValue placeholder="Travel reimbursement" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={ALL_VALUE}>All travel</SelectItem>
+            <SelectItem value={ALL_VALUE}>Reimbursement</SelectItem>
             {TRAVEL_REIMBURSEMENT_OPTIONS.map((opt) => (
               <SelectItem key={opt.value} value={opt.value}>
                 {opt.label}
