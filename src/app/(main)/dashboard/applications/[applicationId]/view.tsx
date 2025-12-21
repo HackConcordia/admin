@@ -11,6 +11,7 @@ import {
   Check,
   ChevronsUpDown,
   X,
+  SaveAllIcon,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +46,7 @@ import {
 } from "@/components/ui/command";
 import { toast } from "sonner";
 import { getAllSkillTags, getSkillTagsByCategory } from "@/lib/skill-tags";
+import { ApplicationStatusBadge } from "../_components/application-status-badge";
 
 /**
  * Helper function to format array values for display
@@ -216,7 +218,7 @@ export default function ApplicationView({
         const meJson = await meRes.json();
         if (!active) return;
         setAdminEmail(meJson?.data?.email ?? null);
-      } catch {}
+      } catch { }
     }
     loadAdmin();
     return () => {
@@ -372,38 +374,36 @@ export default function ApplicationView({
     <div className="grid grid-cols-1 gap-4 md:gap-6">
       <div className="mt-2">
         <div className="flex flex-col gap-3">
-          <CardHeader>
-            <CardTitle>Applicant Details</CardTitle>
-            <CardDescription>
+          <div>
+            <h2>Applicant Details</h2>
+            <p className="text-xs text-muted-foreground">
               Review application and take action.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+            </p>
+          </div>
+          <div className="space-y-4">
             {error ? (
               <div className="text-sm text-red-600">{error}</div>
             ) : (
               <>
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <div className="text-lg font-semibold">
+                <div>
+                    <h2>
                       {application.firstName} {application.lastName}
-                    </div>
-                    <div className="text-muted-foreground text-sm">
+                    </h2>
+                    <p className="text-muted-foreground text-sm mb-2">
                       {application.email}
-                    </div>
+                    </p>
+                    <ApplicationStatusBadge status={application.status} />
                   </div>
-                  <StatusBadge status={application.status} />
-                </div>
 
                 <Separator />
 
                 <div className="space-y-6">
                   {/* Personal Information */}
                   <div>
-                    <h3 className="mb-3 text-sm font-semibold">
+                    <h3 className="mb-6 text-sm font-semibold">
                       Personal Information
                     </h3>
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
                       <div className="space-y-1">
                         <div className="text-muted-foreground text-xs">
                           18 or Above
@@ -441,8 +441,8 @@ export default function ApplicationView({
 
                   {/* Education */}
                   <div>
-                    <h3 className="mb-3 text-sm font-semibold">Education</h3>
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <h3 className="mb-6 text-sm font-semibold">Education</h3>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
                       <div className="space-y-1">
                         <div className="text-muted-foreground text-xs">
                           School
@@ -508,17 +508,62 @@ export default function ApplicationView({
 
                   <Separator />
 
+                  {/* Logistics */}
+                  <div>
+                    <h3 className="mb-6 text-sm font-semibold">Logistics</h3>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">
+                          Country
+                        </div>
+                        <div>{application.country || "—"}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">
+                          City
+                        </div>
+                        <div>{application.city || "—"}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">
+                          Shirt Size
+                        </div>
+                        <div>{application.shirtSize || "—"}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-muted-foreground text-xs">
+                          Dietary Restrictions
+                        </div>
+                        <div>
+                          {formatArrayValue(application.dietaryRestrictions)}
+                        </div>
+                      </div>
+                      {application.dietaryRestrictionsDescription && (
+                        <div className="space-y-1 ">
+                          <div className="text-muted-foreground text-xs">
+                            Restrictions Description
+                          </div>
+                          <div>
+                            {application.dietaryRestrictionsDescription}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <Separator />
+
                   {/* Project Experience */}
                   <div>
-                    <h3 className="mb-3 text-sm font-semibold">
+                    <h3 className="mb-6 text-sm font-semibold">
                       Project Experience
                     </h3>
-                    <div className="space-y-4">
+                    <div className="space-y-6">
                       <div className="space-y-1">
                         <div className="text-muted-foreground text-xs">
                           Cool Project
                         </div>
-                        <div className="whitespace-pre-wrap">
+                        <div className="whitespace-pre-wrap break-words text-justify">
                           {application.coolProject || "—"}
                         </div>
                       </div>
@@ -526,7 +571,7 @@ export default function ApplicationView({
                         <div className="text-muted-foreground text-xs">
                           What are you excited about?
                         </div>
-                        <div className="whitespace-pre-wrap">
+                        <div className="whitespace-pre-wrap break-words text-justify">
                           {application.excitedAbout || "—"}
                         </div>
                       </div>
@@ -537,10 +582,10 @@ export default function ApplicationView({
 
                   {/* Career Interests */}
                   <div>
-                    <h3 className="mb-3 text-sm font-semibold">
+                    <h3 className="mb-6 text-sm font-semibold">
                       Career Interests
                     </h3>
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
                       <div className="space-y-1">
                         <div className="text-muted-foreground text-xs">
                           Job Roles Looking For
@@ -602,8 +647,8 @@ export default function ApplicationView({
 
                   {/* Preferences */}
                   <div>
-                    <h3 className="mb-3 text-sm font-semibold">Preferences</h3>
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <h3 className="mb-6 text-sm font-semibold">Preferences</h3>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
                       <div className="space-y-1">
                         <div className="text-muted-foreground text-xs">
                           Preferred Language
@@ -634,70 +679,25 @@ export default function ApplicationView({
                       </div>
                       {application.isTravelReimbursementApproved !==
                         undefined && (
-                        <div className="space-y-1 md:col-span-2">
-                          <div className="text-muted-foreground text-xs">
-                            Travel Reimbursement Status
+                          <div className="space-y-1 md:col-span-2">
+                            <div className="text-muted-foreground text-xs">
+                              Travel Reimbursement Status
+                            </div>
+                            <div>
+                              {application.isTravelReimbursementApproved ? (
+                                <span className="font-semibold text-green-600">
+                                  Approved:{" "}
+                                  {application.travelReimbursementAmount}{" "}
+                                  {application.travelReimbursementCurrency}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">
+                                  Not Approved
+                                </span>
+                              )}
+                            </div>
                           </div>
-                          <div>
-                            {application.isTravelReimbursementApproved ? (
-                              <span className="font-semibold text-green-600">
-                                Approved:{" "}
-                                {application.travelReimbursementAmount}{" "}
-                                {application.travelReimbursementCurrency}
-                              </span>
-                            ) : (
-                              <span className="text-muted-foreground">
-                                Not Approved
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  {/* Logistics */}
-                  <div>
-                    <h3 className="mb-3 text-sm font-semibold">Logistics</h3>
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">
-                          Country
-                        </div>
-                        <div>{application.country || "—"}</div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">
-                          City
-                        </div>
-                        <div>{application.city || "—"}</div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">
-                          Shirt Size
-                        </div>
-                        <div>{application.shirtSize || "—"}</div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">
-                          Dietary Restrictions
-                        </div>
-                        <div>
-                          {formatArrayValue(application.dietaryRestrictions)}
-                        </div>
-                      </div>
-                      {application.dietaryRestrictionsDescription && (
-                        <div className="space-y-1 md:col-span-2">
-                          <div className="text-muted-foreground text-xs">
-                            Dietary Restrictions Description
-                          </div>
-                          <div>
-                            {application.dietaryRestrictionsDescription}
-                          </div>
-                        </div>
-                      )}
+                        )}
                     </div>
                   </div>
 
@@ -705,10 +705,10 @@ export default function ApplicationView({
 
                   {/* Links */}
                   <div>
-                    <h3 className="mb-3 text-sm font-semibold">
+                    <h3 className="mb-6 text-sm font-semibold">
                       Links & Documents
                     </h3>
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-">
                       <div className="space-y-1">
                         <div className="text-muted-foreground text-xs">
                           GitHub
@@ -773,191 +773,186 @@ export default function ApplicationView({
                 <Separator />
 
                 {/* Comments Section */}
-                <div>
-                  <h3 className="mb-3 text-sm font-semibold">Admin Comments</h3>
-                  <div className="space-y-3">
-                    <Textarea
-                      placeholder="Add comments about this application..."
-                      value={comments}
-                      onChange={(e) => setComments(e.target.value)}
-                      className="min-h-24"
-                    />
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div>
+                    <h3 className="mb-6 text-sm font-semibold">Comments</h3>
+                    <div className="space-y-3">
+                      <Textarea
+                        placeholder="Add comments about this application..."
+                        value={comments}
+                        onChange={(e) => setComments(e.target.value)}
+                        className="min-h-60"
+                      />
+                    </div>
                   </div>
-                </div>
-
-                <Separator />
-
-                {/* Skill Tags Section */}
-                <div>
-                  <h3 className="mb-3 text-sm font-semibold">Skill Tags</h3>
-                  <div className="space-y-3">
-                    <Popover
-                      open={skillTagsOpen}
-                      onOpenChange={setSkillTagsOpen}
-                    >
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          role="combobox"
-                          aria-expanded={skillTagsOpen}
-                          className="w-full justify-between font-normal"
-                        >
-                          <span className="text-sm">
-                            {skillTags.length > 0
-                              ? `${skillTags.length} tag${
-                                  skillTags.length !== 1 ? "s" : ""
-                                } selected`
-                              : "Select skill tags..."}
-                          </span>
-                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-[400px] p-0" align="start">
-                        <Command>
-                          <CommandInput
-                            placeholder="Search skill tags..."
-                            className="h-9"
-                          />
-                          <CommandList className="max-h-[300px]">
-                            <CommandEmpty>No skill tag found.</CommandEmpty>
-                            {Object.entries(getSkillTagsByCategory()).map(
-                              ([category, tags]) => (
-                                <CommandGroup key={category} heading={category}>
-                                  {tags.map((tag) => (
-                                    <CommandItem
-                                      key={tag}
-                                      value={tag}
-                                      onSelect={() => {
-                                        toggleSkillTag(tag);
-                                      }}
-                                      className="text-sm"
-                                    >
-                                      <Check
-                                        className={
-                                          skillTags.includes(tag)
-                                            ? "mr-2 h-4 w-4 opacity-100"
-                                            : "mr-2 h-4 w-4 opacity-0"
-                                        }
-                                      />
-                                      {tag}
-                                    </CommandItem>
-                                  ))}
-                                </CommandGroup>
-                              )
-                            )}
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
-
-                    {/* Selected Tags Display */}
-                    {skillTags.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {skillTags.map((tag) => (
-                          <Badge
-                            key={tag}
-                            variant="secondary"
-                            className="gap-1 pr-1.5 text-xs"
+                  <div>
+                    <h3 className="mb-6 text-sm font-semibold">Skills</h3>
+                    <div className="space-y-3">
+                      <Popover
+                        open={skillTagsOpen}
+                        onOpenChange={setSkillTagsOpen}
+                      >
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={skillTagsOpen}
+                            className="w-full justify-between font-normal"
                           >
-                            <span>{tag}</span>
-                            <button
-                              type="button"
-                              onClick={() => removeSkillTag(tag)}
-                              className="ml-0.5 rounded-sm hover:bg-muted-foreground/20 transition-colors"
-                              aria-label={`Remove ${tag}`}
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
+                            <span className="text-sm">
+                              {skillTags.length > 0
+                                ? `${skillTags.length} tag${skillTags.length !== 1 ? "s" : ""
+                                } selected`
+                                : "Select skill tags..."}
+                            </span>
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[400px] p-0" align="start">
+                          <Command>
+                            <CommandInput
+                              placeholder="Search skill tags..."
+                              className="h-9"
+                            />
+                            <CommandList className="max-h-[300px]">
+                              <CommandEmpty>No skill tag found.</CommandEmpty>
+                              {Object.entries(getSkillTagsByCategory()).map(
+                                ([category, tags]) => (
+                                  <CommandGroup key={category} heading={category}>
+                                    {tags.map((tag) => (
+                                      <CommandItem
+                                        key={tag}
+                                        value={tag}
+                                        onSelect={() => {
+                                          toggleSkillTag(tag);
+                                        }}
+                                        className="text-sm"
+                                      >
+                                        <Check
+                                          className={
+                                            skillTags.includes(tag)
+                                              ? "mr-2 h-4 w-4 opacity-100"
+                                              : "mr-2 h-4 w-4 opacity-0"
+                                          }
+                                        />
+                                        {tag}
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                )
+                              )}
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
 
-                <div className="flex gap-2">
-                  <Button
-                    onClick={saveMetadata}
-                    disabled={isSavingMetadata}
-                    variant="default"
-                    className="flex-1"
-                  >
-                    {isSavingMetadata ? "Saving..." : "Save Comments & Tags"}
-                  </Button>
+                      {/* Selected Tags Display */}
+                      {skillTags.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {skillTags.map((tag) => (
+                            <Badge
+                              key={tag}
+                              variant="secondary"
+                              className="gap-1 pr-1.5 text-xs"
+                            >
+                              <span>{tag}</span>
+                              <button
+                                type="button"
+                                onClick={() => removeSkillTag(tag)}
+                                className="ml-0.5 rounded-sm hover:bg-muted-foreground/20 transition-colors"
+                                aria-label={`Remove ${tag}`}
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                 <Separator />
 
-                {(() => {
-                  const status = application.status;
-                  const isSubmitted = status === "Submitted";
-                  const isConfirmed = status === "Confirmed";
-                  const isCheckedIn =
-                    status === "CheckedIn" || status === "Checked-in";
+                <div className="flex justify-between items-center w-full">
+                  <Button variant="ghost" onClick={() => router.back()}>
+                    Back
+                  </Button>
 
-                  if (isSubmitted) {
-                    return (
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Button
-                          onClick={handleAdmitClick}
-                          disabled={isSaving !== null}
-                          variant="default"
-                        >
-                          <CheckCircle2 className="mr-2" /> Admit
-                        </Button>
-                        <Button
-                          onClick={handleWaitlistClick}
-                          disabled={isSaving !== null}
-                          variant="secondary"
-                        >
-                          <Hourglass className="mr-2" /> Waitlist
-                        </Button>
-                        <Button
-                          onClick={handleRejectClick}
-                          disabled={isSaving !== null}
-                          variant="destructive"
-                        >
-                          <XCircle className="mr-2" /> Reject
-                        </Button>
-                      </div>
-                    );
-                  }
+                  {(() => {
+                    const status = application.status;
+                    const isSubmitted = status === "Submitted";
+                    const isConfirmed = status === "Confirmed";
+                    const isCheckedIn =
+                      status === "CheckedIn" || status === "Checked-in";
 
-                  if (isConfirmed) {
-                    return (
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Button
-                          onClick={checkIn}
-                          disabled={isSaving !== null}
-                          variant="default"
-                        >
-                          <CheckCircle2 className="mr-2" /> Check In
-                        </Button>
-                      </div>
-                    );
-                  }
+                    if (isSubmitted) {
+                      return (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Button
+                            onClick={saveMetadata}
+                            disabled={isSavingMetadata}
+                            variant="outline"
+                            className="btn-primary"
+                          >
+                            <SaveAllIcon /> {isSavingMetadata ? "Saving..." : "Save"}
+                          </Button>
+                          <Button
+                            onClick={handleAdmitClick}
+                            disabled={isSaving !== null}
+                            variant="default"
+                          >
+                            <CheckCircle2 /> Admit
+                          </Button>
+                          <Button
+                            onClick={handleWaitlistClick}
+                            disabled={isSaving !== null}
+                            variant="secondary"
+                          >
+                            <Hourglass /> Waitlist
+                          </Button>
+                          <Button
+                            onClick={handleRejectClick}
+                            disabled={isSaving !== null}
+                            variant="destructive"
+                          >
+                            <XCircle /> Reject
+                          </Button>
+                        </div>
+                      );
+                    }
 
-                  if (isCheckedIn) {
-                    return (
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Button onClick={checkIn} disabled variant="default">
-                          <CheckCircle2 className="mr-2" /> Checked In
-                        </Button>
-                      </div>
-                    );
-                  }
+                    if (isConfirmed) {
+                      return (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Button
+                            onClick={checkIn}
+                            disabled={isSaving !== null}
+                            variant="default"
+                          >
+                            <CheckCircle2 /> Check In
+                          </Button>
+                        </div>
+                      );
+                    }
 
-                  return null;
-                })()}
+                    if (isCheckedIn) {
+                      return (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Button onClick={checkIn} disabled variant="default">
+                            <CheckCircle2 /> Checked In
+                          </Button>
+                        </div>
+                      );
+                    }
+
+                    return null;
+                  })()}
+                </div>
               </>
             )}
-          </CardContent>
+          </div>
         </div>
-      </div>
-      <div>
-        <Button variant="ghost" onClick={() => router.back()}>
-          Back
-        </Button>
       </div>
 
       <TravelReimbursementDialog

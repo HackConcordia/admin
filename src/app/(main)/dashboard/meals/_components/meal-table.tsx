@@ -124,7 +124,7 @@ export function MealTable({ initialData, initialPagination }: MealTableProps) {
       <div className="flex justify-between w-full gap-4">
         <div>
           <h2>Meals Management</h2>
-          <p className="text-xs text-gray-600 dark:text-gray-400">Track meal consumption for ConuHacks 2026</p>
+          <p className="text-xs text-muted-foreground">Track meal consumption for ConuHacks 2026</p>
         </div>
         <TooltipProvider>
           <TabsList className="grid w-full max-w-md grid-cols-2">

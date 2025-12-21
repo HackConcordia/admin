@@ -107,7 +107,7 @@ export default async function AdminsPage() {
           <h2>
             Admin Management
           </h2>
-          <p className="text-xs text-gray-600 dark:text-gray-400">
+          <p className="text-xs text-muted-foreground">
             Manage admin accounts and permissions
           </p>
         </div>

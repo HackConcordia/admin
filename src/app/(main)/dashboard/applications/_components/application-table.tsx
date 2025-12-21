@@ -363,7 +363,7 @@ export function ApplicationTable({
       <div className="flex flex-col gap-3">
         <div>
           <h2>Applications</h2>
-          <p className="text-xs text-gray-600 dark:text-gray-400">
+          <p className="text-xs text-muted-foreground">
             Manage and review submitted applications
           </p>
         </div>

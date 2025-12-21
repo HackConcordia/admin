@@ -30,6 +30,7 @@ import {
   getStatusStrokeColor,
 } from "@/utils/statusColors";
 import Link from "next/link";
+import { ApplicationStatusBadge } from "./application-status-badge";
 
 export type ApplicationTableRow = {
   _id: string;
@@ -194,23 +195,7 @@ export function getApplicationsColumns(
     {
       accessorKey: "status",
       header: "Status",
-      cell: ({ row }) => {
-        const strokeColor = getStatusStrokeColor(row.original.status);
-        const fillColor = getStatusFillColor(row.original.status);
-
-        return (
-          <Badge
-            variant="outline"
-            className="flex items-center gap-1 px-1.5 text-xs text-muted-foreground"
-          >
-            <CircleCheck
-              className="h-3 w-3"
-              style={{ stroke: strokeColor, fill: fillColor }}
-            />
-            {row.original.status}
-          </Badge>
-        );
-      },
+      cell: ({ row }) => <ApplicationStatusBadge status={row.original.status} />,
     },
 
     {

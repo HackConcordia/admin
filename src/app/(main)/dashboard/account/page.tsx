@@ -64,7 +64,7 @@ export default async function AccountPage() {
           <h2>
             Account Settings
           </h2>
-          <p className="text-xs text-gray-600 dark:text-gray-400">
+          <p className="text-xs text-muted-foreground">
             Manage your account information and password
           </p>
         </div>

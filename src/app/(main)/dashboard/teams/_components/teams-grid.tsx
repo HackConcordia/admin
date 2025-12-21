@@ -206,7 +206,7 @@ export function TeamsGrid({
       <div className="flex gap-4 w-full justify-between items-center">
         <div>
           <h2>Teams</h2>
-          <p className="text-xs text-gray-600 dark:text-gray-400">
+          <p className="text-xs text-muted-foreground">
             View and manage all teams in the system
           </p>
         </div>
