@@ -24,32 +24,52 @@ const schoolColors: string[] = [
   "bg-violet-600",
   "bg-amber-600",
   "bg-rose-600",
+  "bg-purple-600",
+  "bg-pink-600",
+  "bg-indigo-600",
+  "bg-cyan-600",
+  "bg-teal-600",
 ];
 
 export function TopSchools({ schools }: TopSchoolsProps) {
   return (
-    <div className="space-y-4">
-      {schools.map((school, index) => (
-        <div key={school.university} className="group flex items-center gap-3">
-          <Avatar
-            className={`h-10 w-10 ${schoolColors[index % schoolColors.length]}`}
+    <div
+      className="h-[264px] overflow-y-auto pr-4"
+      style={{
+        scrollbarWidth: "thin",
+        scrollbarColor: "hsl(var(--muted-foreground) / 0.15) transparent",
+      }}
+    >
+      <div className="space-y-4">
+        {schools.map((school, index) => (
+          <div
+            key={`${school.university}-${index}`}
+            className="group flex items-center gap-3"
           >
-            <AvatarFallback
-              className={`${schoolColors[index % schoolColors.length]} text-xs font-semibold text-white`}
+            <Avatar
+              className={`h-10 w-10 ${
+                schoolColors[index % schoolColors.length]
+              }`}
             >
-              {getInitials(school.university)}
-            </AvatarFallback>
-          </Avatar>
-          <div className="min-w-0 flex-1">
-            <p className="group-hover:text-primary truncate text-sm font-medium transition-colors">
-              {school.university}
-            </p>
+              <AvatarFallback
+                className={`${
+                  schoolColors[index % schoolColors.length]
+                } text-xs font-semibold text-white`}
+              >
+                {getInitials(school.university)}
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 flex-1">
+              <p className="group-hover:text-primary truncate text-sm font-medium transition-colors">
+                {school.university}
+              </p>
+            </div>
+            <div className="text-sm font-semibold tabular-nums">
+              {school.count.toLocaleString()}
+            </div>
           </div>
-          <div className="text-sm font-semibold tabular-nums">
-            {school.count.toLocaleString()}
-          </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }

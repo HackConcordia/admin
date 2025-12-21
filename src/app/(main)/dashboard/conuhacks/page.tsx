@@ -4,7 +4,14 @@ import { useEffect, useState } from "react";
 
 import Link from "next/link";
 
-import { FileText, Users, Trophy, UserX, Shield, BarChart3 } from "lucide-react";
+import {
+  FileText,
+  Users,
+  Trophy,
+  UserX,
+  Shield,
+  BarChart3,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -60,8 +67,12 @@ export default function DashboardPage() {
                 <UserX className="h-6 w-6 text-red-600" />
               </div>
               <h3 className="text-lg font-semibold">Error Loading Dashboard</h3>
-              <p className="text-muted-foreground text-sm">{error && "Unknown error occurred"}</p>
-              <Button onClick={() => window.location.reload()}>Try Again</Button>
+              <p className="text-muted-foreground text-sm">
+                {error && "Unknown error occurred"}
+              </p>
+              <Button onClick={() => window.location.reload()}>
+                Try Again
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -70,14 +81,22 @@ export default function DashboardPage() {
   }
 
   const targetApplicants = 3000;
-  const percentageOfTarget = ((stats.totalApplicants / targetApplicants) * 100).toFixed(2);
+  const percentageOfTarget = (
+    (stats.totalApplicants / targetApplicants) *
+    100
+  ).toFixed(2);
 
   // Calculate change percentage for new applicants
   const changePercentage =
-    stats.newApplicants24To48Hours > 0 ? (stats.applicantsChange / stats.newApplicants24To48Hours) * 100 : 0;
+    stats.newApplicants24To48Hours > 0
+      ? (stats.applicantsChange / stats.newApplicants24To48Hours) * 100
+      : 0;
 
   // Calculate total shirts from tshirtCounts
-  const totalShirts = Object.values(stats.tshirtCounts).reduce((sum, count) => sum + count, 0);
+  const totalShirts = Object.values(stats.tshirtCounts).reduce(
+    (sum, count) => sum + count,
+    0
+  );
 
   return (
     <div className="space-y-6">
@@ -87,13 +106,19 @@ export default function DashboardPage() {
         <Card className="from-background to-muted/50 relative overflow-hidden bg-gradient-to-br lg:col-span-1">
           <CardHeader>
             <CardTitle className="text-lg font-medium">Applications</CardTitle>
-            <p className="text-muted-foreground text-sm">Number of applicants</p>
+            <p className="text-muted-foreground text-sm">
+              Number of applicants
+            </p>
           </CardHeader>
           <CardContent>
             <div className="flex items-end justify-between">
               <div>
-                <p className="text-primary text-4xl font-bold">{stats.totalApplicants.toLocaleString()}</p>
-                <p className="text-muted-foreground mt-1 text-sm">{percentageOfTarget}% of target </p>
+                <p className="text-primary text-4xl font-bold">
+                  {stats.totalApplicants.toLocaleString()}
+                </p>
+                <p className="text-muted-foreground mt-1 text-sm">
+                  {percentageOfTarget}% of target{" "}
+                </p>
                 <div className="mt-4 flex flex-wrap gap-2">
                   <Link href="/dashboard/applications">
                     <Button size="sm">View Applications</Button>
@@ -107,7 +132,10 @@ export default function DashboardPage() {
                 </div>
               </div>
               <div className="flex h-24 w-24 items-center justify-center">
-                <Trophy className="h-20 w-20 text-amber-500" strokeWidth={1.5} />
+                <Trophy
+                  className="h-20 w-20 text-amber-500"
+                  strokeWidth={1.5}
+                />
               </div>
             </div>
           </CardContent>
@@ -119,7 +147,10 @@ export default function DashboardPage() {
             <CardTitle className="text-lg font-medium">Status</CardTitle>
           </CardHeader>
           <CardContent>
-            <StatusOverview statusCounts={stats.statusCounts} totalApplicants={stats.totalApplicants} />
+            <StatusOverview
+              statusCounts={stats.statusCounts}
+              totalApplicants={stats.totalApplicants}
+            />
           </CardContent>
         </Card>
       </div>
@@ -129,20 +160,30 @@ export default function DashboardPage() {
         {/* Weekly Overview */}
         <Card className="lg:col-span-1">
           <CardHeader>
-            <CardTitle className="text-lg font-medium">Weekly Overview</CardTitle>
+            <CardTitle className="text-lg font-medium">
+              Weekly Overview
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <WeeklyOverviewChart data={stats.last7DaysApplicants} weeklyTotal={stats.weeklyApplicants} />
+            <WeeklyOverviewChart
+              data={stats.last7DaysApplicants}
+              weeklyTotal={stats.weeklyApplicants}
+            />
           </CardContent>
         </Card>
 
         {/* T-Shirt Size Distribution */}
         <Card className="lg:col-span-1">
           <CardHeader>
-            <CardTitle className="text-lg font-medium">T-Shirt Size Distribution</CardTitle>
+            <CardTitle className="text-lg font-medium">
+              T-Shirt Size Distribution
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <TShirtDistribution data={stats.tshirtCounts} totalShirts={totalShirts} />
+            <TShirtDistribution
+              data={stats.tshirtCounts}
+              totalShirts={totalShirts}
+            />
           </CardContent>
         </Card>
 
@@ -186,10 +227,10 @@ export default function DashboardPage() {
 
       {/* Third Row */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Top Schools */}
+        {/* Schools */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg font-medium">Top Schools</CardTitle>
+            <CardTitle className="text-lg font-medium">Schools</CardTitle>
           </CardHeader>
           <CardContent>
             <TopSchools schools={stats.topUniversities} />
@@ -199,7 +240,9 @@ export default function DashboardPage() {
         {/* Dietary Restrictions */}
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle className="text-lg font-medium">Dietary Restriction</CardTitle>
+            <CardTitle className="text-lg font-medium">
+              Dietary Restriction
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <DietaryChart data={stats.dietaryRestrictionsData} />
