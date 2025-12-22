@@ -666,7 +666,6 @@ export default function ApplicationView({
 
   // Fields that use JSON string in array format: ['["value1","value2"]']
   const JSON_STRING_ARRAY_FIELDS = ["workRegions", "jobTypesInterested", "dietaryRestrictions"];
-  
   // Fields that use JSON string format directly: '["value1","value2"]'
   const JSON_STRING_DIRECT_FIELDS = ["workingLanguages"];
 
@@ -674,9 +673,7 @@ export default function ApplicationView({
   function isOtherSelected(field: keyof ApplicationDetails): boolean {
     const data = isEditMode ? editedApplication : application;
     const value = data[field];
-    
     if (!value) return false;
-    
     // For multiselect fields, check if array contains "other"
     if (Array.isArray(value)) {
       // Check if it's JSON string in array format
@@ -692,7 +689,6 @@ export default function ApplicationView({
       }
       return value.some((v) => String(v).toLowerCase() === "other");
     }
-    
     // For string fields (including JSON string format)
     if (typeof value === "string") {
       // Check if it's a JSON array string
@@ -708,10 +704,8 @@ export default function ApplicationView({
       }
       return value.toLowerCase() === "other";
     }
-    
     return false;
   }
-
   // Generic toggle function for any multiselect field
   function toggleMultiselectValue(
     field: keyof ApplicationDetails,
@@ -720,7 +714,6 @@ export default function ApplicationView({
     setEditedApplication((prev) => {
       const currentValue = prev[field];
       let current: string[] = [];
-      
       if (Array.isArray(currentValue)) {
         if (currentValue.length === 1 && typeof currentValue[0] === "string") {
           const str = currentValue[0].trim();
@@ -1198,7 +1191,6 @@ export default function ApplicationView({
                             c.value.toLowerCase() === currentValue?.toLowerCase() ||
                             c.label.toLowerCase() === currentValue?.toLowerCase()
                         );
-                        
                         if (!isEditMode) {
                           // Display mode - show full country name
                           return (
@@ -1210,7 +1202,6 @@ export default function ApplicationView({
                             </div>
                           );
                         }
-                        
                         // Edit mode
                         return (
                           <div className="space-y-2 min-w-0">

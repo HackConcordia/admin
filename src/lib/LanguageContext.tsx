@@ -5,6 +5,8 @@ import React, {
   useContext,
   useState,
   useEffect,
+  useCallback,
+  useMemo,
   ReactNode,
 } from "react";
 
@@ -52,29 +54,37 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({
   }, [language]);
 
   // Update language and save to localStorage
-  const setLanguage = (lang: Language) => {
+  const setLanguage = useCallback((lang: Language) => {
     setLanguageState(lang);
     localStorage.setItem("language", lang);
-  };
+  }, []);
 
   // Translation function - supports nested keys with dot notation
-  const t = (key: string): string => {
-    const keys = key.split(".");
-    let value = translations;
+  const t = useCallback(
+    (key: string): string => {
+      const keys = key.split(".");
+      let value = translations;
 
-    for (const k of keys) {
-      if (value && typeof value === "object" && k in value) {
-        value = value[k];
-      } else {
-        return key; // Return key if translation not found
+      for (const k of keys) {
+        if (value && typeof value === "object" && k in value) {
+          value = value[k];
+        } else {
+          return key; // Return key if translation not found
+        }
       }
-    }
 
-    return typeof value === "string" ? value : key;
-  };
+      return typeof value === "string" ? value : key;
+    },
+    [translations]
+  );
+
+  const contextValue = useMemo(
+    () => ({ language, setLanguage, t }),
+    [language, setLanguage, t]
+  );
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t }}>
+    <LanguageContext.Provider value={contextValue}>
       {children}
     </LanguageContext.Provider>
   );
