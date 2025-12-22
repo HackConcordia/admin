@@ -1189,43 +1189,55 @@ export default function ApplicationView({
                   <div>
                     <h3 className="mb-6 text-sm font-semibold">Logistics</h3>
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
-                      {isEditMode ? (
-                        (() => {
-                          const countriesList = Countries("en");
-                          const matchedCountry = countriesList.find(
-                            (c) =>
-                              c.label.toLowerCase() === editedApplication.country?.toLowerCase() ||
-                              c.value.toLowerCase() === editedApplication.country?.toLowerCase()
-                          );
+                      {(() => {
+                        const countriesList = Countries("en");
+                        const currentValue = isEditMode ? editedApplication.country : application.country;
+                        // Match by code (value) or by label (for backwards compatibility)
+                        const matchedCountry = countriesList.find(
+                          (c) =>
+                            c.value.toLowerCase() === currentValue?.toLowerCase() ||
+                            c.label.toLowerCase() === currentValue?.toLowerCase()
+                        );
+                        
+                        if (!isEditMode) {
+                          // Display mode - show full country name
                           return (
-                            <div className="space-y-2">
-                              <Label className="text-xs">Country</Label>
-                              <Select
-                                value={matchedCountry?.label || editedApplication.country || ""}
-                                onValueChange={(v) => updateField("country", v)}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select country" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {editedApplication.country && !matchedCountry && (
-                                    <SelectItem value={editedApplication.country}>
-                                      {editedApplication.country} (current)
-                                    </SelectItem>
-                                  )}
-                                  {countriesList.map((country, idx) => (
-                                    <SelectItem key={`${country.value}-${idx}`} value={country.label}>
-                                      {country.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                            <div className="space-y-1 min-w-0">
+                              <div className="text-muted-foreground text-xs">Country</div>
+                              <div className="truncate" title={matchedCountry?.label || currentValue || ""}>
+                                {matchedCountry?.label || currentValue || "—"}
+                              </div>
                             </div>
                           );
-                        })()
-                      ) : (
-                        renderField("Country", "country", "text")
-                      )}
+                        }
+                        
+                        // Edit mode
+                        return (
+                          <div className="space-y-2 min-w-0">
+                            <Label className="text-xs">Country</Label>
+                            <Select
+                              value={matchedCountry?.value || currentValue || ""}
+                              onValueChange={(v) => updateField("country", v)}
+                            >
+                              <SelectTrigger className="w-full truncate">
+                                <SelectValue placeholder="Select country" className="truncate" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {currentValue && !matchedCountry && (
+                                  <SelectItem value={currentValue}>
+                                    {currentValue} (current)
+                                  </SelectItem>
+                                )}
+                                {countriesList.map((country, idx) => (
+                                  <SelectItem key={`${country.value}-${idx}`} value={country.value}>
+                                    {country.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        );
+                      })()}
                       {renderField("City", "city", "text")}
                       {renderField("Shirt Size", "shirtSize", "select", TShirtSizes("en"))}
                       {renderField("Dietary Restrictions", "dietaryRestrictions", "multiselect", DietaryRestrictions("en"))}
