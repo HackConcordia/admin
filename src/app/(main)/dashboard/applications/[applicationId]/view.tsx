@@ -1,8 +1,81 @@
 "use client";
 
 import * as React from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useRouter } from "next/navigation";
+
+// Uncontrolled Input component - only syncs to parent on blur
+// This completely avoids re-renders during typing
+function DebouncedInput({
+  value: initialValue,
+  onChange,
+  ...props
+}: {
+  value: string;
+  onChange: (value: string) => void;
+} & Omit<React.InputHTMLAttributes<HTMLInputElement>, "onChange" | "defaultValue">) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const initialValueRef = useRef(initialValue);
+
+  // Update the input value when initialValue changes (e.g., entering edit mode)
+  useEffect(() => {
+    if (inputRef.current && initialValue !== initialValueRef.current) {
+      inputRef.current.value = initialValue;
+      initialValueRef.current = initialValue;
+    }
+  }, [initialValue]);
+
+  const handleBlur = useCallback(() => {
+    if (inputRef.current) {
+      onChange(inputRef.current.value);
+    }
+  }, [onChange]);
+
+  return (
+    <Input
+      {...props}
+      ref={inputRef}
+      defaultValue={initialValue}
+      onBlur={handleBlur}
+    />
+  );
+}
+
+// Uncontrolled Textarea component - only syncs to parent on blur
+function DebouncedTextarea({
+  value: initialValue,
+  onChange,
+  ...props
+}: {
+  value: string;
+  onChange: (value: string) => void;
+} & Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, "onChange" | "defaultValue">) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const initialValueRef = useRef(initialValue);
+
+  useEffect(() => {
+    if (textareaRef.current && initialValue !== initialValueRef.current) {
+      textareaRef.current.value = initialValue;
+      initialValueRef.current = initialValue;
+    }
+  }, [initialValue]);
+
+  const handleBlur = useCallback(() => {
+    if (textareaRef.current) {
+      onChange(textareaRef.current.value);
+    }
+  }, [onChange]);
+
+  return (
+    <Textarea
+      {...props}
+      ref={textareaRef}
+      defaultValue={initialValue}
+      onBlur={handleBlur}
+    />
+  );
+}
 
 import {
   CheckCircle2,
@@ -12,6 +85,12 @@ import {
   ChevronsUpDown,
   X,
   SaveAllIcon,
+  Pencil,
+  Save,
+  XIcon,
+  Upload,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +110,16 @@ import {
 } from "@/components/ui/travel-reimbursement-dialog";
 import { NoTravelConfirmationDialog } from "@/components/ui/no-travel-confirmation-dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Popover,
   PopoverContent,
@@ -44,9 +133,50 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { getAllSkillTags, getSkillTagsByCategory } from "@/lib/skill-tags";
 import { ApplicationStatusBadge } from "../_components/application-status-badge";
+
+// Import form options from constants
+import { AgeOptions } from "@/constants/AgeOptions";
+import { Genders } from "@/constants/Genders";
+import { Pronouns } from "@/constants/Pronouns";
+import { UnderrepresentedGroups } from "@/constants/UnderrepresentedGroups";
+import { Schools } from "@/constants/Schools";
+import { Faculties } from "@/constants/Faculties";
+import { LevelOfStudyTypes } from "@/constants/LevelOfStudyTypes";
+import { Programs } from "@/constants/Programs";
+import { GraduationSemesters } from "@/constants/GraduationSemesters";
+import { GraduationYears } from "@/constants/GraduationYears";
+import { TShirtSizes } from "@/constants/TShirtSizes";
+import { DietaryRestrictions } from "@/constants/DietaryRestrictions";
+import { CommunicationLanguages } from "@/constants/CommunicationLanguages";
+import { WorkingLanguages } from "@/constants/WorkingLanguages";
+import { WorkRegions } from "@/constants/WorkRegions";
+import { JobTypes } from "@/constants/JobTypes";
+import { JobRoles } from "@/constants/JobRoles";
+import { CoopTerms } from "@/constants/CoopTerms";
+import { Countries } from "@/constants/Countries";
+import { statuses } from "@/constants/statuses";
+
+// Convert statuses to select options format
+const APPLICATION_STATUSES = statuses.map((s) => ({
+  value: s.name,
+  label: s.title,
+}));
+
+// Critical fields that require confirmation before saving
+const CRITICAL_FIELDS = ["status", "firstName", "lastName"];
 
 /**
  * Helper function to format array values for display
@@ -202,11 +332,35 @@ export default function ApplicationView({
   const [isSavingMetadata, setIsSavingMetadata] = React.useState(false);
   const [skillTagsOpen, setSkillTagsOpen] = React.useState(false);
 
+  // Edit mode state
+  const [isEditMode, setIsEditMode] = React.useState(false);
+  const [editedApplication, setEditedApplication] =
+    React.useState<ApplicationDetails>(initial);
+  const [isSavingEdit, setIsSavingEdit] = React.useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = React.useState(false);
+  const [criticalChanges, setCriticalChanges] = React.useState<string[]>([]);
+
+  // Resume upload state
+  const [resumeFile, setResumeFile] = React.useState<File | null>(null);
+  const [isUploadingResume, setIsUploadingResume] = React.useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  // Multi-select popover state
+  const [openMultiselect, setOpenMultiselect] = React.useState<string | null>(null);
+
   // Update local state when application prop changes
   React.useEffect(() => {
     setComments(application.comments || "");
     setSkillTags(application.skillTags || []);
   }, [application.comments, application.skillTags]);
+
+  // Reset edited application when entering edit mode
+  React.useEffect(() => {
+    if (isEditMode) {
+      setEditedApplication(application);
+      setResumeFile(null);
+    }
+  }, [isEditMode, application]);
 
   React.useEffect(() => {
     let active = true;
@@ -370,29 +524,621 @@ export default function ApplicationView({
     setSkillTags((prev) => prev.filter((t) => t !== tag));
   }
 
+  // Helper function to update edited application fields
+  function updateField<K extends keyof ApplicationDetails>(
+    field: K,
+    value: ApplicationDetails[K]
+  ) {
+    setEditedApplication((prev) => ({ ...prev, [field]: value }));
+  }
+
+  // Check for critical changes
+  function getCriticalChanges(): string[] {
+    const changes: string[] = [];
+    for (const field of CRITICAL_FIELDS) {
+      const key = field as keyof ApplicationDetails;
+      if (editedApplication[key] !== application[key]) {
+        changes.push(field);
+      }
+    }
+    return changes;
+  }
+
+  // Handle save with confirmation for critical changes
+  async function handleSaveClick() {
+    const changes = getCriticalChanges();
+    if (changes.length > 0) {
+      setCriticalChanges(changes);
+      setShowConfirmDialog(true);
+    } else {
+      await saveChanges();
+    }
+  }
+
+  // Save all changes
+  async function saveChanges() {
+    try {
+      setIsSavingEdit(true);
+      setError(null);
+
+      // First, save the application fields
+      const res = await fetch(`/api/application/${application._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...editedApplication,
+          comments,
+          skillTags,
+        }),
+      });
+
+      if (!res.ok) {
+        const json = await res.json();
+        throw new Error(json?.error || `Update failed with ${res.status}`);
+      }
+
+      const json = await res.json();
+
+      // If there's a new resume to upload
+      if (resumeFile) {
+        setIsUploadingResume(true);
+        const formData = new FormData();
+        formData.append("resume", resumeFile);
+
+        const resumeRes = await fetch(
+          `/api/application/${application._id}/resume`,
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
+
+        if (!resumeRes.ok) {
+          const resumeJson = await resumeRes.json();
+          throw new Error(resumeJson?.error || "Failed to upload resume");
+        }
+
+        json.data.hasResume = true;
+        setIsUploadingResume(false);
+      }
+
+      // Update local state
+      setApplication({
+        ...json.data,
+        hasResume: json.data.resume?.id ? true : application.hasResume,
+      });
+      setIsEditMode(false);
+      setResumeFile(null);
+      toast.success("Application updated successfully");
+    } catch (e: any) {
+      setError(e?.message ?? "Failed to update application");
+      toast.error(e?.message ?? "Failed to update application");
+    } finally {
+      setIsSavingEdit(false);
+      setIsUploadingResume(false);
+      setShowConfirmDialog(false);
+    }
+  }
+
+  // Handle resume file selection
+  function handleResumeSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      const allowedTypes = [
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      ];
+      if (!allowedTypes.includes(file.type)) {
+        toast.error(
+          "Invalid file type. Only PDF and Word documents are allowed."
+        );
+        return;
+      }
+      // Validate file size (5MB max)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("File too large. Maximum size is 5MB.");
+        return;
+      }
+      setResumeFile(file);
+    }
+  }
+
+  // Handle resume deletion
+  async function handleDeleteResume() {
+    try {
+      const res = await fetch(`/api/application/${application._id}/resume`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        const json = await res.json();
+        throw new Error(json?.error || "Failed to delete resume");
+      }
+
+      setApplication((prev) => ({ ...prev, hasResume: false }));
+      toast.success("Resume deleted successfully");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to delete resume");
+    }
+  }
+
+  // Fields that use JSON string in array format: ['["value1","value2"]']
+  const JSON_STRING_ARRAY_FIELDS = ["workRegions", "jobTypesInterested", "dietaryRestrictions"];
+  // Fields that use JSON string format directly: '["value1","value2"]'
+  const JSON_STRING_DIRECT_FIELDS = ["workingLanguages"];
+
+  // Helper to check if "other" option is selected for a field
+  function isOtherSelected(field: keyof ApplicationDetails): boolean {
+    const data = isEditMode ? editedApplication : application;
+    const value = data[field];
+    if (!value) return false;
+    // For multiselect fields, check if array contains "other"
+    if (Array.isArray(value)) {
+      // Check if it's JSON string in array format
+      if (value.length === 1 && typeof value[0] === "string" && value[0].trim().startsWith("[")) {
+        try {
+          const parsed = JSON.parse(value[0]);
+          if (Array.isArray(parsed)) {
+            return parsed.some((v: string) => v.toLowerCase() === "other");
+          }
+        } catch {
+          // Fall through
+        }
+      }
+      return value.some((v) => String(v).toLowerCase() === "other");
+    }
+    // For string fields (including JSON string format)
+    if (typeof value === "string") {
+      // Check if it's a JSON array string
+      if (value.trim().startsWith("[")) {
+        try {
+          const parsed = JSON.parse(value);
+          if (Array.isArray(parsed)) {
+            return parsed.some((v: string) => String(v).toLowerCase() === "other");
+          }
+        } catch {
+          // Fall through
+        }
+      }
+      return value.toLowerCase() === "other";
+    }
+    return false;
+  }
+  // Generic toggle function for any multiselect field
+  function toggleMultiselectValue(
+    field: keyof ApplicationDetails,
+    value: string
+  ) {
+    setEditedApplication((prev) => {
+      const currentValue = prev[field];
+      let current: string[] = [];
+      if (Array.isArray(currentValue)) {
+        if (currentValue.length === 1 && typeof currentValue[0] === "string") {
+          const str = currentValue[0].trim();
+          if (str.startsWith("[")) {
+            try {
+              current = JSON.parse(str);
+            } catch {
+              current = currentValue as string[];
+            }
+          } else {
+            current = currentValue as string[];
+          }
+        } else {
+          current = currentValue as string[];
+        }
+      } else if (typeof currentValue === "string" && currentValue) {
+        if (currentValue.startsWith("[")) {
+          try {
+            current = JSON.parse(currentValue);
+          } catch {
+            current = [currentValue];
+          }
+        } else {
+          current = [currentValue];
+        }
+      }
+
+      const newValues = current.includes(value)
+        ? current.filter((v) => v !== value)
+        : [...current, value];
+
+      let storedValue: string | string[];
+      if (JSON_STRING_ARRAY_FIELDS.includes(field)) {
+        storedValue = [JSON.stringify(newValues)];
+      } else if (JSON_STRING_DIRECT_FIELDS.includes(field)) {
+        storedValue = JSON.stringify(newValues);
+      } else {
+        storedValue = newValues;
+      }
+
+      return {
+        ...prev,
+        [field]: storedValue,
+      } as ApplicationDetails;
+    });
+  }
+
+  // Render a field - either as display or as editable input
+  function renderField(
+    label: string,
+    field: keyof ApplicationDetails,
+    type: "text" | "textarea" | "select" | "boolean" | "multiselect" = "text",
+    options?: { value: string; label: string }[]
+  ) {
+    const value = isEditMode ? editedApplication[field] : application[field];
+
+    if (!isEditMode) {
+      if (type === "boolean") {
+        return (
+          <div className="space-y-1">
+            <div className="text-muted-foreground text-xs">{label}</div>
+            <div>{value ? "Yes" : "No"}</div>
+          </div>
+        );
+      }
+      if (type === "multiselect" || Array.isArray(value)) {
+        return (
+          <div className="space-y-1">
+            <div className="text-muted-foreground text-xs">{label}</div>
+            <div>{formatArrayValue(value as string | string[])}</div>
+          </div>
+        );
+      }
+      let displayValue = "—";
+      if (value !== null && value !== undefined && value !== "") {
+        displayValue = String(value);
+      }
+      return (
+        <div className="space-y-1">
+          <div className="text-muted-foreground text-xs">{label}</div>
+          <div className={type === "textarea" ? "whitespace-pre-wrap" : ""}>
+            {displayValue}
+          </div>
+        </div>
+      );
+    }
+
+    // Edit mode
+    if (type === "boolean") {
+      return (
+        <div className="space-y-2">
+          <Label className="text-xs">{label}</Label>
+          <div className="flex items-center space-x-2">
+            <Switch
+              checked={value as boolean}
+              onCheckedChange={(checked) => updateField(field, checked as any)}
+            />
+            <span className="text-sm">{value ? "Yes" : "No"}</span>
+          </div>
+        </div>
+      );
+    }
+
+    if (type === "select" && options) {
+      let rawValue = "";
+      if (Array.isArray(value)) {
+        rawValue = value.length > 0 ? String(value[0]) : "";
+      } else if (value !== null && value !== undefined) {
+        rawValue = String(value);
+      }
+
+      const matchedOption = options.find(
+        (opt) => opt.value.toLowerCase() === rawValue.toLowerCase()
+      );
+      const selectValue = matchedOption ? matchedOption.value : rawValue;
+      const displayOptions = [...options];
+      if (rawValue && !matchedOption) {
+        displayOptions.unshift({
+          value: rawValue,
+          label: `${rawValue} (current)`,
+        });
+      }
+
+      return (
+        <div className="space-y-2">
+          <Label className="text-xs">{label}</Label>
+          <Select
+            value={selectValue}
+            onValueChange={(v) => updateField(field, v as any)}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder={`Select ${label.toLowerCase()}`} />
+            </SelectTrigger>
+            <SelectContent>
+              {displayOptions.map((opt, idx) => (
+                <SelectItem key={`${opt.value}-${idx}`} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      );
+    }
+
+    if (type === "textarea") {
+      let textareaValue = "";
+      if (Array.isArray(value)) {
+        textareaValue = value.join(", ");
+      } else if (value !== null && value !== undefined) {
+        textareaValue = String(value);
+      }
+
+      return (
+        <div className="space-y-2">
+          <Label className="text-xs">{label}</Label>
+          <DebouncedTextarea
+            value={textareaValue}
+            onChange={(v) => updateField(field, v as any)}
+            className="min-h-24"
+          />
+        </div>
+      );
+    }
+
+    if (type === "multiselect" && options) {
+      let selectedValues: string[] = [];
+      if (Array.isArray(value)) {
+        if (value.length === 1 && typeof value[0] === "string") {
+          const str = value[0].trim();
+          if (str.startsWith("[")) {
+            try {
+              selectedValues = JSON.parse(str);
+            } catch {
+              selectedValues = value as string[];
+            }
+          } else {
+            selectedValues = value as string[];
+          }
+        } else {
+          selectedValues = value as string[];
+        }
+      } else if (typeof value === "string" && value) {
+        if (value.startsWith("[")) {
+          try {
+            selectedValues = JSON.parse(value);
+          } catch {
+            selectedValues = [value];
+          }
+        } else {
+          selectedValues = [value];
+        }
+      }
+
+      const getLabel = (val: string) => {
+        const opt = options.find(
+          (o) => o.value.toLowerCase() === val.toLowerCase()
+        );
+        return opt?.label || val;
+      };
+
+      return (
+        <div className="space-y-2">
+          <Label className="text-xs">{label}</Label>
+          <Popover
+            open={openMultiselect === field}
+            onOpenChange={(open) => setOpenMultiselect(open ? field : null)}
+          >
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                className="w-full justify-between font-normal"
+              >
+                <span className="text-sm truncate">
+                  {selectedValues.length > 0
+                    ? `${selectedValues.length} selected`
+                    : `Select ${label.toLowerCase()}`}
+                </span>
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[300px] p-0" align="start">
+              <Command>
+                <CommandInput placeholder={`Search ${label.toLowerCase()}...`} />
+                <CommandList>
+                  <CommandEmpty>No option found.</CommandEmpty>
+                  <CommandGroup>
+                    {options.map((opt, idx) => (
+                      <CommandItem
+                        key={`${opt.value}-${idx}`}
+                        value={opt.value}
+                        onSelect={() => toggleMultiselectValue(field, opt.value)}
+                      >
+                        <Check
+                          className={
+                            selectedValues.some(
+                              (v) => v.toLowerCase() === opt.value.toLowerCase()
+                            )
+                              ? "mr-2 h-4 w-4 opacity-100"
+                              : "mr-2 h-4 w-4 opacity-0"
+                          }
+                        />
+                        {opt.label}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+          {selectedValues.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {selectedValues.map((v, idx) => (
+                <Badge key={`${v}-${idx}`} variant="secondary" className="text-xs">
+                  {getLabel(v)}
+                  <button
+                    type="button"
+                    onClick={() => toggleMultiselectValue(field, v)}
+                    className="ml-1"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Default text input
+    let textValue = "";
+    if (Array.isArray(value)) {
+      textValue = value.join(", ");
+    } else if (value !== null && value !== undefined) {
+      textValue = String(value);
+    }
+
+    return (
+      <div className="space-y-2">
+        <Label className="text-xs">{label}</Label>
+        <DebouncedInput
+          value={textValue}
+          onChange={(v) => updateField(field, v as any)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 gap-4 md:gap-6">
       <div className="flex flex-col gap-3">
-          <div>
-            <h2>Applicant Details</h2>
-            <p className="text-xs text-muted-foreground">
-              Review application and take action.
-            </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2>Applicant Details</h2>
+              <p className="text-xs text-muted-foreground">
+                {isEditMode
+                  ? "Edit application fields and save changes."
+                  : "Review application and take action."}
+              </p>
+            </div>
+            {!isEditMode ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEditMode(true)}
+              >
+                <Pencil className="mr-2 h-4 w-4" />
+                Edit
+              </Button>
+            ) : (
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setIsEditMode(false);
+                    setEditedApplication(application);
+                    setResumeFile(null);
+                  }}
+                  disabled={isSavingEdit}
+                >
+                  <XIcon className="mr-2 h-4 w-4" />
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleSaveClick}
+                  disabled={isSavingEdit || isUploadingResume}
+                >
+                  <Save className="mr-2 h-4 w-4" />
+                  {isSavingEdit ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
+            )}
           </div>
           <div className="space-y-4">
             {error ? (
               <div className="text-sm text-red-600">{error}</div>
             ) : (
               <>
-                <div>
-                    <h2>
-                      {application.firstName} {application.lastName}
-                    </h2>
-                    <p className="text-muted-foreground text-sm mb-2">
-                      {application.email}
-                    </p>
+                {/* Header with name and status */}
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  {isEditMode ? (
+                    <div className="grid grid-cols-2 gap-4 flex-1">
+                      <div className="space-y-2">
+                        <Label className="text-xs">First Name *</Label>
+                        <DebouncedInput
+                          value={editedApplication.firstName}
+                          onChange={(v) => updateField("firstName", v)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs">Last Name *</Label>
+                        <DebouncedInput
+                          value={editedApplication.lastName}
+                          onChange={(v) => updateField("lastName", v)}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <h2>
+                        {application.firstName} {application.lastName}
+                      </h2>
+                      <p className="text-muted-foreground text-sm mb-2">
+                        {application.email}
+                      </p>
+                    </div>
+                  )}
+                  {isEditMode ? (
+                    <div className="space-y-2">
+                      <Label className="text-xs">Status</Label>
+                      <Select
+                        value={
+                          APPLICATION_STATUSES.find(
+                            (s) =>
+                              s.value.toLowerCase() ===
+                              editedApplication.status?.toLowerCase()
+                          )?.value ||
+                          editedApplication.status ||
+                          ""
+                        }
+                        onValueChange={(v) => updateField("status", v)}
+                      >
+                        <SelectTrigger className="w-[180px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {editedApplication.status &&
+                            !APPLICATION_STATUSES.find(
+                              (s) =>
+                                s.value.toLowerCase() ===
+                                editedApplication.status?.toLowerCase()
+                            ) && (
+                              <SelectItem value={editedApplication.status}>
+                                {editedApplication.status} (current)
+                              </SelectItem>
+                            )}
+                          {APPLICATION_STATUSES.map((status) => (
+                            <SelectItem key={status.value} value={status.value}>
+                              {status.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ) : (
                     <ApplicationStatusBadge status={application.status} />
+                  )}
+                </div>
+
+                {isEditMode && (
+                  <div className="space-y-2">
+                    <Label className="text-xs">Email (read-only)</Label>
+                    <Input
+                      type="email"
+                      value={editedApplication.email}
+                      readOnly
+                      disabled
+                      className="bg-muted cursor-not-allowed"
+                    />
                   </div>
+                )}
 
                 <Separator />
 
@@ -403,36 +1149,11 @@ export default function ApplicationView({
                       Personal Information
                     </h3>
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">
-                          18 or Above
-                        </div>
-                        <div>{application.isEighteenOrAbove || "—"}</div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">
-                          Phone Number
-                        </div>
-                        <div>{application.phoneNumber || "—"}</div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">
-                          Gender
-                        </div>
-                        <div>{application.gender || "—"}</div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">
-                          Pronouns
-                        </div>
-                        <div>{application.pronouns || "—"}</div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">
-                          Underrepresented
-                        </div>
-                        <div>{application.underrepresented || "—"}</div>
-                      </div>
+                      {renderField("18 or Above", "isEighteenOrAbove", "select", AgeOptions("en"))}
+                      {renderField("Phone Number", "phoneNumber", "text")}
+                      {renderField("Gender", "gender", "select", Genders("en").filter((g) => g.value !== ""))}
+                      {renderField("Pronouns", "pronouns", "select", Pronouns("en").filter((p) => p.value !== ""))}
+                      {renderField("Underrepresented", "underrepresented", "select", UnderrepresentedGroups("en"))}
                     </div>
                   </div>
 
@@ -442,66 +1163,16 @@ export default function ApplicationView({
                   <div>
                     <h3 className="mb-6 text-sm font-semibold">Education</h3>
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">
-                          School
-                        </div>
-                        <div>{application.school || "—"}</div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">
-                          School (Other)
-                        </div>
-                        <div>{application.schoolOther || "—"}</div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">
-                          Faculty
-                        </div>
-                        <div>{application.faculty || "—"}</div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">
-                          Faculty (Other)
-                        </div>
-                        <div>{application.facultyOther || "—"}</div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">
-                          Level of Study
-                        </div>
-                        <div>{application.levelOfStudy || "—"}</div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">
-                          Level of Study (Other)
-                        </div>
-                        <div>{application.levelOfStudyOther || "—"}</div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">
-                          Program
-                        </div>
-                        <div>{application.program || "—"}</div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">
-                          Program (Other)
-                        </div>
-                        <div>{application.programOther || "—"}</div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">
-                          Graduation Semester
-                        </div>
-                        <div>{application.graduationSemester || "—"}</div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">
-                          Graduation Year
-                        </div>
-                        <div>{application.graduationYear || "—"}</div>
-                      </div>
+                      {renderField("School", "school", "select", Schools("en"))}
+                      {isOtherSelected("school") && renderField("School (Other)", "schoolOther", "text")}
+                      {renderField("Faculty", "faculty", "select", Faculties("en"))}
+                      {isOtherSelected("faculty") && renderField("Faculty (Other)", "facultyOther", "text")}
+                      {renderField("Level of Study", "levelOfStudy", "select", LevelOfStudyTypes("en"))}
+                      {isOtherSelected("levelOfStudy") && renderField("Level of Study (Other)", "levelOfStudyOther", "text")}
+                      {renderField("Program", "program", "select", Programs("en"))}
+                      {isOtherSelected("program") && renderField("Program (Other)", "programOther", "text")}
+                      {renderField("Graduation Semester", "graduationSemester", "select", GraduationSemesters("en"))}
+                      {renderField("Graduation Year", "graduationYear", "select", GraduationYears("en"))}
                     </div>
                   </div>
 
@@ -511,40 +1182,59 @@ export default function ApplicationView({
                   <div>
                     <h3 className="mb-6 text-sm font-semibold">Logistics</h3>
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">
-                          Country
-                        </div>
-                        <div>{application.country || "—"}</div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">
-                          City
-                        </div>
-                        <div>{application.city || "—"}</div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">
-                          Shirt Size
-                        </div>
-                        <div>{application.shirtSize || "—"}</div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">
-                          Dietary Restrictions
-                        </div>
-                        <div>
-                          {formatArrayValue(application.dietaryRestrictions)}
-                        </div>
-                      </div>
-                      {application.dietaryRestrictionsDescription && (
-                        <div className="space-y-1 ">
-                          <div className="text-muted-foreground text-xs">
-                            Restrictions Description
+                      {(() => {
+                        const countriesList = Countries("en");
+                        const currentValue = isEditMode ? editedApplication.country : application.country;
+                        // Match by code (value) or by label (for backwards compatibility)
+                        const matchedCountry = countriesList.find(
+                          (c) =>
+                            c.value.toLowerCase() === currentValue?.toLowerCase() ||
+                            c.label.toLowerCase() === currentValue?.toLowerCase()
+                        );
+                        if (!isEditMode) {
+                          // Display mode - show full country name
+                          return (
+                            <div className="space-y-1 min-w-0">
+                              <div className="text-muted-foreground text-xs">Country</div>
+                              <div className="truncate" title={matchedCountry?.label || currentValue || ""}>
+                                {matchedCountry?.label || currentValue || "—"}
+                              </div>
+                            </div>
+                          );
+                        }
+                        // Edit mode
+                        return (
+                          <div className="space-y-2 min-w-0">
+                            <Label className="text-xs">Country</Label>
+                            <Select
+                              value={matchedCountry?.value || currentValue || ""}
+                              onValueChange={(v) => updateField("country", v)}
+                            >
+                              <SelectTrigger className="w-full truncate">
+                                <SelectValue placeholder="Select country" className="truncate" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {currentValue && !matchedCountry && (
+                                  <SelectItem value={currentValue}>
+                                    {currentValue} (current)
+                                  </SelectItem>
+                                )}
+                                {countriesList.map((country, idx) => (
+                                  <SelectItem key={`${country.value}-${idx}`} value={country.value}>
+                                    {country.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
-                          <div>
-                            {application.dietaryRestrictionsDescription}
-                          </div>
+                        );
+                      })()}
+                      {renderField("City", "city", "text")}
+                      {renderField("Shirt Size", "shirtSize", "select", TShirtSizes("en"))}
+                      {renderField("Dietary Restrictions", "dietaryRestrictions", "multiselect", DietaryRestrictions("en"))}
+                      {isOtherSelected("dietaryRestrictions") && (
+                        <div className="md:col-span-1">
+                          {renderField("Dietary Restrictions Description", "dietaryRestrictionsDescription", "textarea")}
                         </div>
                       )}
                     </div>
@@ -558,22 +1248,8 @@ export default function ApplicationView({
                       Project Experience
                     </h3>
                     <div className="space-y-6">
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">
-                          Cool Project
-                        </div>
-                        <div className="whitespace-pre-wrap break-words text-justify">
-                          {application.coolProject || "—"}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">
-                          What are you excited about?
-                        </div>
-                        <div className="whitespace-pre-wrap break-words text-justify">
-                          {application.excitedAbout || "—"}
-                        </div>
-                      </div>
+                      {renderField("Cool Project", "coolProject", "textarea")}
+                      {renderField("What are you excited about?", "excitedAbout", "textarea")}
                     </div>
                   </div>
 
@@ -585,60 +1261,14 @@ export default function ApplicationView({
                       Career Interests
                     </h3>
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">
-                          Job Roles Looking For
-                        </div>
-                        <div>
-                          {formatArrayValue(application.jobRolesLookingFor)}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">
-                          Work Regions
-                        </div>
-                        <div>{formatArrayValue(application.workRegions)}</div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">
-                          Work Regions (Other)
-                        </div>
-                        <div>{application.workRegionsOther || "—"}</div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">
-                          Job Types Interested
-                        </div>
-                        <div>
-                          {formatArrayValue(application.jobTypesInterested)}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">
-                          Job Types (Other)
-                        </div>
-                        <div>{application.jobTypesInterestedOther || "—"}</div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">
-                          Registered for Co-op
-                        </div>
-                        <div>
-                          {application.isRegisteredForCoop ? "Yes" : "No"}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">
-                          Next Co-op Term
-                        </div>
-                        <div>{application.nextCoopTerm || "—"}</div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">
-                          Next Co-op Term (Other)
-                        </div>
-                        <div>{application.nextCoopTermOther || "—"}</div>
-                      </div>
+                      {renderField("Job Roles Looking For", "jobRolesLookingFor", "select", JobRoles("en"))}
+                      {renderField("Work Regions", "workRegions", "multiselect", WorkRegions("en"))}
+                      {isOtherSelected("workRegions") && renderField("Work Regions (Other)", "workRegionsOther", "text")}
+                      {renderField("Job Types Interested", "jobTypesInterested", "multiselect", JobTypes("en"))}
+                      {isOtherSelected("jobTypesInterested") && renderField("Job Types (Other)", "jobTypesInterestedOther", "text")}
+                      {renderField("Registered for Co-op", "isRegisteredForCoop", "boolean")}
+                      {renderField("Next Co-op Term", "nextCoopTerm", "select", CoopTerms("en"))}
+                      {isOtherSelected("nextCoopTerm") && renderField("Next Co-op Term (Other)", "nextCoopTermOther", "text")}
                     </div>
                   </div>
 
@@ -648,122 +1278,216 @@ export default function ApplicationView({
                   <div>
                     <h3 className="mb-6 text-sm font-semibold">Preferences</h3>
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">
-                          Preferred Language
-                        </div>
-                        <div>{application.preferredLanguage || "—"}</div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">
-                          Working Languages
-                        </div>
-                        <div>
-                          {formatArrayValue(application.workingLanguages)}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">
-                          Working Languages (Other)
-                        </div>
-                        <div>{application.workingLanguagesOther || "—"}</div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">
-                          Travel Reimbursement
-                        </div>
-                        <div>
-                          {application.travelReimbursement ? "Yes" : "No"}
-                        </div>
-                      </div>
-                      {application.isTravelReimbursementApproved !==
-                        undefined && (
-                          <div className="space-y-1 md:col-span-2">
-                            <div className="text-muted-foreground text-xs">
-                              Travel Reimbursement Status
+                      {renderField("Preferred Language", "preferredLanguage", "select", CommunicationLanguages("en"))}
+                      {renderField("Working Languages", "workingLanguages", "multiselect", WorkingLanguages("en"))}
+                      {isOtherSelected("workingLanguages") && renderField("Working Languages (Other)", "workingLanguagesOther", "text")}
+                      {renderField("Travel Reimbursement", "travelReimbursement", "boolean")}
+                      {(application.isTravelReimbursementApproved !== undefined || isEditMode) && (
+                        <div className="space-y-1 md:col-span-2">
+                          {isEditMode ? (
+                            <div className="grid grid-cols-3 gap-4">
+                              <div className="space-y-2">
+                                <Label className="text-xs">Travel Reimbursement Approved</Label>
+                                <Switch
+                                  checked={editedApplication.isTravelReimbursementApproved || false}
+                                  onCheckedChange={(checked) =>
+                                    updateField("isTravelReimbursementApproved", checked)
+                                  }
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label className="text-xs">Amount</Label>
+                                <Input
+                                  type="number"
+                                  value={editedApplication.travelReimbursementAmount || ""}
+                                  onChange={(e) =>
+                                    updateField(
+                                      "travelReimbursementAmount",
+                                      e.target.value ? Number(e.target.value) : undefined
+                                    )
+                                  }
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label className="text-xs">Currency</Label>
+                                <Select
+                                  value={editedApplication.travelReimbursementCurrency || ""}
+                                  onValueChange={(v) => updateField("travelReimbursementCurrency", v)}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="CAD">CAD</SelectItem>
+                                    <SelectItem value="USD">USD</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
                             </div>
-                            <div>
-                              {application.isTravelReimbursementApproved ? (
-                                <span className="font-semibold text-green-600">
-                                  Approved:{" "}
-                                  {application.travelReimbursementAmount}{" "}
-                                  {application.travelReimbursementCurrency}
-                                </span>
-                              ) : (
-                                <span className="text-muted-foreground">
-                                  Not Approved
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        )}
+                          ) : (
+                            <>
+                              <div className="text-muted-foreground text-xs">
+                                Travel Reimbursement Status
+                              </div>
+                              <div>
+                                {application.isTravelReimbursementApproved ? (
+                                  <span className="font-semibold text-green-600">
+                                    Approved: {application.travelReimbursementAmount}{" "}
+                                    {application.travelReimbursementCurrency}
+                                  </span>
+                                ) : (
+                                  <span className="text-muted-foreground">Not Approved</span>
+                                )}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
 
                   <Separator />
 
-                  {/* Links */}
+                  {/* Links & Documents */}
                   <div>
                     <h3 className="mb-6 text-sm font-semibold">
                       Links & Documents
                     </h3>
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-">
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">
-                          GitHub
-                        </div>
-                        <div>
-                          {application.github ? (
-                            <a
-                              href={application.github}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 underline"
-                            >
-                              {application.github}
-                            </a>
-                          ) : (
-                            "—"
-                          )}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">
-                          LinkedIn
-                        </div>
-                        <div>
-                          {application.linkedin ? (
-                            <a
-                              href={application.linkedin}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 underline"
-                            >
-                              {application.linkedin}
-                            </a>
-                          ) : (
-                            "—"
-                          )}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-muted-foreground text-xs">
-                          Resume
-                        </div>
-                        <div>
-                          {application.hasResume ? (
-                            <a
-                              href={`/api/users/resume/${application._id}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 underline"
-                            >
-                              View Resume
-                            </a>
-                          ) : (
-                            "—"
-                          )}
-                        </div>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                      {isEditMode ? (
+                        <>
+                          <div className="space-y-2">
+                            <Label className="text-xs">GitHub</Label>
+                            <DebouncedInput
+                              value={editedApplication.github || ""}
+                              onChange={(v) => updateField("github", v)}
+                              placeholder="https://github.com/username"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-xs">LinkedIn</Label>
+                            <DebouncedInput
+                              value={editedApplication.linkedin || ""}
+                              onChange={(v) => updateField("linkedin", v)}
+                              placeholder="https://linkedin.com/in/username"
+                            />
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-xs">GitHub</div>
+                            <div>
+                              {application.github ? (
+                                <a
+                                  href={application.github}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 underline"
+                                >
+                                  {application.github}
+                                </a>
+                              ) : (
+                                "—"
+                              )}
+                            </div>
+                          </div>
+                          <div className="space-y-1">
+                            <div className="text-muted-foreground text-xs">LinkedIn</div>
+                            <div>
+                              {application.linkedin ? (
+                                <a
+                                  href={application.linkedin}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 underline"
+                                >
+                                  {application.linkedin}
+                                </a>
+                              ) : (
+                                "—"
+                              )}
+                            </div>
+                          </div>
+                        </>
+                      )}
+                      <div className="space-y-2">
+                        <Label className="text-xs">Resume</Label>
+                        {isEditMode ? (
+                          <div className="space-y-3">
+                            {application.hasResume && (
+                              <div className="flex items-center gap-2">
+                                <a
+                                  href={`/api/users/resume/${application._id}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 underline text-sm"
+                                >
+                                  View Current Resume
+                                </a>
+                                <Button
+                                  type="button"
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={handleDeleteResume}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            )}
+                            <div className="flex items-center gap-2">
+                              <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept=".pdf,.doc,.docx"
+                                onChange={handleResumeSelect}
+                                className="hidden"
+                              />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => fileInputRef.current?.click()}
+                              >
+                                <Upload className="mr-2 h-4 w-4" />
+                                {resumeFile ? "Change File" : "Upload New Resume"}
+                              </Button>
+                              {resumeFile && (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm text-muted-foreground">
+                                    {resumeFile.name}
+                                  </span>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setResumeFile(null)}
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              Accepted formats: PDF, DOC, DOCX (max 5MB)
+                            </p>
+                          </div>
+                        ) : (
+                          <div>
+                            {application.hasResume ? (
+                              <a
+                                href={`/api/users/resume/${application._id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 underline"
+                              >
+                                View Resume
+                              </a>
+                            ) : (
+                              "—"
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -967,6 +1691,48 @@ export default function ApplicationView({
         candidateName={`${application.firstName} ${application.lastName}`}
         action={pendingAction || "admit"}
       />
+
+      {/* Confirmation Dialog for Critical Changes */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              Confirm Critical Changes
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div>
+                <p className="mb-3">
+                  You are about to modify the following critical fields:
+                </p>
+                <ul className="list-disc pl-5 space-y-1">
+                  {criticalChanges.map((field) => (
+                    <li key={field} className="text-sm">
+                      <span className="font-medium capitalize">{field}</span>:{" "}
+                      <span className="text-muted-foreground">
+                        {String(application[field as keyof ApplicationDetails])}
+                      </span>{" "}
+                      →{" "}
+                      <span className="font-medium">
+                        {String(editedApplication[field as keyof ApplicationDetails])}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-3 text-sm">
+                  Are you sure you want to proceed with these changes?
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={saveChanges}>
+              Confirm Changes
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
