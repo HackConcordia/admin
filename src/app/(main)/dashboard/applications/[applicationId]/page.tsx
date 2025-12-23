@@ -6,8 +6,23 @@ import ApplicationView, {
   type ApplicationDetails,
   type TeamData,
 } from "./view";
+import { cookies } from "next/headers";
+import { COOKIE_NAME, verifyAuthToken } from "@/lib/auth-token";
 
 export const dynamic = "force-dynamic";
+
+async function getIsSuperAdminSSR(): Promise<boolean> {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get(COOKIE_NAME)?.value;
+    if (!token) return false;
+
+    const payload = await verifyAuthToken(token);
+    return !!payload?.isSuperAdmin;
+  } catch {
+    return false;
+  }
+}
 
 export default async function Page({
   params,
@@ -110,11 +125,14 @@ export default async function Page({
     // Continue without team data if fetch fails
   }
 
+  const isSuperAdmin = await getIsSuperAdminSSR();
+
   return (
     <ApplicationView
       application={application}
       adminEmail={null}
       teamData={teamData}
+      isSuperAdmin={isSuperAdmin}
     />
   );
 }

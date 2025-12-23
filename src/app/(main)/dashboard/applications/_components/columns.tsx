@@ -22,13 +22,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { StatusBadge } from "@/components/ui/status-badge";
-import { Badge } from "@/components/ui/badge";
-import {
-  getStatusColor,
-  getStatusFillColor,
-  getStatusStrokeColor,
-} from "@/utils/statusColors";
 import Link from "next/link";
 import { ApplicationStatusBadge } from "./application-status-badge";
 
@@ -168,11 +161,11 @@ function RowActions({ row, isSuperAdmin, onRefresh }: any) {
           </Button>
         )}
 
-        {isSuperAdmin && (
+        {/* {isSuperAdmin && (
           <Button size="icon" variant="outline" className="text-destructive">
             <Trash2 className="h-4 w-4" />
           </Button>
-        )}
+        )} */}
       </div>
 
       {isSuperAdmin && (

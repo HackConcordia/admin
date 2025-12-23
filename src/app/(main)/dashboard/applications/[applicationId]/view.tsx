@@ -321,10 +321,12 @@ export default function ApplicationView({
   application: initial,
   adminEmail: initialAdminEmail,
   teamData,
+  isSuperAdmin,
 }: {
   application: ApplicationDetails;
   adminEmail: string | null;
   teamData?: TeamData;
+  isSuperAdmin: boolean;
 }) {
   const router = useRouter();
 
@@ -1059,40 +1061,41 @@ export default function ApplicationView({
                 : "Review application and take action."}
             </p>
           </div>
-          {!isEditMode ? (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsEditMode(true)}
-            >
-              <Pencil className="mr-2 h-4 w-4" />
-              Edit
-            </Button>
-          ) : (
-            <div className="flex gap-2">
+          {isSuperAdmin &&
+            (!isEditMode ? (
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => {
-                  setIsEditMode(false);
-                  setEditedApplication(application);
-                  setResumeFile(null);
-                }}
-                disabled={isSavingEdit}
+                onClick={() => setIsEditMode(true)}
               >
-                <XIcon className="mr-2 h-4 w-4" />
-                Cancel
+                <Pencil className="mr-2 h-4 w-4" />
+                Edit
               </Button>
-              <Button
-                size="sm"
-                onClick={handleSaveClick}
-                disabled={isSavingEdit || isUploadingResume}
-              >
-                <Save className="mr-2 h-4 w-4" />
-                {isSavingEdit ? "Saving..." : "Save Changes"}
-              </Button>
-            </div>
-          )}
+            ) : (
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setIsEditMode(false);
+                    setEditedApplication(application);
+                    setResumeFile(null);
+                  }}
+                  disabled={isSavingEdit}
+                >
+                  <XIcon className="mr-2 h-4 w-4" />
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleSaveClick}
+                  disabled={isSavingEdit || isUploadingResume}
+                >
+                  <Save className="mr-2 h-4 w-4" />
+                  {isSavingEdit ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
+            ))}
         </div>
         <div className="space-y-4">
           {error ? (
@@ -1187,40 +1190,44 @@ export default function ApplicationView({
 
               <div className="space-y-6">
                 {/* Personal Information */}
-                <div>
-                  <h3 className="mb-6 text-sm font-semibold">
-                    Personal Information
-                  </h3>
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
-                    {renderField(
-                      "18 or Above",
-                      "isEighteenOrAbove",
-                      "select",
-                      AgeOptions("en")
-                    )}
-                    {renderField("Phone Number", "phoneNumber", "text")}
-                    {renderField(
-                      "Gender",
-                      "gender",
-                      "select",
-                      Genders("en").filter((g) => g.value !== "")
-                    )}
-                    {renderField(
-                      "Pronouns",
-                      "pronouns",
-                      "select",
-                      Pronouns("en").filter((p) => p.value !== "")
-                    )}
-                    {renderField(
-                      "Underrepresented",
-                      "underrepresented",
-                      "select",
-                      UnderrepresentedGroups("en")
-                    )}
-                  </div>
-                </div>
+                {isSuperAdmin && (
+                  <>
+                    <div>
+                      <h3 className="mb-6 text-sm font-semibold">
+                        Personal Information
+                      </h3>
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
+                        {renderField(
+                          "18 or Above",
+                          "isEighteenOrAbove",
+                          "select",
+                          AgeOptions("en")
+                        )}
+                        {renderField("Phone Number", "phoneNumber", "text")}
+                        {renderField(
+                          "Gender",
+                          "gender",
+                          "select",
+                          Genders("en").filter((g) => g.value !== "")
+                        )}
+                        {renderField(
+                          "Pronouns",
+                          "pronouns",
+                          "select",
+                          Pronouns("en").filter((p) => p.value !== "")
+                        )}
+                        {renderField(
+                          "Underrepresented",
+                          "underrepresented",
+                          "select",
+                          UnderrepresentedGroups("en")
+                        )}
+                      </div>
+                    </div>
 
-                <Separator />
+                    <Separator />
+                  </>
+                )}
 
                 {/* Education */}
                 <div>
@@ -1342,19 +1349,21 @@ export default function ApplicationView({
                       );
                     })()}
                     {renderField("City", "city", "text")}
-                    {renderField(
-                      "Shirt Size",
-                      "shirtSize",
-                      "select",
-                      TShirtSizes("en")
-                    )}
-                    {renderField(
-                      "Dietary Restrictions",
-                      "dietaryRestrictions",
-                      "multiselect",
-                      DietaryRestrictions("en")
-                    )}
-                    {isOtherSelected("dietaryRestrictions") && (
+                    {isSuperAdmin &&
+                      renderField(
+                        "Shirt Size",
+                        "shirtSize",
+                        "select",
+                        TShirtSizes("en")
+                      )}
+                    {isSuperAdmin &&
+                      renderField(
+                        "Dietary Restrictions",
+                        "dietaryRestrictions",
+                        "multiselect",
+                        DietaryRestrictions("en")
+                      )}
+                    {isSuperAdmin && isOtherSelected("dietaryRestrictions") && (
                       <div className="md:col-span-1">
                         {renderField(
                           "Dietary Restrictions Description",
