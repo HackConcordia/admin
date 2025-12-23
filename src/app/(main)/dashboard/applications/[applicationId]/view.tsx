@@ -347,6 +347,11 @@ export default function ApplicationView({
     "admit" | "waitlist" | "reject" | null
   >(null);
   const [backConfirmationOpen, setBackConfirmationOpen] = React.useState(false);
+  const [actionConfirmationOpen, setActionConfirmationOpen] =
+    React.useState(false);
+  const [confirmationAction, setConfirmationAction] = React.useState<
+    "waitlist" | "reject" | null
+  >(null);
 
   // Comments and Skill Tags state
   const [comments, setComments] = React.useState<string>(
@@ -454,21 +459,26 @@ export default function ApplicationView({
   }
 
   function handleWaitlistClick() {
-    if (!application.travelReimbursement) {
-      setPendingAction("waitlist");
-      setNoTravelConfirmationOpen(true);
-    } else {
-      updateStatus("waitlist");
-    }
+    setConfirmationAction("waitlist");
+    setActionConfirmationOpen(true);
   }
 
   function handleRejectClick() {
+    setConfirmationAction("reject");
+    setActionConfirmationOpen(true);
+  }
+
+  function proceedWithAction() {
+    setActionConfirmationOpen(false);
+    if (!confirmationAction) return;
+
     if (!application.travelReimbursement) {
-      setPendingAction("reject");
+      setPendingAction(confirmationAction);
       setNoTravelConfirmationOpen(true);
     } else {
-      updateStatus("reject");
+      updateStatus(confirmationAction);
     }
+    setConfirmationAction(null);
   }
 
   function handleNoTravelConfirm() {
@@ -2073,6 +2083,30 @@ export default function ApplicationView({
             </Button>
             <AlertDialogAction onClick={handleSaveAndGoBack}>
               Save & Go Back
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Action Confirmation Dialog for Waitlist/Reject */}
+      <AlertDialog
+        open={actionConfirmationOpen}
+        onOpenChange={setActionConfirmationOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Action</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to {confirmationAction}{" "}
+              {application.firstName} {application.lastName}?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setConfirmationAction(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={proceedWithAction}>
+              Confirm
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

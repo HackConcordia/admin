@@ -79,12 +79,12 @@ export const PATCH = async (
       newStatus = "Refused";
       updateFields.status = newStatus;
 
-      // emailToSend = () =>
-      //   sendRefusedEmail(
-      //     application.email as string,
-      //     application.firstName as string,
-      //     application.lastName as string
-      //   );
+      emailToSend = () =>
+        sendRefusedEmail(
+          application.email as string,
+          application.firstName as string,
+          application.lastName as string
+        );
     } else {
       return sendErrorResponse("Invalid action", null, 400);
     }
