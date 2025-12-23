@@ -15,7 +15,20 @@ function formatDateDDMMMYYYY(value: unknown): string | undefined {
   if (Number.isNaN(d.getTime())) return undefined;
 
   const day = String(d.getDate()).padStart(2, "0");
-  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const monthNames = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
   const month = monthNames[d.getMonth()];
   const year = d.getFullYear();
 
@@ -87,12 +100,19 @@ function buildQuery(
 ): Record<string, any> {
   const query: Record<string, any> = {};
 
-  // Search by email, firstName, or lastName (case-insensitive)
+  // Search by email or full name (firstName + lastName concatenated)
   if (search) {
     query.$or = [
       { email: { $regex: search, $options: "i" } },
-      { firstName: { $regex: search, $options: "i" } },
-      { lastName: { $regex: search, $options: "i" } },
+      {
+        $expr: {
+          $regexMatch: {
+            input: { $concat: ["$firstName", " ", "$lastName"] },
+            regex: search,
+            options: "i",
+          },
+        },
+      },
     ];
   }
 
@@ -125,14 +145,20 @@ async function getPaginatedApplications(
   travelReimbursement: string,
   page: number,
   limit: number
-): Promise<{ applications: ApplicationTableRow[]; pagination: PaginationInfo }> {
+): Promise<{
+  applications: ApplicationTableRow[];
+  pagination: PaginationInfo;
+}> {
   const query = buildQuery(search, status, travelReimbursement);
 
   const total = await Application.countDocuments(query);
   const totalPages = Math.ceil(total / limit);
   const skip = (page - 1) * limit;
 
-  const apps = await Application.find(query, "email firstName lastName status createdAt processedBy")
+  const apps = await Application.find(
+    query,
+    "email firstName lastName status createdAt processedBy"
+  )
     .sort({ createdAt: 1 })
     .skip(skip)
     .limit(limit)
@@ -155,7 +181,10 @@ async function getPaginatedAssignedApplications(
   travelReimbursement: string,
   page: number,
   limit: number
-): Promise<{ applications: ApplicationTableRow[]; pagination: PaginationInfo }> {
+): Promise<{
+  applications: ApplicationTableRow[];
+  pagination: PaginationInfo;
+}> {
   if (!adminId) {
     return {
       applications: [],
@@ -163,7 +192,10 @@ async function getPaginatedAssignedApplications(
     };
   }
 
-  const admin = await Admin.findById(adminId).select("assignedApplications").lean().exec();
+  const admin = await Admin.findById(adminId)
+    .select("assignedApplications")
+    .lean()
+    .exec();
   if (!admin) {
     return {
       applications: [],
@@ -185,7 +217,10 @@ async function getPaginatedAssignedApplications(
   const totalPages = Math.ceil(total / limit);
   const skip = (page - 1) * limit;
 
-  const apps = await Application.find(query, "email firstName lastName status createdAt processedBy")
+  const apps = await Application.find(
+    query,
+    "email firstName lastName status createdAt processedBy"
+  )
     .sort({ createdAt: 1 })
     .skip(skip)
     .limit(limit)
@@ -231,7 +266,13 @@ async function getApplicationsSSR(searchParams: SearchParams): Promise<{
     await connectMongoDB();
 
     if (auth.isSuperAdmin) {
-      const result = await getPaginatedApplications(search, status, travelReimbursement, page, limit);
+      const result = await getPaginatedApplications(
+        search,
+        status,
+        travelReimbursement,
+        page,
+        limit
+      );
       return {
         applications: result.applications,
         isSuperAdmin: true,
@@ -242,7 +283,14 @@ async function getApplicationsSSR(searchParams: SearchParams): Promise<{
       };
     }
 
-    const result = await getPaginatedAssignedApplications(auth.adminId, search, status, travelReimbursement, page, limit);
+    const result = await getPaginatedAssignedApplications(
+      auth.adminId,
+      search,
+      status,
+      travelReimbursement,
+      page,
+      limit
+    );
     return {
       applications: result.applications,
       isSuperAdmin: false,
@@ -270,16 +318,23 @@ type PageProps = {
 
 export default async function Page({ searchParams }: PageProps) {
   const params = await searchParams;
-  const { applications, isSuperAdmin, pagination, search, status, travelReimbursement } = await getApplicationsSSR(params);
+  const {
+    applications,
+    isSuperAdmin,
+    pagination,
+    search,
+    status,
+    travelReimbursement,
+  } = await getApplicationsSSR(params);
 
   return (
     <ApplicationTable
-        initialData={applications}
-        isSuperAdmin={isSuperAdmin}
-        pagination={pagination}
-        initialSearch={search}
-        initialStatus={status}
-        initialTravelReimbursement={travelReimbursement}
-      />
+      initialData={applications}
+      isSuperAdmin={isSuperAdmin}
+      pagination={pagination}
+      initialSearch={search}
+      initialStatus={status}
+      initialTravelReimbursement={travelReimbursement}
+    />
   );
 }

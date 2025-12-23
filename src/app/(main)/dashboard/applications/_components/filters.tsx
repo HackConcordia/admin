@@ -117,7 +117,7 @@ export default function ApplicationsFilters({
     <div className="flex w-full gap-3">
       <div className="flex-1">
         <Input
-          placeholder="Search by email, first name, or last name…"
+          placeholder="Search by email and full name…"
           value={search}
           onChange={(e) => handleSearchChange(e.target.value)}
         />
