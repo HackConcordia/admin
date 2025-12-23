@@ -88,6 +88,9 @@ function mapApplications(docs: any[]): ApplicationTableRow[] {
     school: a.school,
     processedBy: a.processedBy,
     processedAt: a.processedAt ? formatDateDDMMMYYYY(a.processedAt) : undefined,
+    travelReimbursementAmount: a.travelReimbursementAmount,
+    travelReimbursementCurrency: a.travelReimbursementCurrency,
+    isTravelReimbursementApproved: a.isTravelReimbursementApproved,
   }));
 }
 
@@ -147,6 +150,8 @@ function buildQuery(
       { country: { $ne: "CA" } },
       { country: "CA", city: { $nin: quebecCities } },
     ];
+  } else if (travelReimbursement === "approved") {
+    query.isTravelReimbursementApproved = true;
   }
 
   // Filter by assigned applications (for non-super admins)
@@ -178,7 +183,7 @@ async function getPaginatedApplications(
 
   const apps = await Application.find(
     query,
-    "email firstName lastName status school processedBy processedAt"
+    "email firstName lastName status school processedBy processedAt travelReimbursementAmount travelReimbursementCurrency isTravelReimbursementApproved"
   )
     .sort({ createdAt: 1 })
     .skip(skip)
@@ -240,7 +245,7 @@ async function getPaginatedAssignedApplications(
 
   const apps = await Application.find(
     query,
-    "email firstName lastName status school processedBy processedAt"
+    "email firstName lastName status school processedBy processedAt travelReimbursementAmount travelReimbursementCurrency isTravelReimbursementApproved"
   )
     .sort({ createdAt: 1 })
     .skip(skip)

@@ -34,6 +34,9 @@ export type ApplicationTableRow = {
   school?: string;
   processedBy?: string;
   processedAt?: string;
+  travelReimbursementAmount?: number;
+  travelReimbursementCurrency?: string;
+  isTravelReimbursementApproved?: boolean;
 };
 
 // Assign single
@@ -185,9 +188,10 @@ function RowActions({ row, isSuperAdmin, onRefresh }: any) {
 
 export function getApplicationsColumns(
   isSuperAdmin: boolean,
-  onRefresh?: () => void
+  onRefresh?: () => void,
+  showApprovedAmount?: boolean
 ): ColumnDef<ApplicationTableRow>[] {
-  return [
+  const columns: ColumnDef<ApplicationTableRow>[] = [
     {
       id: "select",
       header: ({ table }) => (
@@ -234,6 +238,24 @@ export function getApplicationsColumns(
       header: "School",
       cell: ({ row }) => row.original.school || "--",
     },
+  ];
+
+  if (showApprovedAmount) {
+    columns.push({
+      accessorKey: "ReimbAmount",
+      header: "Approved Amount",
+      cell: ({ row }) => {
+        const amount = row.original.travelReimbursementAmount;
+        const currency = row.original.travelReimbursementCurrency;
+        if (amount && currency) {
+          return `${amount} ${currency}`;
+        }
+        return "--";
+      },
+    });
+  }
+
+  columns.push(
     {
       accessorKey: "assignedTo",
       header: "Assigned To",
@@ -254,6 +276,8 @@ export function getApplicationsColumns(
           onRefresh={onRefresh}
         />
       ),
-    },
-  ];
+    }
+  );
+
+  return columns;
 }

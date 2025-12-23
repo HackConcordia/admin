@@ -49,6 +49,7 @@ const TRAVEL_REIMBURSEMENT_OPTIONS = [
     label: "Required Travel Reimbursement outside Quebec",
   },
   { value: "false", label: "Not Required Travel Reimbursement" },
+  { value: "approved", label: "Approved Travel Reimbursement" },
 ];
 
 export default function ApplicationsFilters({

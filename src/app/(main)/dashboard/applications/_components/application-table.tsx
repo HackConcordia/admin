@@ -51,8 +51,12 @@ export function ApplicationTable({
 
   const columns = useMemo(
     () =>
-      getApplicationsColumns(isSuperAdmin, () => forceRerender((n) => n + 1)),
-    [isSuperAdmin]
+      getApplicationsColumns(
+        isSuperAdmin,
+        () => forceRerender((n) => n + 1),
+        initialTravelReimbursement === "approved"
+      ),
+    [isSuperAdmin, initialTravelReimbursement]
   );
 
   const table = useDataTableInstance({
