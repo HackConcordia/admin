@@ -1539,14 +1539,29 @@ export default function ApplicationView({
                                   editedApplication.travelReimbursementAmount ||
                                   ""
                                 }
-                                onChange={(e) =>
-                                  updateField(
-                                    "travelReimbursementAmount",
-                                    e.target.value
-                                      ? Number(e.target.value)
-                                      : undefined
-                                  )
-                                }
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  // Only allow empty string or positive integers
+                                  if (value === "" || /^\d+$/.test(value)) {
+                                    updateField(
+                                      "travelReimbursementAmount",
+                                      value ? parseInt(value, 10) : undefined
+                                    );
+                                  }
+                                }}
+                                onKeyDown={(e) => {
+                                  // Prevent decimal point, comma, and e/E (scientific notation)
+                                  if (
+                                    e.key === "." ||
+                                    e.key === "," ||
+                                    e.key === "e" ||
+                                    e.key === "E"
+                                  ) {
+                                    e.preventDefault();
+                                  }
+                                }}
+                                step="1"
+                                className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                               />
                             </div>
                             <div className="space-y-2">

@@ -57,10 +57,10 @@ export function TravelReimbursementDialog({
         return;
       }
 
-      const amountNum = parseFloat(amount);
+      const amountNum = parseInt(amount, 10);
 
-      if (isNaN(amountNum) || amountNum <= 0) {
-        setError("Amount must be a positive number");
+      if (isNaN(amountNum) || amountNum <= 0 || !Number.isInteger(Number(amount))) {
+        setError("Amount must be a positive whole number");
         return;
       }
 
@@ -162,11 +162,22 @@ export function TravelReimbursementDialog({
                   placeholder={`Enter amount (max ${CURRENCY_LIMITS[currency]} ${currency})`}
                   value={amount}
                   onChange={(e) => {
-                    setAmount(e.target.value);
-                    setError("");
+                    const value = e.target.value;
+                    // Only allow empty string or positive integers
+                    if (value === "" || /^\d+$/.test(value)) {
+                      setAmount(value);
+                      setError("");
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    // Prevent decimal point, comma, and e/E (scientific notation)
+                    if (e.key === "." || e.key === "," || e.key === "e" || e.key === "E") {
+                      e.preventDefault();
+                    }
                   }}
                   min="0"
-                  step="0.01"
+                  step="1"
+                  className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
               </div>
             </div>
