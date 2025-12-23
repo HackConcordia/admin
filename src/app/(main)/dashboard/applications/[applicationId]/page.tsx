@@ -1,11 +1,19 @@
 import connectMongoDB from "@/repository/mongoose";
 import Application from "@/repository/models/application";
+import Team from "@/repository/models/team";
 import { notFound } from "next/navigation";
-import ApplicationView, { type ApplicationDetails } from "./view";
+import ApplicationView, {
+  type ApplicationDetails,
+  type TeamData,
+} from "./view";
 
 export const dynamic = "force-dynamic";
 
-export default async function Page({ params }: { params: Promise<{ applicationId: string }> }) {
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ applicationId: string }>;
+}) {
   const { applicationId } = await params;
   if (!applicationId) return notFound();
 
@@ -39,7 +47,9 @@ export default async function Page({ params }: { params: Promise<{ applicationId
     workingLanguages: app.workingLanguages,
     workingLanguagesOther: app.workingLanguagesOther,
     shirtSize: app.shirtSize,
-    dietaryRestrictions: Array.isArray(app.dietaryRestrictions) ? app.dietaryRestrictions : [],
+    dietaryRestrictions: Array.isArray(app.dietaryRestrictions)
+      ? app.dietaryRestrictions
+      : [],
     dietaryRestrictionsDescription: app.dietaryRestrictionsDescription,
     github: app.github,
     linkedin: app.linkedin,
@@ -55,6 +65,7 @@ export default async function Page({ params }: { params: Promise<{ applicationId
     nextCoopTerm: app.nextCoopTerm,
     nextCoopTermOther: app.nextCoopTermOther,
     status: app.status,
+    teamId: app.teamId,
     processedBy: app.processedBy,
     processedAt: app.processedAt?.toISOString?.() ?? undefined,
     hasResume: Boolean(app?.resume?.id),
@@ -65,5 +76,45 @@ export default async function Page({ params }: { params: Promise<{ applicationId
     skillTags: app.skillTags,
   };
 
-  return <ApplicationView application={application} adminEmail={null} />;
+  // Fetch team data if the applicant is in a team
+  let teamData: TeamData = null;
+  try {
+    if (app.teamId) {
+      const team = await Team.findById(app.teamId)
+        .select("teamName members")
+        .lean()
+        .exec();
+
+      if (team) {
+        // Fetch member details
+        const memberIds = (team as any).members.map((m: any) => m.userId);
+        const members = await Application.find({ _id: { $in: memberIds } })
+          .select("_id firstName lastName email")
+          .lean()
+          .exec();
+
+        teamData = {
+          teamId: String(app.teamId),
+          teamName: (team as any).teamName,
+          members: members.map((m: any) => ({
+            userId: String(m._id),
+            firstName: m.firstName,
+            lastName: m.lastName,
+            email: m.email,
+          })),
+        };
+      }
+    }
+  } catch (error) {
+    console.error("Failed to fetch team data:", error);
+    // Continue without team data if fetch fails
+  }
+
+  return (
+    <ApplicationView
+      application={application}
+      adminEmail={null}
+      teamData={teamData}
+    />
+  );
 }

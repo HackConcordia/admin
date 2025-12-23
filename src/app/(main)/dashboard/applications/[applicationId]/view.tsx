@@ -14,7 +14,10 @@ function DebouncedInput({
 }: {
   value: string;
   onChange: (value: string) => void;
-} & Omit<React.InputHTMLAttributes<HTMLInputElement>, "onChange" | "defaultValue">) {
+} & Omit<
+  React.InputHTMLAttributes<HTMLInputElement>,
+  "onChange" | "defaultValue"
+>) {
   const inputRef = useRef<HTMLInputElement>(null);
   const initialValueRef = useRef(initialValue);
 
@@ -50,7 +53,10 @@ function DebouncedTextarea({
 }: {
   value: string;
   onChange: (value: string) => void;
-} & Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, "onChange" | "defaultValue">) {
+} & Omit<
+  React.TextareaHTMLAttributes<HTMLTextAreaElement>,
+  "onChange" | "defaultValue"
+>) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const initialValueRef = useRef(initialValue);
 
@@ -146,6 +152,7 @@ import {
 import { toast } from "sonner";
 import { getAllSkillTags, getSkillTagsByCategory } from "@/lib/skill-tags";
 import { ApplicationStatusBadge } from "../_components/application-status-badge";
+import { TeamInfoCard } from "./team-info-card";
 
 // Import form options from constants
 import { AgeOptions } from "@/constants/AgeOptions";
@@ -244,6 +251,19 @@ function formatArrayValue(value: string | string[] | undefined | null): string {
   return filtered.length > 0 ? filtered.join(" | ") : "—";
 }
 
+export type TeamMemberInfo = {
+  userId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+};
+
+export type TeamData = {
+  teamId: string;
+  teamName: string;
+  members: TeamMemberInfo[];
+} | null;
+
 export type ApplicationDetails = {
   _id: string;
   firstName: string;
@@ -286,6 +306,7 @@ export type ApplicationDetails = {
   nextCoopTerm: string;
   nextCoopTermOther: string;
   status: string;
+  teamId?: string;
   processedBy?: string;
   processedAt?: string;
   hasResume?: boolean;
@@ -299,9 +320,11 @@ export type ApplicationDetails = {
 export default function ApplicationView({
   application: initial,
   adminEmail: initialAdminEmail,
+  teamData,
 }: {
   application: ApplicationDetails;
   adminEmail: string | null;
+  teamData?: TeamData;
 }) {
   const router = useRouter();
 
@@ -346,7 +369,9 @@ export default function ApplicationView({
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Multi-select popover state
-  const [openMultiselect, setOpenMultiselect] = React.useState<string | null>(null);
+  const [openMultiselect, setOpenMultiselect] = React.useState<string | null>(
+    null
+  );
 
   // Update local state when application prop changes
   React.useEffect(() => {
@@ -372,7 +397,7 @@ export default function ApplicationView({
         const meJson = await meRes.json();
         if (!active) return;
         setAdminEmail(meJson?.data?.email ?? null);
-      } catch { }
+      } catch {}
     }
     loadAdmin();
     return () => {
@@ -665,7 +690,11 @@ export default function ApplicationView({
   }
 
   // Fields that use JSON string in array format: ['["value1","value2"]']
-  const JSON_STRING_ARRAY_FIELDS = ["workRegions", "jobTypesInterested", "dietaryRestrictions"];
+  const JSON_STRING_ARRAY_FIELDS = [
+    "workRegions",
+    "jobTypesInterested",
+    "dietaryRestrictions",
+  ];
   // Fields that use JSON string format directly: '["value1","value2"]'
   const JSON_STRING_DIRECT_FIELDS = ["workingLanguages"];
 
@@ -677,7 +706,11 @@ export default function ApplicationView({
     // For multiselect fields, check if array contains "other"
     if (Array.isArray(value)) {
       // Check if it's JSON string in array format
-      if (value.length === 1 && typeof value[0] === "string" && value[0].trim().startsWith("[")) {
+      if (
+        value.length === 1 &&
+        typeof value[0] === "string" &&
+        value[0].trim().startsWith("[")
+      ) {
         try {
           const parsed = JSON.parse(value[0]);
           if (Array.isArray(parsed)) {
@@ -696,7 +729,9 @@ export default function ApplicationView({
         try {
           const parsed = JSON.parse(value);
           if (Array.isArray(parsed)) {
-            return parsed.some((v: string) => String(v).toLowerCase() === "other");
+            return parsed.some(
+              (v: string) => String(v).toLowerCase() === "other"
+            );
           }
         } catch {
           // Fall through
@@ -938,7 +973,9 @@ export default function ApplicationView({
             </PopoverTrigger>
             <PopoverContent className="w-[300px] p-0" align="start">
               <Command>
-                <CommandInput placeholder={`Search ${label.toLowerCase()}...`} />
+                <CommandInput
+                  placeholder={`Search ${label.toLowerCase()}...`}
+                />
                 <CommandList>
                   <CommandEmpty>No option found.</CommandEmpty>
                   <CommandGroup>
@@ -946,7 +983,9 @@ export default function ApplicationView({
                       <CommandItem
                         key={`${opt.value}-${idx}`}
                         value={opt.value}
-                        onSelect={() => toggleMultiselectValue(field, opt.value)}
+                        onSelect={() =>
+                          toggleMultiselectValue(field, opt.value)
+                        }
                       >
                         <Check
                           className={
@@ -968,7 +1007,11 @@ export default function ApplicationView({
           {selectedValues.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-2">
               {selectedValues.map((v, idx) => (
-                <Badge key={`${v}-${idx}`} variant="secondary" className="text-xs">
+                <Badge
+                  key={`${v}-${idx}`}
+                  variant="secondary"
+                  className="text-xs"
+                >
                   {getLabel(v)}
                   <button
                     type="button"
@@ -1007,675 +1050,859 @@ export default function ApplicationView({
   return (
     <div className="grid grid-cols-1 gap-4 md:gap-6">
       <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2>Applicant Details</h2>
-              <p className="text-xs text-muted-foreground">
-                {isEditMode
-                  ? "Edit application fields and save changes."
-                  : "Review application and take action."}
-              </p>
-            </div>
-            {!isEditMode ? (
+        <div className="flex items-center justify-between">
+          <div>
+            <h2>Applicant Details</h2>
+            <p className="text-xs text-muted-foreground">
+              {isEditMode
+                ? "Edit application fields and save changes."
+                : "Review application and take action."}
+            </p>
+          </div>
+          {!isEditMode ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsEditMode(true)}
+            >
+              <Pencil className="mr-2 h-4 w-4" />
+              Edit
+            </Button>
+          ) : (
+            <div className="flex gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setIsEditMode(true)}
+                onClick={() => {
+                  setIsEditMode(false);
+                  setEditedApplication(application);
+                  setResumeFile(null);
+                }}
+                disabled={isSavingEdit}
               >
-                <Pencil className="mr-2 h-4 w-4" />
-                Edit
+                <XIcon className="mr-2 h-4 w-4" />
+                Cancel
               </Button>
-            ) : (
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setIsEditMode(false);
-                    setEditedApplication(application);
-                    setResumeFile(null);
-                  }}
-                  disabled={isSavingEdit}
-                >
-                  <XIcon className="mr-2 h-4 w-4" />
-                  Cancel
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={handleSaveClick}
-                  disabled={isSavingEdit || isUploadingResume}
-                >
-                  <Save className="mr-2 h-4 w-4" />
-                  {isSavingEdit ? "Saving..." : "Save Changes"}
-                </Button>
-              </div>
-            )}
-          </div>
-          <div className="space-y-4">
-            {error ? (
-              <div className="text-sm text-red-600">{error}</div>
-            ) : (
-              <>
-                {/* Header with name and status */}
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  {isEditMode ? (
-                    <div className="grid grid-cols-2 gap-4 flex-1">
-                      <div className="space-y-2">
-                        <Label className="text-xs">First Name *</Label>
-                        <DebouncedInput
-                          value={editedApplication.firstName}
-                          onChange={(v) => updateField("firstName", v)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-xs">Last Name *</Label>
-                        <DebouncedInput
-                          value={editedApplication.lastName}
-                          onChange={(v) => updateField("lastName", v)}
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <div>
-                      <h2>
-                        {application.firstName} {application.lastName}
-                      </h2>
-                      <p className="text-muted-foreground text-sm mb-2">
-                        {application.email}
-                      </p>
-                    </div>
-                  )}
-                  {isEditMode ? (
+              <Button
+                size="sm"
+                onClick={handleSaveClick}
+                disabled={isSavingEdit || isUploadingResume}
+              >
+                <Save className="mr-2 h-4 w-4" />
+                {isSavingEdit ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
+          )}
+        </div>
+        <div className="space-y-4">
+          {error ? (
+            <div className="text-sm text-red-600">{error}</div>
+          ) : (
+            <>
+              {/* Header with name and status */}
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                {isEditMode ? (
+                  <div className="grid grid-cols-2 gap-4 flex-1">
                     <div className="space-y-2">
-                      <Label className="text-xs">Status</Label>
-                      <Select
-                        value={
-                          APPLICATION_STATUSES.find(
+                      <Label className="text-xs">First Name *</Label>
+                      <DebouncedInput
+                        value={editedApplication.firstName}
+                        onChange={(v) => updateField("firstName", v)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Last Name *</Label>
+                      <DebouncedInput
+                        value={editedApplication.lastName}
+                        onChange={(v) => updateField("lastName", v)}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <h2>
+                      {application.firstName} {application.lastName}
+                    </h2>
+                    <p className="text-muted-foreground text-sm mb-2">
+                      {application.email}
+                    </p>
+                  </div>
+                )}
+                {isEditMode ? (
+                  <div className="space-y-2">
+                    <Label className="text-xs">Status</Label>
+                    <Select
+                      value={
+                        APPLICATION_STATUSES.find(
+                          (s) =>
+                            s.value.toLowerCase() ===
+                            editedApplication.status?.toLowerCase()
+                        )?.value ||
+                        editedApplication.status ||
+                        ""
+                      }
+                      onValueChange={(v) => updateField("status", v)}
+                    >
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {editedApplication.status &&
+                          !APPLICATION_STATUSES.find(
                             (s) =>
                               s.value.toLowerCase() ===
                               editedApplication.status?.toLowerCase()
-                          )?.value ||
-                          editedApplication.status ||
-                          ""
-                        }
-                        onValueChange={(v) => updateField("status", v)}
-                      >
-                        <SelectTrigger className="w-[180px]">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {editedApplication.status &&
-                            !APPLICATION_STATUSES.find(
-                              (s) =>
-                                s.value.toLowerCase() ===
-                                editedApplication.status?.toLowerCase()
-                            ) && (
-                              <SelectItem value={editedApplication.status}>
-                                {editedApplication.status} (current)
-                              </SelectItem>
-                            )}
-                          {APPLICATION_STATUSES.map((status) => (
-                            <SelectItem key={status.value} value={status.value}>
-                              {status.label}
+                          ) && (
+                            <SelectItem value={editedApplication.status}>
+                              {editedApplication.status} (current)
                             </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  ) : (
-                    <ApplicationStatusBadge status={application.status} />
-                  )}
-                </div>
-
-                {isEditMode && (
-                  <div className="space-y-2">
-                    <Label className="text-xs">Email (read-only)</Label>
-                    <Input
-                      type="email"
-                      value={editedApplication.email}
-                      readOnly
-                      disabled
-                      className="bg-muted cursor-not-allowed"
-                    />
+                          )}
+                        {APPLICATION_STATUSES.map((status) => (
+                          <SelectItem key={status.value} value={status.value}>
+                            {status.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
+                ) : (
+                  <ApplicationStatusBadge status={application.status} />
                 )}
+              </div>
+
+              {isEditMode && (
+                <div className="space-y-2">
+                  <Label className="text-xs">Email (read-only)</Label>
+                  <Input
+                    type="email"
+                    value={editedApplication.email}
+                    readOnly
+                    disabled
+                    className="bg-muted cursor-not-allowed"
+                  />
+                </div>
+              )}
+
+              <Separator />
+
+              <div className="space-y-6">
+                {/* Personal Information */}
+                <div>
+                  <h3 className="mb-6 text-sm font-semibold">
+                    Personal Information
+                  </h3>
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
+                    {renderField(
+                      "18 or Above",
+                      "isEighteenOrAbove",
+                      "select",
+                      AgeOptions("en")
+                    )}
+                    {renderField("Phone Number", "phoneNumber", "text")}
+                    {renderField(
+                      "Gender",
+                      "gender",
+                      "select",
+                      Genders("en").filter((g) => g.value !== "")
+                    )}
+                    {renderField(
+                      "Pronouns",
+                      "pronouns",
+                      "select",
+                      Pronouns("en").filter((p) => p.value !== "")
+                    )}
+                    {renderField(
+                      "Underrepresented",
+                      "underrepresented",
+                      "select",
+                      UnderrepresentedGroups("en")
+                    )}
+                  </div>
+                </div>
 
                 <Separator />
 
-                <div className="space-y-6">
-                  {/* Personal Information */}
-                  <div>
-                    <h3 className="mb-6 text-sm font-semibold">
-                      Personal Information
-                    </h3>
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
-                      {renderField("18 or Above", "isEighteenOrAbove", "select", AgeOptions("en"))}
-                      {renderField("Phone Number", "phoneNumber", "text")}
-                      {renderField("Gender", "gender", "select", Genders("en").filter((g) => g.value !== ""))}
-                      {renderField("Pronouns", "pronouns", "select", Pronouns("en").filter((p) => p.value !== ""))}
-                      {renderField("Underrepresented", "underrepresented", "select", UnderrepresentedGroups("en"))}
-                    </div>
+                {/* Education */}
+                <div>
+                  <h3 className="mb-6 text-sm font-semibold">Education</h3>
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
+                    {renderField("School", "school", "select", Schools("en"))}
+                    {isOtherSelected("school") &&
+                      renderField("School (Other)", "schoolOther", "text")}
+                    {renderField(
+                      "Faculty",
+                      "faculty",
+                      "select",
+                      Faculties("en")
+                    )}
+                    {isOtherSelected("faculty") &&
+                      renderField("Faculty (Other)", "facultyOther", "text")}
+                    {renderField(
+                      "Level of Study",
+                      "levelOfStudy",
+                      "select",
+                      LevelOfStudyTypes("en")
+                    )}
+                    {isOtherSelected("levelOfStudy") &&
+                      renderField(
+                        "Level of Study (Other)",
+                        "levelOfStudyOther",
+                        "text"
+                      )}
+                    {renderField(
+                      "Program",
+                      "program",
+                      "select",
+                      Programs("en")
+                    )}
+                    {isOtherSelected("program") &&
+                      renderField("Program (Other)", "programOther", "text")}
+                    {renderField(
+                      "Graduation Semester",
+                      "graduationSemester",
+                      "select",
+                      GraduationSemesters("en")
+                    )}
+                    {renderField(
+                      "Graduation Year",
+                      "graduationYear",
+                      "select",
+                      GraduationYears("en")
+                    )}
                   </div>
+                </div>
 
-                  <Separator />
+                <Separator />
 
-                  {/* Education */}
-                  <div>
-                    <h3 className="mb-6 text-sm font-semibold">Education</h3>
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
-                      {renderField("School", "school", "select", Schools("en"))}
-                      {isOtherSelected("school") && renderField("School (Other)", "schoolOther", "text")}
-                      {renderField("Faculty", "faculty", "select", Faculties("en"))}
-                      {isOtherSelected("faculty") && renderField("Faculty (Other)", "facultyOther", "text")}
-                      {renderField("Level of Study", "levelOfStudy", "select", LevelOfStudyTypes("en"))}
-                      {isOtherSelected("levelOfStudy") && renderField("Level of Study (Other)", "levelOfStudyOther", "text")}
-                      {renderField("Program", "program", "select", Programs("en"))}
-                      {isOtherSelected("program") && renderField("Program (Other)", "programOther", "text")}
-                      {renderField("Graduation Semester", "graduationSemester", "select", GraduationSemesters("en"))}
-                      {renderField("Graduation Year", "graduationYear", "select", GraduationYears("en"))}
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  {/* Logistics */}
-                  <div>
-                    <h3 className="mb-6 text-sm font-semibold">Logistics</h3>
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
-                      {(() => {
-                        const countriesList = Countries("en");
-                        const currentValue = isEditMode ? editedApplication.country : application.country;
-                        // Match by code (value) or by label (for backwards compatibility)
-                        const matchedCountry = countriesList.find(
-                          (c) =>
-                            c.value.toLowerCase() === currentValue?.toLowerCase() ||
-                            c.label.toLowerCase() === currentValue?.toLowerCase()
-                        );
-                        if (!isEditMode) {
-                          // Display mode - show full country name
-                          return (
-                            <div className="space-y-1 min-w-0">
-                              <div className="text-muted-foreground text-xs">Country</div>
-                              <div className="truncate" title={matchedCountry?.label || currentValue || ""}>
-                                {matchedCountry?.label || currentValue || "—"}
-                              </div>
-                            </div>
-                          );
-                        }
-                        // Edit mode
+                {/* Logistics */}
+                <div>
+                  <h3 className="mb-6 text-sm font-semibold">Logistics</h3>
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
+                    {(() => {
+                      const countriesList = Countries("en");
+                      const currentValue = isEditMode
+                        ? editedApplication.country
+                        : application.country;
+                      // Match by code (value) or by label (for backwards compatibility)
+                      const matchedCountry = countriesList.find(
+                        (c) =>
+                          c.value.toLowerCase() ===
+                            currentValue?.toLowerCase() ||
+                          c.label.toLowerCase() === currentValue?.toLowerCase()
+                      );
+                      if (!isEditMode) {
+                        // Display mode - show full country name
                         return (
-                          <div className="space-y-2 min-w-0">
-                            <Label className="text-xs">Country</Label>
-                            <Select
-                              value={matchedCountry?.value || currentValue || ""}
-                              onValueChange={(v) => updateField("country", v)}
+                          <div className="space-y-1 min-w-0">
+                            <div className="text-muted-foreground text-xs">
+                              Country
+                            </div>
+                            <div
+                              className="truncate"
+                              title={
+                                matchedCountry?.label || currentValue || ""
+                              }
                             >
-                              <SelectTrigger className="w-full truncate">
-                                <SelectValue placeholder="Select country" className="truncate" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {currentValue && !matchedCountry && (
-                                  <SelectItem value={currentValue}>
-                                    {currentValue} (current)
-                                  </SelectItem>
-                                )}
-                                {countriesList.map((country, idx) => (
-                                  <SelectItem key={`${country.value}-${idx}`} value={country.value}>
-                                    {country.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                              {matchedCountry?.label || currentValue || "—"}
+                            </div>
                           </div>
                         );
-                      })()}
-                      {renderField("City", "city", "text")}
-                      {renderField("Shirt Size", "shirtSize", "select", TShirtSizes("en"))}
-                      {renderField("Dietary Restrictions", "dietaryRestrictions", "multiselect", DietaryRestrictions("en"))}
-                      {isOtherSelected("dietaryRestrictions") && (
-                        <div className="md:col-span-1">
-                          {renderField("Dietary Restrictions Description", "dietaryRestrictionsDescription", "textarea")}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  {/* Project Experience */}
-                  <div>
-                    <h3 className="mb-6 text-sm font-semibold">
-                      Project Experience
-                    </h3>
-                    <div className="space-y-6">
-                      {renderField("Cool Project", "coolProject", "textarea")}
-                      {renderField("What are you excited about?", "excitedAbout", "textarea")}
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  {/* Career Interests */}
-                  <div>
-                    <h3 className="mb-6 text-sm font-semibold">
-                      Career Interests
-                    </h3>
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-                      {renderField("Job Roles Looking For", "jobRolesLookingFor", "select", JobRoles("en"))}
-                      {renderField("Work Regions", "workRegions", "multiselect", WorkRegions("en"))}
-                      {isOtherSelected("workRegions") && renderField("Work Regions (Other)", "workRegionsOther", "text")}
-                      {renderField("Job Types Interested", "jobTypesInterested", "multiselect", JobTypes("en"))}
-                      {isOtherSelected("jobTypesInterested") && renderField("Job Types (Other)", "jobTypesInterestedOther", "text")}
-                      {renderField("Registered for Co-op", "isRegisteredForCoop", "boolean")}
-                      {renderField("Next Co-op Term", "nextCoopTerm", "select", CoopTerms("en"))}
-                      {isOtherSelected("nextCoopTerm") && renderField("Next Co-op Term (Other)", "nextCoopTermOther", "text")}
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  {/* Preferences */}
-                  <div>
-                    <h3 className="mb-6 text-sm font-semibold">Preferences</h3>
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-                      {renderField("Preferred Language", "preferredLanguage", "select", CommunicationLanguages("en"))}
-                      {renderField("Working Languages", "workingLanguages", "multiselect", WorkingLanguages("en"))}
-                      {isOtherSelected("workingLanguages") && renderField("Working Languages (Other)", "workingLanguagesOther", "text")}
-                      {renderField("Travel Reimbursement", "travelReimbursement", "boolean")}
-                      {(application.isTravelReimbursementApproved !== undefined || isEditMode) && (
-                        <div className="space-y-1 md:col-span-2">
-                          {isEditMode ? (
-                            <div className="grid grid-cols-3 gap-4">
-                              <div className="space-y-2">
-                                <Label className="text-xs">Travel Reimbursement Approved</Label>
-                                <Switch
-                                  checked={editedApplication.isTravelReimbursementApproved || false}
-                                  onCheckedChange={(checked) =>
-                                    updateField("isTravelReimbursementApproved", checked)
-                                  }
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label className="text-xs">Amount</Label>
-                                <Input
-                                  type="number"
-                                  value={editedApplication.travelReimbursementAmount || ""}
-                                  onChange={(e) =>
-                                    updateField(
-                                      "travelReimbursementAmount",
-                                      e.target.value ? Number(e.target.value) : undefined
-                                    )
-                                  }
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label className="text-xs">Currency</Label>
-                                <Select
-                                  value={editedApplication.travelReimbursementCurrency || ""}
-                                  onValueChange={(v) => updateField("travelReimbursementCurrency", v)}
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="CAD">CAD</SelectItem>
-                                    <SelectItem value="USD">USD</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            </div>
-                          ) : (
-                            <>
-                              <div className="text-muted-foreground text-xs">
-                                Travel Reimbursement Status
-                              </div>
-                              <div>
-                                {application.isTravelReimbursementApproved ? (
-                                  <span className="font-semibold text-green-600">
-                                    Approved: {application.travelReimbursementAmount}{" "}
-                                    {application.travelReimbursementCurrency}
-                                  </span>
-                                ) : (
-                                  <span className="text-muted-foreground">Not Approved</span>
-                                )}
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  {/* Links & Documents */}
-                  <div>
-                    <h3 className="mb-6 text-sm font-semibold">
-                      Links & Documents
-                    </h3>
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                      {isEditMode ? (
-                        <>
-                          <div className="space-y-2">
-                            <Label className="text-xs">GitHub</Label>
-                            <DebouncedInput
-                              value={editedApplication.github || ""}
-                              onChange={(v) => updateField("github", v)}
-                              placeholder="https://github.com/username"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label className="text-xs">LinkedIn</Label>
-                            <DebouncedInput
-                              value={editedApplication.linkedin || ""}
-                              onChange={(v) => updateField("linkedin", v)}
-                              placeholder="https://linkedin.com/in/username"
-                            />
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <div className="space-y-1">
-                            <div className="text-muted-foreground text-xs">GitHub</div>
-                            <div>
-                              {application.github ? (
-                                <a
-                                  href={application.github}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-blue-600 underline"
-                                >
-                                  {application.github}
-                                </a>
-                              ) : (
-                                "—"
-                              )}
-                            </div>
-                          </div>
-                          <div className="space-y-1">
-                            <div className="text-muted-foreground text-xs">LinkedIn</div>
-                            <div>
-                              {application.linkedin ? (
-                                <a
-                                  href={application.linkedin}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-blue-600 underline"
-                                >
-                                  {application.linkedin}
-                                </a>
-                              ) : (
-                                "—"
-                              )}
-                            </div>
-                          </div>
-                        </>
-                      )}
-                      <div className="space-y-2">
-                        <Label className="text-xs">Resume</Label>
-                        {isEditMode ? (
-                          <div className="space-y-3">
-                            {application.hasResume && (
-                              <div className="flex items-center gap-2">
-                                <a
-                                  href={`/api/users/resume/${application._id}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-blue-600 underline text-sm"
-                                >
-                                  View Current Resume
-                                </a>
-                                <Button
-                                  type="button"
-                                  variant="destructive"
-                                  size="sm"
-                                  onClick={handleDeleteResume}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            )}
-                            <div className="flex items-center gap-2">
-                              <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept=".pdf,.doc,.docx"
-                                onChange={handleResumeSelect}
-                                className="hidden"
+                      }
+                      // Edit mode
+                      return (
+                        <div className="space-y-2 min-w-0">
+                          <Label className="text-xs">Country</Label>
+                          <Select
+                            value={matchedCountry?.value || currentValue || ""}
+                            onValueChange={(v) => updateField("country", v)}
+                          >
+                            <SelectTrigger className="w-full truncate">
+                              <SelectValue
+                                placeholder="Select country"
+                                className="truncate"
                               />
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => fileInputRef.current?.click()}
-                              >
-                                <Upload className="mr-2 h-4 w-4" />
-                                {resumeFile ? "Change File" : "Upload New Resume"}
-                              </Button>
-                              {resumeFile && (
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm text-muted-foreground">
-                                    {resumeFile.name}
-                                  </span>
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setResumeFile(null)}
-                                  >
-                                    <X className="h-4 w-4" />
-                                  </Button>
-                                </div>
+                            </SelectTrigger>
+                            <SelectContent>
+                              {currentValue && !matchedCountry && (
+                                <SelectItem value={currentValue}>
+                                  {currentValue} (current)
+                                </SelectItem>
                               )}
+                              {countriesList.map((country, idx) => (
+                                <SelectItem
+                                  key={`${country.value}-${idx}`}
+                                  value={country.value}
+                                >
+                                  {country.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      );
+                    })()}
+                    {renderField("City", "city", "text")}
+                    {renderField(
+                      "Shirt Size",
+                      "shirtSize",
+                      "select",
+                      TShirtSizes("en")
+                    )}
+                    {renderField(
+                      "Dietary Restrictions",
+                      "dietaryRestrictions",
+                      "multiselect",
+                      DietaryRestrictions("en")
+                    )}
+                    {isOtherSelected("dietaryRestrictions") && (
+                      <div className="md:col-span-1">
+                        {renderField(
+                          "Dietary Restrictions Description",
+                          "dietaryRestrictionsDescription",
+                          "textarea"
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Project Experience */}
+                <div>
+                  <h3 className="mb-6 text-sm font-semibold">
+                    Project Experience
+                  </h3>
+                  <div className="space-y-6">
+                    {renderField("Cool Project", "coolProject", "textarea")}
+                    {renderField(
+                      "What are you excited about?",
+                      "excitedAbout",
+                      "textarea"
+                    )}
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Career Interests */}
+                <div>
+                  <h3 className="mb-6 text-sm font-semibold">
+                    Career Interests
+                  </h3>
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+                    {renderField(
+                      "Job Roles Looking For",
+                      "jobRolesLookingFor",
+                      "select",
+                      JobRoles("en")
+                    )}
+                    {renderField(
+                      "Work Regions",
+                      "workRegions",
+                      "multiselect",
+                      WorkRegions("en")
+                    )}
+                    {isOtherSelected("workRegions") &&
+                      renderField(
+                        "Work Regions (Other)",
+                        "workRegionsOther",
+                        "text"
+                      )}
+                    {renderField(
+                      "Job Types Interested",
+                      "jobTypesInterested",
+                      "multiselect",
+                      JobTypes("en")
+                    )}
+                    {isOtherSelected("jobTypesInterested") &&
+                      renderField(
+                        "Job Types (Other)",
+                        "jobTypesInterestedOther",
+                        "text"
+                      )}
+                    {renderField(
+                      "Registered for Co-op",
+                      "isRegisteredForCoop",
+                      "boolean"
+                    )}
+                    {renderField(
+                      "Next Co-op Term",
+                      "nextCoopTerm",
+                      "select",
+                      CoopTerms("en")
+                    )}
+                    {isOtherSelected("nextCoopTerm") &&
+                      renderField(
+                        "Next Co-op Term (Other)",
+                        "nextCoopTermOther",
+                        "text"
+                      )}
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Preferences */}
+                <div>
+                  <h3 className="mb-6 text-sm font-semibold">Preferences</h3>
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+                    {renderField(
+                      "Preferred Language",
+                      "preferredLanguage",
+                      "select",
+                      CommunicationLanguages("en")
+                    )}
+                    {renderField(
+                      "Working Languages",
+                      "workingLanguages",
+                      "multiselect",
+                      WorkingLanguages("en")
+                    )}
+                    {isOtherSelected("workingLanguages") &&
+                      renderField(
+                        "Working Languages (Other)",
+                        "workingLanguagesOther",
+                        "text"
+                      )}
+                    {renderField(
+                      "Travel Reimbursement",
+                      "travelReimbursement",
+                      "boolean"
+                    )}
+                    {(application.isTravelReimbursementApproved !== undefined ||
+                      isEditMode) && (
+                      <div className="space-y-1 md:col-span-2">
+                        {isEditMode ? (
+                          <div className="grid grid-cols-3 gap-4">
+                            <div className="space-y-2">
+                              <Label className="text-xs">
+                                Travel Reimbursement Approved
+                              </Label>
+                              <Switch
+                                checked={
+                                  editedApplication.isTravelReimbursementApproved ||
+                                  false
+                                }
+                                onCheckedChange={(checked) =>
+                                  updateField(
+                                    "isTravelReimbursementApproved",
+                                    checked
+                                  )
+                                }
+                              />
                             </div>
-                            <p className="text-xs text-muted-foreground">
-                              Accepted formats: PDF, DOC, DOCX (max 5MB)
-                            </p>
+                            <div className="space-y-2">
+                              <Label className="text-xs">Amount</Label>
+                              <Input
+                                type="number"
+                                value={
+                                  editedApplication.travelReimbursementAmount ||
+                                  ""
+                                }
+                                onChange={(e) =>
+                                  updateField(
+                                    "travelReimbursementAmount",
+                                    e.target.value
+                                      ? Number(e.target.value)
+                                      : undefined
+                                  )
+                                }
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-xs">Currency</Label>
+                              <Select
+                                value={
+                                  editedApplication.travelReimbursementCurrency ||
+                                  ""
+                                }
+                                onValueChange={(v) =>
+                                  updateField("travelReimbursementCurrency", v)
+                                }
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="CAD">CAD</SelectItem>
+                                  <SelectItem value="USD">USD</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
                           </div>
                         ) : (
+                          <>
+                            <div className="text-muted-foreground text-xs">
+                              Travel Reimbursement Status
+                            </div>
+                            <div>
+                              {application.isTravelReimbursementApproved ? (
+                                <span className="font-semibold text-green-600">
+                                  Approved:{" "}
+                                  {application.travelReimbursementAmount}{" "}
+                                  {application.travelReimbursementCurrency}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">
+                                  Not Approved
+                                </span>
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Links & Documents */}
+                <div>
+                  <h3 className="mb-6 text-sm font-semibold">
+                    Links & Documents
+                  </h3>
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    {isEditMode ? (
+                      <>
+                        <div className="space-y-2">
+                          <Label className="text-xs">GitHub</Label>
+                          <DebouncedInput
+                            value={editedApplication.github || ""}
+                            onChange={(v) => updateField("github", v)}
+                            placeholder="https://github.com/username"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs">LinkedIn</Label>
+                          <DebouncedInput
+                            value={editedApplication.linkedin || ""}
+                            onChange={(v) => updateField("linkedin", v)}
+                            placeholder="https://linkedin.com/in/username"
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="space-y-1">
+                          <div className="text-muted-foreground text-xs">
+                            GitHub
+                          </div>
                           <div>
-                            {application.hasResume ? (
+                            {application.github ? (
                               <a
-                                href={`/api/users/resume/${application._id}`}
+                                href={application.github}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-blue-600 underline"
                               >
-                                View Resume
+                                {application.github}
                               </a>
                             ) : (
                               "—"
                             )}
                           </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* Comments Section */}
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div>
-                    <h3 className="mb-6 text-sm font-semibold">Comments</h3>
-                    <div className="space-y-3">
-                      <Textarea
-                        placeholder="Add comments about this application..."
-                        value={comments}
-                        onChange={(e) => setComments(e.target.value)}
-                        className="min-h-60"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="mb-6 text-sm font-semibold">Skills</h3>
-                    <div className="space-y-3">
-                      <Popover
-                        open={skillTagsOpen}
-                        onOpenChange={setSkillTagsOpen}
-                      >
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            role="combobox"
-                            aria-expanded={skillTagsOpen}
-                            className="w-full justify-between font-normal"
-                          >
-                            <span className="text-sm">
-                              {skillTags.length > 0
-                                ? `${skillTags.length} tag${skillTags.length !== 1 ? "s" : ""
-                                } selected`
-                                : "Select skill tags..."}
-                            </span>
-                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-[400px] p-0" align="start">
-                          <Command>
-                            <CommandInput
-                              placeholder="Search skill tags..."
-                              className="h-9"
-                            />
-                            <CommandList className="max-h-[300px]">
-                              <CommandEmpty>No skill tag found.</CommandEmpty>
-                              {Object.entries(getSkillTagsByCategory()).map(
-                                ([category, tags]) => (
-                                  <CommandGroup key={category} heading={category}>
-                                    {tags.map((tag) => (
-                                      <CommandItem
-                                        key={tag}
-                                        value={tag}
-                                        onSelect={() => {
-                                          toggleSkillTag(tag);
-                                        }}
-                                        className="text-sm"
-                                      >
-                                        <Check
-                                          className={
-                                            skillTags.includes(tag)
-                                              ? "mr-2 h-4 w-4 opacity-100"
-                                              : "mr-2 h-4 w-4 opacity-0"
-                                          }
-                                        />
-                                        {tag}
-                                      </CommandItem>
-                                    ))}
-                                  </CommandGroup>
-                                )
-                              )}
-                            </CommandList>
-                          </Command>
-                        </PopoverContent>
-                      </Popover>
-
-                      {/* Selected Tags Display */}
-                      {skillTags.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                          {skillTags.map((tag) => (
-                            <Badge
-                              key={tag}
-                              variant="secondary"
-                              className="gap-1 pr-1.5 text-xs"
-                            >
-                              <span>{tag}</span>
-                              <button
-                                type="button"
-                                onClick={() => removeSkillTag(tag)}
-                                className="ml-0.5 rounded-sm hover:bg-muted-foreground/20 transition-colors"
-                                aria-label={`Remove ${tag}`}
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-muted-foreground text-xs">
+                            LinkedIn
+                          </div>
+                          <div>
+                            {application.linkedin ? (
+                              <a
+                                href={application.linkedin}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 underline"
                               >
-                                <X className="h-3 w-3" />
-                              </button>
-                            </Badge>
-                          ))}
+                                {application.linkedin}
+                              </a>
+                            ) : (
+                              "—"
+                            )}
+                          </div>
+                        </div>
+                      </>
+                    )}
+                    <div className="space-y-2">
+                      <Label className="text-xs">Resume</Label>
+                      {isEditMode ? (
+                        <div className="space-y-3">
+                          {application.hasResume && (
+                            <div className="flex items-center gap-2">
+                              <a
+                                href={`/api/users/resume/${application._id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 underline text-sm"
+                              >
+                                View Current Resume
+                              </a>
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="sm"
+                                onClick={handleDeleteResume}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-2">
+                            <input
+                              ref={fileInputRef}
+                              type="file"
+                              accept=".pdf,.doc,.docx"
+                              onChange={handleResumeSelect}
+                              className="hidden"
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => fileInputRef.current?.click()}
+                            >
+                              <Upload className="mr-2 h-4 w-4" />
+                              {resumeFile ? "Change File" : "Upload New Resume"}
+                            </Button>
+                            {resumeFile && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm text-muted-foreground">
+                                  {resumeFile.name}
+                                </span>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setResumeFile(null)}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Accepted formats: PDF, DOC, DOCX (max 5MB)
+                          </p>
+                        </div>
+                      ) : (
+                        <div>
+                          {application.hasResume ? (
+                            <a
+                              href={`/api/users/resume/${application._id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 underline"
+                            >
+                              View Resume
+                            </a>
+                          ) : (
+                            "—"
+                          )}
                         </div>
                       )}
                     </div>
                   </div>
                 </div>
+              </div>
 
-                <Separator />
+              <Separator />
 
-                <div className="flex justify-between items-center w-full">
-                  <Button variant="ghost" onClick={() => router.back()}>
-                    Back
-                  </Button>
-
-                  {(() => {
-                    const status = application.status;
-                    const isSubmitted = status === "Submitted";
-                    const isConfirmed = status === "Confirmed";
-                    const isCheckedIn =
-                      status === "CheckedIn" || status === "Checked-in";
-
-                    if (isSubmitted) {
-                      return (
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Button
-                            onClick={saveMetadata}
-                            disabled={isSavingMetadata}
-                            variant="outline"
-                            className="btn-primary"
-                          >
-                            <SaveAllIcon /> {isSavingMetadata ? "Saving..." : "Save"}
-                          </Button>
-                          <Button
-                            onClick={handleAdmitClick}
-                            disabled={isSaving !== null}
-                            variant="default"
-                          >
-                            <CheckCircle2 /> Admit
-                          </Button>
-                          <Button
-                            onClick={handleWaitlistClick}
-                            disabled={isSaving !== null}
-                            variant="secondary"
-                          >
-                            <Hourglass /> Waitlist
-                          </Button>
-                          <Button
-                            onClick={handleRejectClick}
-                            disabled={isSaving !== null}
-                            variant="destructive"
-                          >
-                            <XCircle /> Reject
-                          </Button>
-                        </div>
-                      );
-                    }
-
-                    if (isConfirmed) {
-                      return (
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Button
-                            onClick={checkIn}
-                            disabled={isSaving !== null}
-                            variant="default"
-                          >
-                            <CheckCircle2 /> Check In
-                          </Button>
-                        </div>
-                      );
-                    }
-
-                    if (isCheckedIn) {
-                      return (
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Button onClick={checkIn} disabled variant="default">
-                            <CheckCircle2 /> Checked In
-                          </Button>
-                        </div>
-                      );
-                    }
-
-                    return null;
-                  })()}
+              {/* Comments Section */}
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                  <h3 className="mb-6 text-sm font-semibold">Comments</h3>
+                  <div className="space-y-3">
+                    <Textarea
+                      placeholder="Add comments about this application..."
+                      value={comments}
+                      onChange={(e) => setComments(e.target.value)}
+                      className="min-h-60"
+                    />
+                  </div>
                 </div>
-              </>
-            )}
-          </div>
+                <div>
+                  <h3 className="mb-6 text-sm font-semibold">Skills</h3>
+                  <div className="space-y-3">
+                    <Popover
+                      open={skillTagsOpen}
+                      onOpenChange={setSkillTagsOpen}
+                    >
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={skillTagsOpen}
+                          className="w-full justify-between font-normal"
+                        >
+                          <span className="text-sm">
+                            {skillTags.length > 0
+                              ? `${skillTags.length} tag${
+                                  skillTags.length !== 1 ? "s" : ""
+                                } selected`
+                              : "Select skill tags..."}
+                          </span>
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[400px] p-0" align="start">
+                        <Command>
+                          <CommandInput
+                            placeholder="Search skill tags..."
+                            className="h-9"
+                          />
+                          <CommandList className="max-h-[300px]">
+                            <CommandEmpty>No skill tag found.</CommandEmpty>
+                            {Object.entries(getSkillTagsByCategory()).map(
+                              ([category, tags]) => (
+                                <CommandGroup key={category} heading={category}>
+                                  {tags.map((tag) => (
+                                    <CommandItem
+                                      key={tag}
+                                      value={tag}
+                                      onSelect={() => {
+                                        toggleSkillTag(tag);
+                                      }}
+                                      className="text-sm"
+                                    >
+                                      <Check
+                                        className={
+                                          skillTags.includes(tag)
+                                            ? "mr-2 h-4 w-4 opacity-100"
+                                            : "mr-2 h-4 w-4 opacity-0"
+                                        }
+                                      />
+                                      {tag}
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              )
+                            )}
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+
+                    {/* Selected Tags Display */}
+                    {skillTags.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {skillTags.map((tag) => (
+                          <Badge
+                            key={tag}
+                            variant="secondary"
+                            className="gap-1 pr-1.5 text-xs"
+                          >
+                            <span>{tag}</span>
+                            <button
+                              type="button"
+                              onClick={() => removeSkillTag(tag)}
+                              className="ml-0.5 rounded-sm hover:bg-muted-foreground/20 transition-colors"
+                              aria-label={`Remove ${tag}`}
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Team Information Section - Subtle placement at bottom */}
+              {teamData && (
+                <>
+                  <TeamInfoCard
+                    teamData={teamData}
+                    currentApplicationId={application._id}
+                  />
+                  <Separator />
+                </>
+              )}
+
+              <div className="flex justify-between items-center w-full">
+                <Button variant="ghost" onClick={() => router.back()}>
+                  Back
+                </Button>
+
+                {(() => {
+                  const status = application.status;
+                  const isSubmitted = status === "Submitted";
+                  const isConfirmed = status === "Confirmed";
+                  const isCheckedIn =
+                    status === "CheckedIn" || status === "Checked-in";
+
+                  if (isSubmitted) {
+                    return (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                          onClick={saveMetadata}
+                          disabled={isSavingMetadata}
+                          variant="outline"
+                          className="btn-primary"
+                        >
+                          <SaveAllIcon />{" "}
+                          {isSavingMetadata ? "Saving..." : "Save"}
+                        </Button>
+                        <Button
+                          onClick={handleAdmitClick}
+                          disabled={isSaving !== null}
+                          variant="default"
+                        >
+                          <CheckCircle2 /> Admit
+                        </Button>
+                        <Button
+                          onClick={handleWaitlistClick}
+                          disabled={isSaving !== null}
+                          variant="secondary"
+                        >
+                          <Hourglass /> Waitlist
+                        </Button>
+                        <Button
+                          onClick={handleRejectClick}
+                          disabled={isSaving !== null}
+                          variant="destructive"
+                        >
+                          <XCircle /> Reject
+                        </Button>
+                      </div>
+                    );
+                  }
+
+                  if (isConfirmed) {
+                    return (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                          onClick={checkIn}
+                          disabled={isSaving !== null}
+                          variant="default"
+                        >
+                          <CheckCircle2 /> Check In
+                        </Button>
+                      </div>
+                    );
+                  }
+
+                  if (isCheckedIn) {
+                    return (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button onClick={checkIn} disabled variant="default">
+                          <CheckCircle2 /> Checked In
+                        </Button>
+                      </div>
+                    );
+                  }
+
+                  return null;
+                })()}
+              </div>
+            </>
+          )}
         </div>
+      </div>
 
       <TravelReimbursementDialog
         open={travelReimbursementDialogOpen}
@@ -1714,7 +1941,9 @@ export default function ApplicationView({
                       </span>{" "}
                       →{" "}
                       <span className="font-medium">
-                        {String(editedApplication[field as keyof ApplicationDetails])}
+                        {String(
+                          editedApplication[field as keyof ApplicationDetails]
+                        )}
                       </span>
                     </li>
                   ))}

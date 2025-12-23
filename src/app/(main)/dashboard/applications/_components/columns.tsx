@@ -38,8 +38,9 @@ export type ApplicationTableRow = {
   lastName?: string;
   email: string;
   status: string;
-  createdAt?: string;
+  school?: string;
   processedBy?: string;
+  processedAt?: string;
 };
 
 // Assign single
@@ -71,24 +72,36 @@ function AssignDialog({
 
     setLoading(true);
     try {
-      await toast.promise(
-        fetch("/api/admin/assign-applications", {
-          method: "POST",
-          body: JSON.stringify({
-            selectedAdminEmail: selected,
-            selectedApplicants: [applicationId],
-          }),
-          headers: { "Content-Type": "application/json" },
+      const response = await fetch("/api/admin/assign-applications", {
+        method: "POST",
+        body: JSON.stringify({
+          selectedAdminEmail: selected,
+          selectedApplicants: [applicationId],
         }),
-        {
-          loading: "Assigning...",
-          success: "Assigned",
-          error: "Failed",
-        }
-      );
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to assign");
+      }
+
+      const result = await response.json();
+      const teamMembersAdded = result?.data?.teamMembersAdded || 0;
+
+      if (teamMembersAdded > 0) {
+        toast.success(
+          `Assigned successfully (including ${teamMembersAdded} team member${
+            teamMembersAdded !== 1 ? "s" : ""
+          })`
+        );
+      } else {
+        toast.success("Assigned successfully");
+      }
 
       onAssigned(selected);
       onOpenChange(false);
+    } catch (error) {
+      toast.error("Failed to assign");
     } finally {
       setLoading(false);
     }
@@ -99,7 +112,9 @@ function AssignDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Assign</DialogTitle>
-          <DialogDescription>Select an admin</DialogDescription>
+          <DialogDescription>
+            Select an admin to review this application
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-2 py-2">
           <Label>Admin</Label>
@@ -115,6 +130,10 @@ function AssignDialog({
               ))}
             </SelectContent>
           </Select>
+          <p className="text-xs text-muted-foreground mt-2">
+            Note: If this applicant is in a team, all team members will be
+            assigned together.
+          </p>
         </div>
         <DialogFooter>
           <Button variant="secondary" onClick={() => onOpenChange(false)}>
@@ -130,24 +149,24 @@ function AssignDialog({
 }
 
 // Inline actions
-function RowActions({ row, isSuperAdmin }: any) {
+function RowActions({ row, isSuperAdmin, onRefresh }: any) {
   const [open, setOpen] = React.useState(false);
   const id = row.original._id;
 
   return (
     <>
       <div className="flex gap-2">
-        {isSuperAdmin && (
-          <Button size="icon" variant="outline" onClick={() => setOpen(true)}>
-            <UserPlus className="h-4 w-4" />
-          </Button>
-        )}
-
         <Button size="icon" variant="outline" asChild>
           <Link href={`/dashboard/applications/${id}`}>
             <Eye className="h-4 w-4" />
           </Link>
         </Button>
+
+        {isSuperAdmin && (
+          <Button size="icon" variant="outline" onClick={() => setOpen(true)}>
+            <UserPlus className="h-4 w-4" />
+          </Button>
+        )}
 
         {isSuperAdmin && (
           <Button size="icon" variant="outline" className="text-destructive">
@@ -161,7 +180,10 @@ function RowActions({ row, isSuperAdmin }: any) {
           open={open}
           onOpenChange={setOpen}
           applicationId={id}
-          onAssigned={(email) => (row.original.processedBy = email)}
+          onAssigned={(email) => {
+            row.original.processedBy = email;
+            if (onRefresh) onRefresh();
+          }}
         />
       )}
     </>
@@ -169,7 +191,8 @@ function RowActions({ row, isSuperAdmin }: any) {
 }
 
 export function getApplicationsColumns(
-  isSuperAdmin: boolean
+  isSuperAdmin: boolean,
+  onRefresh?: () => void
 ): ColumnDef<ApplicationTableRow>[] {
   return [
     {
@@ -188,6 +211,20 @@ export function getApplicationsColumns(
       ),
     },
     {
+      id: "fullName",
+      header: "Full Name",
+      accessorFn: (row) => {
+        const firstName = row.firstName || "";
+        const lastName = row.lastName || "";
+        return firstName || lastName ? `${firstName} ${lastName}`.trim() : "--";
+      },
+      cell: ({ row }) => {
+        const firstName = row.original.firstName || "";
+        const lastName = row.original.lastName || "";
+        return firstName || lastName ? `${firstName} ${lastName}`.trim() : "--";
+      },
+    },
+    {
       accessorKey: "email",
       header: "Email",
       minSize: 600,
@@ -195,33 +232,35 @@ export function getApplicationsColumns(
     {
       accessorKey: "status",
       header: "Status",
-      cell: ({ row }) => <ApplicationStatusBadge status={row.original.status} />,
+      cell: ({ row }) => (
+        <ApplicationStatusBadge status={row.original.status} />
+      ),
     },
-
+    {
+      accessorKey: "school",
+      header: "School",
+      cell: ({ row }) => row.original.school || "--",
+    },
     {
       accessorKey: "assignedTo",
       header: "Assigned To",
-      cell: ({ row }) => row.original.processedBy && "Not assigned",
-    },
-    {
-      accessorKey: "processedBy",
-      header: "Processed By",
-      cell: ({ row }) => row.original.processedBy && "Not assigned",
+      cell: ({ row }) => row.original.processedBy || "Not assigned",
     },
     {
       accessorKey: "processedAt",
       header: "Processed At",
-      cell: ({ row }) => row.original.processedBy && "--",
-    },
-    {
-      accessorKey: "createdAt",
-      header: "Created At",
-      cell: ({ row }) => row.original.createdAt,
+      cell: ({ row }) => row.original.processedAt || "--",
     },
     {
       id: "actions",
       header: "Actions",
-      cell: ({ row }) => <RowActions row={row} isSuperAdmin={isSuperAdmin} />,
+      cell: ({ row }) => (
+        <RowActions
+          row={row}
+          isSuperAdmin={isSuperAdmin}
+          onRefresh={onRefresh}
+        />
+      ),
     },
   ];
 }

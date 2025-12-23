@@ -130,3 +130,13 @@ export const Cities = (lang: Language = "en") => [
   { value: "Woodstock", label: "Woodstock, Ontario" },
   { value: "Yellowknife", label: "Yellowknife, Northwest Territories" },
 ];
+
+/**
+ * Returns an array of city values that are located in Quebec.
+ * Used for filtering applications by Quebec location.
+ */
+export const getQuebecCities = (): string[] => {
+  return Cities()
+    .filter((city) => city.label.endsWith(", Quebec"))
+    .map((city) => city.value);
+};

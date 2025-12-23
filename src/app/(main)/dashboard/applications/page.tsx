@@ -4,6 +4,7 @@ import { COOKIE_NAME, verifyAuthToken } from "@/lib/auth-token";
 import Admin from "@/repository/models/admin";
 import Application from "@/repository/models/application";
 import connectMongoDB from "@/repository/mongoose";
+import { getQuebecCities } from "@/constants/Cities";
 
 import { ApplicationTable } from "./_components/application-table";
 import { type ApplicationTableRow } from "./_components/columns";
@@ -84,8 +85,9 @@ function mapApplications(docs: any[]): ApplicationTableRow[] {
     lastName: a.lastName,
     email: a.email,
     status: a.status,
-    createdAt: formatDateDDMMMYYYY(a.createdAt),
+    school: a.school,
     processedBy: a.processedBy,
+    processedAt: a.processedAt ? formatDateDDMMMYYYY(a.processedAt) : undefined,
   }));
 }
 
@@ -116,9 +118,14 @@ function buildQuery(
     ];
   }
 
-  // Filter by status
+  // Filter by status (can be comma-separated for multiple statuses)
   if (status) {
-    query.status = status;
+    const statuses = status.split(",").filter(Boolean);
+    if (statuses.length === 1) {
+      query.status = statuses[0];
+    } else if (statuses.length > 1) {
+      query.status = { $in: statuses };
+    }
   }
 
   // Filter by travel reimbursement
@@ -126,6 +133,20 @@ function buildQuery(
     query.travelReimbursement = true;
   } else if (travelReimbursement === "false") {
     query.travelReimbursement = false;
+  } else if (travelReimbursement === "quebec") {
+    // Travel reimbursement required AND located in Quebec
+    const quebecCities = getQuebecCities();
+    query.travelReimbursement = true;
+    query.country = "CA";
+    query.city = { $in: quebecCities };
+  } else if (travelReimbursement === "outside-quebec") {
+    // Travel reimbursement required AND NOT located in Quebec
+    const quebecCities = getQuebecCities();
+    query.travelReimbursement = true;
+    query.$or = [
+      { country: { $ne: "CA" } },
+      { country: "CA", city: { $nin: quebecCities } },
+    ];
   }
 
   // Filter by assigned applications (for non-super admins)
@@ -157,7 +178,7 @@ async function getPaginatedApplications(
 
   const apps = await Application.find(
     query,
-    "email firstName lastName status createdAt processedBy"
+    "email firstName lastName status school processedBy processedAt"
   )
     .sort({ createdAt: 1 })
     .skip(skip)
@@ -219,7 +240,7 @@ async function getPaginatedAssignedApplications(
 
   const apps = await Application.find(
     query,
-    "email firstName lastName status createdAt processedBy"
+    "email firstName lastName status school processedBy processedAt"
   )
     .sort({ createdAt: 1 })
     .skip(skip)

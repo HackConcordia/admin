@@ -50,7 +50,8 @@ export function ApplicationTable({
   const searchParams = useSearchParams();
 
   const columns = useMemo(
-    () => getApplicationsColumns(isSuperAdmin),
+    () =>
+      getApplicationsColumns(isSuperAdmin, () => forceRerender((n) => n + 1)),
     [isSuperAdmin]
   );
 
@@ -219,25 +220,39 @@ export function ApplicationTable({
 
     setAssigning(true);
     try {
-      const promise = fetch("/api/admin/assign-applications", {
+      const response = await fetch("/api/admin/assign-applications", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           selectedAdminEmail: selectedEmail,
           selectedApplicants: selectedIds,
         }),
-      }).then(async (r) => {
-        if (!r.ok) {
-          const err = await r.json().catch(() => ({}));
-          throw new Error(err?.message && "Failed to assign");
-        }
       });
 
-      await toast.promise(promise, {
-        loading: "Assigning selected applications...",
-        success: "Applications assigned",
-        error: (e) => e.message && "Failed to assign",
-      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err?.message || "Failed to assign");
+      }
+
+      const result = await response.json();
+      const totalAssigned = result?.data?.totalAssigned || selectedIds.length;
+      const teamMembersAdded = result?.data?.teamMembersAdded || 0;
+
+      if (teamMembersAdded > 0) {
+        toast.success(
+          `Assigned ${totalAssigned} application${
+            totalAssigned !== 1 ? "s" : ""
+          } (including ${teamMembersAdded} team member${
+            teamMembersAdded !== 1 ? "s" : ""
+          })`
+        );
+      } else {
+        toast.success(
+          `Assigned ${totalAssigned} application${
+            totalAssigned !== 1 ? "s" : ""
+          }`
+        );
+      }
 
       // Optimistic update for processedBy
       for (const row of selectedRows) {
@@ -246,6 +261,8 @@ export function ApplicationTable({
       table.resetRowSelection();
       forceRerender((n) => n + 1);
       setBulkOpen(false);
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to assign");
     } finally {
       setAssigning(false);
     }

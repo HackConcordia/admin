@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { Check, ChevronDown } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import {
@@ -10,6 +11,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 type ApplicationsFiltersProps = {
   initialSearch: string;
@@ -33,8 +42,13 @@ const STATUS_OPTIONS = [
 ];
 
 const TRAVEL_REIMBURSEMENT_OPTIONS = [
-  { value: "true", label: "Required" },
-  { value: "false", label: "Not Required" },
+  { value: "true", label: "Required Travel Reimbursement (All)" },
+  { value: "quebec", label: "Required Travel Reimbursement in Quebec" },
+  {
+    value: "outside-quebec",
+    label: "Required Travel Reimbursement outside Quebec",
+  },
+  { value: "false", label: "Not Required Travel Reimbursement" },
 ];
 
 export default function ApplicationsFilters({
@@ -47,12 +61,13 @@ export default function ApplicationsFilters({
 }: ApplicationsFiltersProps) {
   const ALL_VALUE = "__all__";
   const [search, setSearch] = React.useState<string>(initialSearch);
-  const [status, setStatus] = React.useState<string>(
-    initialStatus || ALL_VALUE
+  const [selectedStatuses, setSelectedStatuses] = React.useState<string[]>(
+    initialStatus ? initialStatus.split(",") : []
   );
   const [travelReimbursement, setTravelReimbursement] = React.useState<string>(
     initialTravelReimbursement || ALL_VALUE
   );
+  const [statusOpen, setStatusOpen] = React.useState(false);
   const debounceTimerRef = React.useRef<NodeJS.Timeout | null>(null);
 
   // Debounced search handler
@@ -74,13 +89,23 @@ export default function ApplicationsFilters({
   );
 
   // Status change handler (immediate, no debounce)
-  const handleStatusChange = React.useCallback(
-    (value: string) => {
-      setStatus(value);
-      onStatusChange(value === ALL_VALUE ? "" : value);
+  const handleStatusToggle = React.useCallback(
+    (statusValue: string) => {
+      const newStatuses = selectedStatuses.includes(statusValue)
+        ? selectedStatuses.filter((s) => s !== statusValue)
+        : [...selectedStatuses, statusValue];
+
+      setSelectedStatuses(newStatuses);
+      // Notify parent with comma-separated string
+      onStatusChange(newStatuses.length > 0 ? newStatuses.join(",") : "");
     },
-    [onStatusChange]
+    [selectedStatuses, onStatusChange]
   );
+
+  const handleClearStatuses = React.useCallback(() => {
+    setSelectedStatuses([]);
+    onStatusChange("");
+  }, [onStatusChange]);
 
   // Travel reimbursement change handler (immediate, no debounce)
   const handleTravelReimbursementChange = React.useCallback(
@@ -106,7 +131,7 @@ export default function ApplicationsFilters({
   }, [initialSearch]);
 
   React.useEffect(() => {
-    setStatus(initialStatus || ALL_VALUE);
+    setSelectedStatuses(initialStatus ? initialStatus.split(",") : []);
   }, [initialStatus]);
 
   React.useEffect(() => {
@@ -123,19 +148,96 @@ export default function ApplicationsFilters({
         />
       </div>
       <div className="flex gap-2">
-        <Select value={status} onValueChange={handleStatusChange}>
-          <SelectTrigger aria-label="Filter by status" className="w-[140px]">
-            <SelectValue placeholder="All statuses" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL_VALUE}>All statuses</SelectItem>
-            {STATUS_OPTIONS.map((opt) => (
-              <SelectItem key={opt} value={opt}>
-                {opt}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Popover open={statusOpen} onOpenChange={setStatusOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 border-dashed"
+              aria-label="Filter by status"
+            >
+              <ChevronDown className="mr-2 h-4 w-4" />
+              Status
+              {selectedStatuses.length > 0 && (
+                <>
+                  <div className="mx-2 h-4 w-[1px] bg-border" />
+                  <Badge
+                    variant="secondary"
+                    className="rounded-sm px-1 font-normal lg:hidden"
+                  >
+                    {selectedStatuses.length}
+                  </Badge>
+                  <div className="hidden space-x-1 lg:flex">
+                    {selectedStatuses.length > 2 ? (
+                      <Badge
+                        variant="secondary"
+                        className="rounded-sm px-1 font-normal"
+                      >
+                        {selectedStatuses.length} selected
+                      </Badge>
+                    ) : (
+                      STATUS_OPTIONS.filter((option) =>
+                        selectedStatuses.includes(option)
+                      ).map((option) => (
+                        <Badge
+                          variant="secondary"
+                          key={option}
+                          className="rounded-sm px-1 font-normal"
+                        >
+                          {option}
+                        </Badge>
+                      ))
+                    )}
+                  </div>
+                </>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[200px] p-0" align="start">
+            <div className="max-h-[300px] overflow-auto p-2">
+              {STATUS_OPTIONS.map((option) => {
+                const isSelected = selectedStatuses.includes(option);
+                return (
+                  <div
+                    key={option}
+                    className={cn(
+                      "flex cursor-pointer items-center rounded-sm px-2 py-1.5 text-sm hover:bg-accent",
+                      isSelected && "bg-accent"
+                    )}
+                    onClick={() => handleStatusToggle(option)}
+                  >
+                    <div
+                      className={cn(
+                        "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                        isSelected
+                          ? "bg-primary text-primary-foreground"
+                          : "opacity-50 [&_svg]:invisible"
+                      )}
+                    >
+                      <Check className="h-4 w-4" />
+                    </div>
+                    <span>{option}</span>
+                  </div>
+                );
+              })}
+            </div>
+            {selectedStatuses.length > 0 && (
+              <>
+                <div className="border-t" />
+                <div className="p-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-center"
+                    onClick={handleClearStatuses}
+                  >
+                    Clear filters
+                  </Button>
+                </div>
+              </>
+            )}
+          </PopoverContent>
+        </Popover>
         <Select
           value={travelReimbursement}
           onValueChange={handleTravelReimbursementChange}
@@ -147,7 +249,7 @@ export default function ApplicationsFilters({
             <SelectValue placeholder="Travel reimbursement" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={ALL_VALUE}>Reimbursement</SelectItem>
+            <SelectItem value={ALL_VALUE}>All applicants</SelectItem>
             {TRAVEL_REIMBURSEMENT_OPTIONS.map((opt) => (
               <SelectItem key={opt.value} value={opt.value}>
                 {opt.label}
