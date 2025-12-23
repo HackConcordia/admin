@@ -346,6 +346,7 @@ export default function ApplicationView({
   const [pendingAction, setPendingAction] = React.useState<
     "admit" | "waitlist" | "reject" | null
   >(null);
+  const [backConfirmationOpen, setBackConfirmationOpen] = React.useState(false);
 
   // Comments and Skill Tags state
   const [comments, setComments] = React.useState<string>(
@@ -549,6 +550,35 @@ export default function ApplicationView({
 
   function removeSkillTag(tag: string) {
     setSkillTags((prev) => prev.filter((t) => t !== tag));
+  }
+
+  // Check if there are unsaved changes to comments or skill tags
+  function hasUnsavedChanges(): boolean {
+    const commentsChanged = comments !== (application.comments || "");
+    const skillTagsChanged =
+      JSON.stringify(skillTags.sort()) !==
+      JSON.stringify((application.skillTags || []).sort());
+    return commentsChanged || skillTagsChanged;
+  }
+
+  // Handle back button click with unsaved changes check
+  function handleBackClick() {
+    if (hasUnsavedChanges()) {
+      setBackConfirmationOpen(true);
+    } else {
+      router.back();
+    }
+  }
+
+  // Handle save and go back
+  async function handleSaveAndGoBack() {
+    try {
+      await saveMetadata();
+      router.back();
+    } catch (e) {
+      // Error already handled by saveMetadata
+      setBackConfirmationOpen(false);
+    }
   }
 
   // Helper function to update edited application fields
@@ -1833,7 +1863,7 @@ export default function ApplicationView({
               )}
 
               <div className="flex justify-between items-center w-full">
-                <Button variant="ghost" onClick={() => router.back()}>
+                <Button variant="ghost" onClick={handleBackClick}>
                   Back
                 </Button>
 
@@ -1869,6 +1899,36 @@ export default function ApplicationView({
                           variant="secondary"
                         >
                           <Hourglass /> Waitlist
+                        </Button>
+                        <Button
+                          onClick={handleRejectClick}
+                          disabled={isSaving !== null}
+                          variant="destructive"
+                        >
+                          <XCircle /> Reject
+                        </Button>
+                      </div>
+                    );
+                  }
+
+                  if (status === "Waitlisted") {
+                    return (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                          onClick={saveMetadata}
+                          disabled={isSavingMetadata}
+                          variant="outline"
+                          className="btn-primary"
+                        >
+                          <SaveAllIcon />{" "}
+                          {isSavingMetadata ? "Saving..." : "Save"}
+                        </Button>
+                        <Button
+                          onClick={handleAdmitClick}
+                          disabled={isSaving !== null}
+                          variant="default"
+                        >
+                          <CheckCircle2 /> Admit
                         </Button>
                         <Button
                           onClick={handleRejectClick}
@@ -1967,6 +2027,37 @@ export default function ApplicationView({
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={saveChanges}>
               Confirm Changes
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Back Confirmation Dialog for Unsaved Changes */}
+      <AlertDialog
+        open={backConfirmationOpen}
+        onOpenChange={setBackConfirmationOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have unsaved changes to comments or skill tags. What would you
+              like to do?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setBackConfirmationOpen(false);
+                router.back();
+              }}
+            >
+              Go Back Without Saving
+            </Button>
+            <AlertDialogAction onClick={handleSaveAndGoBack}>
+              Save & Go Back
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
