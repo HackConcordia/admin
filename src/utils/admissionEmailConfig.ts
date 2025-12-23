@@ -57,10 +57,10 @@ export async function sendAdmittedEmail(
       to: email,
       from: { email: config.fromEmail, name: "HackConcordia" },
       replyTo: { email: config.replyToEmail, name: "HackConcordia" },
-      subject: "Congratulations! You've Been Admitted to HackConcordia",
+      subject: "Congratulations! You've Been Admitted to ConUHacks X / Félicitations! Vous avez été admis à ConUHacks X",
       text: `Dear ${firstName} ${lastName},
 
-Congratulations! We are excited to inform you that you have been admitted to HackConcordia!
+Congratulations! We are excited to inform you that you have been admitted to ConUHacks X!
 
 We look forward to seeing you at the event. Further details about the hackathon will be sent to you soon.
 ${reimbursementText}
@@ -73,7 +73,7 @@ The HackConcordia Team
 This is an automated email. Please do not reply to this message.`,
       html: `<p>Dear ${firstName} ${lastName},</p>
 
-<p><strong>Congratulations!</strong> We are excited to inform you that you have been admitted to HackConcordia!</p>
+<p><strong>Congratulations!</strong> We are excited to inform you that you have been admitted to ConUHacks X!</p>
 
 <p>We look forward to seeing you at the event. Further details about the hackathon will be sent to you soon.</p>${
         reimbursementText
@@ -124,7 +124,7 @@ export async function sendWaitlistedEmail(
 
 Thank you for your interest in HackConcordia!
 
-Your application has been reviewed and you have been placed on our waitlist. We will notify you if a spot becomes available.
+Your application has been reviewed and you have been placed on our waitlist for ConUHacks X. We will notify you if a spot becomes available.
 
 Best regards,
 The HackConcordia Team
@@ -135,7 +135,7 @@ Cher/Chère ${firstName} ${lastName},
 
 Merci pour votre intérêt envers HackConcordia!
 
-Votre candidature a été examinée et vous avez été placé sur notre liste d'attente. Nous vous informerons si une place se libère.
+Votre candidature a été examinée et vous avez été placé sur notre liste d'attente pour ConUHacks X. Nous vous informerons si une place se libère.
 
 Cordialement,
 L'équipe HackConcordia
@@ -146,7 +146,7 @@ This is an automated email. Please do not reply to this message.
 Ceci est un courriel automatisé. Veuillez ne pas répondre à ce message.`,
       html: `<p>Dear ${firstName} ${lastName},</p>
 
-<p>Thank you for your interest in HackConcordia!</p>
+<p>Thank you for your interest in ConUHacks X!</p>
 
 <p>Your application has been reviewed and you have been placed on our waitlist. We will notify you if a spot becomes available.</p>
 
@@ -156,7 +156,7 @@ Ceci est un courriel automatisé. Veuillez ne pas répondre à ce message.`,
 
 <p>Cher/Chère ${firstName} ${lastName},</p>
 
-<p>Merci pour votre intérêt envers HackConcordia!</p>
+<p>Merci pour votre intérêt envers ConUHacks X!</p>
 
 <p>Votre candidature a été examinée et vous avez été placé sur notre liste d'attente. Nous vous informerons si une place se libère.</p>
 
@@ -199,7 +199,7 @@ export async function sendRefusedEmail(
         "HackConcordia Application Update / Mise à jour de votre candidature",
       text: `Dear ${firstName} ${lastName},
 
-Thank you for your interest in HackConcordia!
+Thank you for your interest in ConUHacks X!
 
 After careful consideration, we regret to inform you that we are unable to offer you a spot at this year's event. We received a large number of applications and had to make difficult decisions.
 
@@ -212,7 +212,7 @@ The HackConcordia Team
 
 Cher/Chère ${firstName} ${lastName},
 
-Merci pour votre intérêt envers HackConcordia!
+Merci pour votre intérêt envers ConUHacks X!
 
 Après un examen attentif, nous avons le regret de vous informer que nous ne sommes pas en mesure de vous offrir une place à l'événement de cette année. Nous avons reçu un grand nombre de candidatures et avons dû prendre des décisions difficiles.
 
@@ -227,7 +227,7 @@ This is an automated email. Please do not reply to this message.
 Ceci est un courriel automatisé. Veuillez ne pas répondre à ce message.`,
       html: `<p>Dear ${firstName} ${lastName},</p>
 
-<p>Thank you for your interest in HackConcordia!</p>
+<p>Thank you for your interest in ConUHacks X!</p>
 
 <p>After careful consideration, we regret to inform you that we are unable to offer you a spot at this year's event. We received a large number of applications and had to make difficult decisions.</p>
 
@@ -239,7 +239,7 @@ Ceci est un courriel automatisé. Veuillez ne pas répondre à ce message.`,
 
 <p>Cher/Chère ${firstName} ${lastName},</p>
 
-<p>Merci pour votre intérêt envers HackConcordia!</p>
+<p>Merci pour votre intérêt envers ConUHacks X!</p>
 
 <p>Après un examen attentif, nous avons le regret de vous informer que nous ne sommes pas en mesure de vous offrir une place à l'événement de cette année. Nous avons reçu un grand nombre de candidatures et avons dû prendre des décisions difficiles.</p>
 
