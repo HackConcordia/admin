@@ -68,7 +68,7 @@ export function StatusOverview({
         <span className="text-foreground font-semibold">
           {processedPercentage}%
         </span>{" "}
-        submitted applications!
+        of submitted applications!
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
