@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { GridFSBucket } from "mongodb";
 
-import connectMongoDB from '@/repository/mongoose';
+import connectMongoDB from "@/repository/mongoose";
 
 export const GET = async (req: NextRequest, { params }: { params: Promise<{ fileId: string }> }) => {
   try {
@@ -16,13 +16,16 @@ export const GET = async (req: NextRequest, { params }: { params: Promise<{ file
 
     await connectMongoDB();
 
-    if (!mongoose.connection.db) return;
+    if (!mongoose.connection.db) {
+      return new NextResponse("Database not connected", { status: 500 });
+    }
 
     const gridFSBucket = new GridFSBucket(mongoose.connection.db);
+
     const objectId = new mongoose.Types.ObjectId(fileId);
 
     const files = await gridFSBucket.find({ _id: objectId }).toArray();
-    if (files.length === 0) {
+    if (!files.length) {
       return new NextResponse("File not found", { status: 404 });
     }
 
@@ -31,23 +34,27 @@ export const GET = async (req: NextRequest, { params }: { params: Promise<{ file
 
     const stream = new ReadableStream({
       start(controller) {
-        downloadStream.on("data", (chunk) => controller.enqueue(chunk));
+        downloadStream.on("data", (chunk) => {
+          controller.enqueue(new Uint8Array(chunk));
+        });
         downloadStream.on("end", () => controller.close());
         downloadStream.on("error", (err) => controller.error(err));
       },
     });
 
-    const contentType = file.metadata?.mimetype || "application/octet-stream";
-    const filename = file.filename || "file";
+    // ----- Filename handling (ASCII-safe + UTF-8) -----
+    const originalName = file.filename || "resume.pdf";
+    const fallbackName = "resume.pdf"; // ASCII only
+    const utf8Name = encodeURIComponent(originalName);
 
-    // Encode filename to be ASCII-safe
-    const encodedFilename = encodeURIComponent(filename);
-    const contentDisposition = `inline; filename="${encodedFilename}"; filename*=UTF-8''${encodedFilename}`;
+    const contentDisposition =
+      `inline; filename="${fallbackName}"; filename*=UTF-8''${utf8Name}`;
 
     return new NextResponse(stream, {
       headers: {
-        "Content-Type": contentType,
+        "Content-Type": file.metadata?.mimetype || "application/pdf",
         "Content-Disposition": contentDisposition,
+        "Accept-Ranges": "bytes",
       },
     });
   } catch (error) {
