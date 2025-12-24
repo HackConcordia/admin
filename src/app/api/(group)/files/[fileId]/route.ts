@@ -43,9 +43,22 @@ export const GET = async (req: NextRequest, { params }: { params: Promise<{ file
       },
     });
 
-    const originalName = file.filename || "resume.pdf";
+    // Use metadata.originalName first, then fall back to filename
+    const originalName = file.metadata?.originalName || file.filename || "resume.pdf";
     const fallbackName = "resume.pdf";
-    const utf8Name = encodeURIComponent(originalName);
+
+    // Properly encode the filename for Content-Disposition header (RFC 5987)
+    // First, ensure the string is properly decoded if needed
+    let utf8Name: string;
+    try {
+      // Ensure we have a proper UTF-8 string
+      const decodedName = Buffer.from(originalName, 'utf8').toString('utf8');
+      utf8Name = encodeURIComponent(decodedName);
+    } catch (error) {
+      // Fallback if encoding fails
+      utf8Name = encodeURIComponent(fallbackName);
+    }
+
     const contentDisposition =
       `inline; filename="${fallbackName}"; filename*=UTF-8''${utf8Name}`;
 
