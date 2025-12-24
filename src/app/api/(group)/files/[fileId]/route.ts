@@ -21,7 +21,6 @@ export const GET = async (req: NextRequest, { params }: { params: Promise<{ file
     }
 
     const gridFSBucket = new GridFSBucket(mongoose.connection.db);
-
     const objectId = new mongoose.Types.ObjectId(fileId);
 
     const files = await gridFSBucket.find({ _id: objectId }).toArray();
@@ -32,21 +31,21 @@ export const GET = async (req: NextRequest, { params }: { params: Promise<{ file
     const file = files[0];
     const downloadStream = gridFSBucket.openDownloadStream(objectId);
 
+    // Convert Node Readable to Web ReadableStream
     const stream = new ReadableStream({
       start(controller) {
-        downloadStream.on("data", (chunk) => {
-          controller.enqueue(new Uint8Array(chunk));
-        });
+        downloadStream.on("data", (chunk) => controller.enqueue(chunk));
         downloadStream.on("end", () => controller.close());
         downloadStream.on("error", (err) => controller.error(err));
       },
+      cancel() {
+        downloadStream.destroy();
+      },
     });
 
-    // ----- Filename handling (ASCII-safe + UTF-8) -----
     const originalName = file.filename || "resume.pdf";
-    const fallbackName = "resume.pdf"; // ASCII only
+    const fallbackName = "resume.pdf";
     const utf8Name = encodeURIComponent(originalName);
-
     const contentDisposition =
       `inline; filename="${fallbackName}"; filename*=UTF-8''${utf8Name}`;
 
@@ -58,7 +57,10 @@ export const GET = async (req: NextRequest, { params }: { params: Promise<{ file
       },
     });
   } catch (error) {
-    console.error("Error during file download:", error);
-    return new NextResponse("Failed to retrieve file", { status: 500 });
+    console.error("Error retrieving file:", error);
+    return new NextResponse(
+      JSON.stringify({ status: "error", message: "Error retrieving file", error }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
   }
 };
