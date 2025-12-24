@@ -48,12 +48,10 @@ export const GET = async (req: NextRequest, { params }: { params: Promise<{ file
     const fallbackName = "resume.pdf";
 
     // Properly encode the filename for Content-Disposition header (RFC 5987)
-    // First, ensure the string is properly decoded if needed
     let utf8Name: string;
     try {
-      // Ensure we have a proper UTF-8 string
-      const decodedName = Buffer.from(originalName, 'utf8').toString('utf8');
-      utf8Name = encodeURIComponent(decodedName);
+      // originalName is already a string, just encode it directly
+      utf8Name = encodeURIComponent(originalName);
     } catch (error) {
       // Fallback if encoding fails
       utf8Name = encodeURIComponent(fallbackName);
@@ -71,8 +69,18 @@ export const GET = async (req: NextRequest, { params }: { params: Promise<{ file
     });
   } catch (error) {
     console.error("Error retrieving file:", error);
+
+    // Properly serialize error for JSON response
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+
     return new NextResponse(
-      JSON.stringify({ status: "error", message: "Error retrieving file", error }),
+      JSON.stringify({
+        status: "error",
+        message: "Error retrieving file",
+        error: errorMessage,
+        ...(errorStack && { stack: errorStack })
+      }),
       { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
