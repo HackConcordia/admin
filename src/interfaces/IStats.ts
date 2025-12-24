@@ -25,7 +25,6 @@ export interface IStats {
     M: number;
     L: number;
     XL: number;
-    XXL: number;
   };
   totalTeams: number;
   dietaryRestrictionsData: {

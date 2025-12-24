@@ -29,7 +29,6 @@ export const GET = async () => {
         mediumShirt: await User.countDocuments({ "confirmation.shirtSize": "M" }),
         largeShirt: await User.countDocuments({ "confirmation.shirtSize": "L" }),
         xlargeShirt: await User.countDocuments({ "confirmation.shirtSize": "XL" }),
-        xxlargeShirt: await User.countDocuments({ "confirmation.shirtSize": "XXL" }),
       },
       dietaryRestrictions: {
         vegetarian: await User.countDocuments({

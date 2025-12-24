@@ -19,7 +19,6 @@ interface shirtSize {
   mediumShirt: number;
   largeShirt: number;
   xlargeShirt: number;
-  xxlargeShirt: number;
 }
 
 interface dietaryRestrictions {

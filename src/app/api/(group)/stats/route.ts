@@ -123,7 +123,7 @@ export const GET = async () => {
         if (app.shirtSize) acc[app.shirtSize] = (acc[app.shirtSize] || 0) + 1;
         return acc;
       },
-      { S: 0, M: 0, L: 0, XL: 0, XXL: 0 }
+      { S: 0, M: 0, L: 0, XL: 0 }
     );
 
     // Dietary restriction counts

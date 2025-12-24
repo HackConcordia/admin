@@ -6,7 +6,6 @@ interface TShirtDistributionProps {
     M: number;
     L: number;
     XL: number;
-    XXL: number;
   };
   totalShirts: number;
 }
@@ -16,7 +15,6 @@ const sizeLabels: Record<string, string> = {
   M: "Medium",
   L: "Large",
   XL: "XL",
-  XXL: "XXL",
 };
 
 const sizeColors: Record<string, string> = {
@@ -24,7 +22,6 @@ const sizeColors: Record<string, string> = {
   M: "bg-blue-500",
   L: "bg-blue-500",
   XL: "bg-blue-500",
-  XXL: "bg-blue-500",
 };
 
 export function TShirtDistribution({
