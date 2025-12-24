@@ -90,9 +90,11 @@ export const GET = async () => {
   try {
     await connectMongoDB();
 
-    // Fetch all applications with the new fields
+    // Fetch all applications with the new fields, excluding Unverified and Incomplete
     const applications = await Application.find(
-      {},
+      {
+        status: { $nin: ["Unverified", "Incomplete"] },
+      },
       {
         isEighteenOrAbove: 1,
         faculty: 1,
