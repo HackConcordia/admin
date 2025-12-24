@@ -287,6 +287,7 @@ export function getApplicationsColumns(
         const lastName = row.original.lastName || "";
         return firstName || lastName ? `${firstName} ${lastName}`.trim() : "--";
       },
+      enableHiding: true,
     },
     {
       accessorKey: "email",

@@ -16,6 +16,8 @@ import { ApplicationTableRow, getApplicationsColumns } from "./columns";
 import { ExportDialog } from "./export-dialog";
 import { ServerPagination } from "./server-pagination";
 
+const VISIBILITY_STORAGE_KEY = "applicationsTableColumnVisibility";
+
 type PaginationInfo = {
   page: number;
   limit: number;
@@ -68,6 +70,26 @@ export function ApplicationTable({
     defaultPageIndex: pagination.page - 1,
     defaultPageSize: pagination.limit,
   });
+
+  // Restore column visibility from localStorage; default hides fullName.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const saved = window.localStorage.getItem(VISIBILITY_STORAGE_KEY);
+    const fallback = { fullName: false };
+    try {
+      const parsed = saved ? JSON.parse(saved) : fallback;
+      table.setColumnVisibility(parsed);
+    } catch {
+      table.setColumnVisibility(fallback);
+    }
+  }, [table]);
+
+  // Persist column visibility changes to localStorage.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const visibility = table.getState().columnVisibility;
+    window.localStorage.setItem(VISIBILITY_STORAGE_KEY, JSON.stringify(visibility));
+  }, [table, table.getState().columnVisibility]);
 
   const [bulkOpen, setBulkOpen] = useState(false);
   const [adminEmails, setAdminEmails] = useState<string[]>([]);
