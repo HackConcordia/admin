@@ -49,7 +49,7 @@ export const GET = async (req: NextRequest, ctx: { params: Promise<{ userId: str
 
     // Buffer the stream completely (like export route does)
     const chunks: Buffer[] = [];
-    
+
     await new Promise<void>((resolve, reject) => {
       downloadStream.on("data", (chunk) => chunks.push(chunk));
       downloadStream.on("end", () => resolve());
@@ -61,7 +61,7 @@ export const GET = async (req: NextRequest, ctx: { params: Promise<{ userId: str
 
     // Get content type from metadata or use default
     const contentType = file.metadata?.mimetype || file.contentType || "application/pdf";
-    
+
     // Use metadata.originalName first, then fall back to filename
     const originalName = file.metadata?.originalName || file.filename || "resume.pdf";
     const fallbackName = "resume.pdf";
@@ -87,13 +87,13 @@ export const GET = async (req: NextRequest, ctx: { params: Promise<{ userId: str
     });
   } catch (error) {
     console.error("Error retrieving file:", error);
-    
+
     const errorMessage = error instanceof Error ? error.message : String(error);
     const errorStack = error instanceof Error ? error.stack : undefined;
-    
+
     return sendErrorResponse(
-      "Error retrieving file", 
-      { message: errorMessage, ...(errorStack && { stack: errorStack }) }, 
+      "Error retrieving file",
+      { message: errorMessage, ...(errorStack && { stack: errorStack }) },
       500
     );
   }

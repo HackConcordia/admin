@@ -34,7 +34,7 @@ export const GET = async (req: NextRequest, { params }: { params: Promise<{ file
 
     // Buffer the stream completely (like export route does)
     const chunks: Buffer[] = [];
-    
+
     await new Promise<void>((resolve, reject) => {
       downloadStream.on("data", (chunk) => chunks.push(chunk));
       downloadStream.on("end", () => resolve());
@@ -69,10 +69,10 @@ export const GET = async (req: NextRequest, { params }: { params: Promise<{ file
     });
   } catch (error) {
     console.error("Error retrieving file:", error);
-    
+
     const errorMessage = error instanceof Error ? error.message : String(error);
     const errorStack = error instanceof Error ? error.stack : undefined;
-    
+
     return new NextResponse(
       JSON.stringify({
         status: "error",
