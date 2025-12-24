@@ -287,7 +287,7 @@ export function getApplicationsColumns(
                 const original = row.original.isStarred;
                 row.original.isStarred = newStatus;
                 if (onRefresh) onRefresh(); // Trigger re-render
-                
+
                 const res = await fetch(`/api/application/${row.original._id}/star`, {
                   method: "PATCH",
                   headers: { "Content-Type": "application/json" },
