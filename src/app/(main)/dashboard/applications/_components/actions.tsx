@@ -40,7 +40,7 @@ export function Actions({
   onTravelReimbursementChange,
 }: ActionsProps) {
   return (
-    <div className="my-3 flex w-full gap-3">
+    <div className="mt-3 mb-1 flex w-full gap-3">
       <ApplicationsFilters
         initialSearch={initialSearch}
         initialStatus={initialStatus}

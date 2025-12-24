@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Check, ChevronDown } from "lucide-react";
+import { Check, ChevronDown, X } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import {
@@ -240,8 +240,10 @@ export default function ApplicationsFilters({
             <Badge
               key={option}
               variant="secondary"
-              className="rounded-sm px-1 font-normal"
+              className="inline-flex items-center gap-1 rounded-sm px-1 font-normal cursor-pointer pr-2"
+              onClick={() => handleStatusToggle(option)}
             >
+              <X className="h-3 w-3" />
               {option}
             </Badge>
           ))}
