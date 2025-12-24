@@ -91,6 +91,7 @@ function mapApplications(docs: any[]): ApplicationTableRow[] {
     travelReimbursementAmount: a.travelReimbursementAmount,
     travelReimbursementCurrency: a.travelReimbursementCurrency,
     isTravelReimbursementApproved: a.isTravelReimbursementApproved,
+    isStarred: a.isStarred || false,
   }));
 }
 
@@ -152,6 +153,8 @@ function buildQuery(
     ];
   } else if (travelReimbursement === "approved") {
     query.isTravelReimbursementApproved = true;
+  } else if (travelReimbursement === "starred") {
+    query.isStarred = true;
   }
 
   // Filter by assigned applications (for non-super admins)
@@ -183,7 +186,7 @@ async function getPaginatedApplications(
 
   const apps = await Application.find(
     query,
-    "email firstName lastName status school processedBy processedAt travelReimbursementAmount travelReimbursementCurrency isTravelReimbursementApproved"
+    "email firstName lastName status school processedBy processedAt travelReimbursementAmount travelReimbursementCurrency isTravelReimbursementApproved isStarred"
   )
     .sort({ createdAt: 1 })
     .skip(skip)
@@ -245,7 +248,7 @@ async function getPaginatedAssignedApplications(
 
   const apps = await Application.find(
     query,
-    "email firstName lastName status school processedBy processedAt travelReimbursementAmount travelReimbursementCurrency isTravelReimbursementApproved"
+    "email firstName lastName status school processedBy processedAt travelReimbursementAmount travelReimbursementCurrency isTravelReimbursementApproved isStarred"
   )
     .sort({ createdAt: 1 })
     .skip(skip)

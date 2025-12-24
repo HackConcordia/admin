@@ -50,6 +50,7 @@ const TRAVEL_REIMBURSEMENT_OPTIONS = [
   },
   { value: "false", label: "Not Required Travel Reimbursement" },
   { value: "approved", label: "Approved Travel Reimbursement" },
+  { value: "starred", label: "Starred Candidates" },
 ];
 
 export default function ApplicationsFilters({

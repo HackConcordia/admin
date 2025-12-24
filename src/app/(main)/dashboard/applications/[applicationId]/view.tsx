@@ -114,7 +114,6 @@ import {
   TravelReimbursementDialog,
   type TravelReimbursementData,
 } from "@/components/ui/travel-reimbursement-dialog";
-import { NoTravelConfirmationDialog } from "@/components/ui/no-travel-confirmation-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -341,16 +340,11 @@ export default function ApplicationView({
   >(null);
   const [travelReimbursementDialogOpen, setTravelReimbursementDialogOpen] =
     React.useState(false);
-  const [noTravelConfirmationOpen, setNoTravelConfirmationOpen] =
-    React.useState(false);
-  const [pendingAction, setPendingAction] = React.useState<
-    "admit" | "waitlist" | "reject" | null
-  >(null);
   const [backConfirmationOpen, setBackConfirmationOpen] = React.useState(false);
   const [actionConfirmationOpen, setActionConfirmationOpen] =
     React.useState(false);
   const [confirmationAction, setConfirmationAction] = React.useState<
-    "waitlist" | "reject" | null
+    "admit" | "waitlist" | "reject" | null
   >(null);
 
   // Comments and Skill Tags state
@@ -453,8 +447,8 @@ export default function ApplicationView({
     if (application.travelReimbursement) {
       setTravelReimbursementDialogOpen(true);
     } else {
-      setPendingAction("admit");
-      setNoTravelConfirmationOpen(true);
+      setConfirmationAction("admit");
+      setActionConfirmationOpen(true);
     }
   }
 
@@ -472,21 +466,12 @@ export default function ApplicationView({
     setActionConfirmationOpen(false);
     if (!confirmationAction) return;
 
-    if (!application.travelReimbursement) {
-      setPendingAction(confirmationAction);
-      setNoTravelConfirmationOpen(true);
+    if (confirmationAction === "admit" && !application.travelReimbursement) {
+       updateStatus("admit");
     } else {
       updateStatus(confirmationAction);
     }
     setConfirmationAction(null);
-  }
-
-  function handleNoTravelConfirm() {
-    setNoTravelConfirmationOpen(false);
-    if (pendingAction) {
-      updateStatus(pendingAction);
-      setPendingAction(null);
-    }
   }
 
   function handleTravelReimbursementSubmit(data: TravelReimbursementData) {
@@ -1911,27 +1896,31 @@ export default function ApplicationView({
                           <SaveAllIcon />{" "}
                           {isSavingMetadata ? "Saving..." : "Save"}
                         </Button>
-                        <Button
-                          onClick={handleAdmitClick}
-                          disabled={isSaving !== null}
-                          variant="default"
-                        >
-                          <CheckCircle2 /> Admit
-                        </Button>
-                        <Button
-                          onClick={handleWaitlistClick}
-                          disabled={isSaving !== null}
-                          variant="secondary"
-                        >
-                          <Hourglass /> Waitlist
-                        </Button>
-                        <Button
-                          onClick={handleRejectClick}
-                          disabled={isSaving !== null}
-                          variant="destructive"
-                        >
-                          <XCircle /> Reject
-                        </Button>
+                        {isSuperAdmin && (
+                          <>
+                            <Button
+                              onClick={handleAdmitClick}
+                              disabled={isSaving !== null}
+                              variant="default"
+                            >
+                              <CheckCircle2 /> Admit
+                            </Button>
+                            <Button
+                              onClick={handleWaitlistClick}
+                              disabled={isSaving !== null}
+                              variant="secondary"
+                            >
+                              <Hourglass /> Waitlist
+                            </Button>
+                            <Button
+                              onClick={handleRejectClick}
+                              disabled={isSaving !== null}
+                              variant="destructive"
+                            >
+                              <XCircle /> Reject
+                            </Button>
+                          </>
+                        )}
                       </div>
                     );
                   }
@@ -1948,20 +1937,24 @@ export default function ApplicationView({
                           <SaveAllIcon />{" "}
                           {isSavingMetadata ? "Saving..." : "Save"}
                         </Button>
-                        <Button
-                          onClick={handleAdmitClick}
-                          disabled={isSaving !== null}
-                          variant="default"
-                        >
-                          <CheckCircle2 /> Admit
-                        </Button>
-                        <Button
-                          onClick={handleRejectClick}
-                          disabled={isSaving !== null}
-                          variant="destructive"
-                        >
-                          <XCircle /> Reject
-                        </Button>
+                        {isSuperAdmin && (
+                          <>
+                            <Button
+                              onClick={handleAdmitClick}
+                              disabled={isSaving !== null}
+                              variant="default"
+                            >
+                              <CheckCircle2 /> Admit
+                            </Button>
+                            <Button
+                              onClick={handleRejectClick}
+                              disabled={isSaving !== null}
+                              variant="destructive"
+                            >
+                              <XCircle /> Reject
+                            </Button>
+                          </>
+                        )}
                       </div>
                     );
                   }
@@ -2003,14 +1996,6 @@ export default function ApplicationView({
         onOpenChange={setTravelReimbursementDialogOpen}
         onSubmit={handleTravelReimbursementSubmit}
         candidateName={`${application.firstName} ${application.lastName}`}
-      />
-
-      <NoTravelConfirmationDialog
-        open={noTravelConfirmationOpen}
-        onOpenChange={setNoTravelConfirmationOpen}
-        onConfirm={handleNoTravelConfirm}
-        candidateName={`${application.firstName} ${application.lastName}`}
-        action={pendingAction || "admit"}
       />
 
       {/* Confirmation Dialog for Critical Changes */}

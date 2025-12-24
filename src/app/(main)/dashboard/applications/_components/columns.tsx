@@ -1,7 +1,7 @@
 import * as React from "react";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { CircleCheck, Eye, Loader, Trash2, UserPlus } from "lucide-react";
+import { CircleCheck, Eye, Loader, Trash2, UserPlus, Star } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,7 @@ export type ApplicationTableRow = {
   travelReimbursementAmount?: number;
   travelReimbursementCurrency?: string;
   isTravelReimbursementApproved?: boolean;
+  isStarred?: boolean;
 };
 
 // Assign single
@@ -270,11 +271,46 @@ export function getApplicationsColumns(
       id: "actions",
       header: "Actions",
       cell: ({ row }) => (
-        <RowActions
-          row={row}
-          isSuperAdmin={isSuperAdmin}
-          onRefresh={onRefresh}
-        />
+        <div className="flex items-center gap-2">
+            <RowActions
+            row={row}
+            isSuperAdmin={isSuperAdmin}
+            onRefresh={onRefresh}
+            />
+            <Button
+            variant="ghost"
+            size="icon"
+            onClick={async () => {
+              try {
+                const newStatus = !row.original.isStarred;
+                // Optimistic update
+                const original = row.original.isStarred;
+                row.original.isStarred = newStatus;
+                if (onRefresh) onRefresh(); // Trigger re-render
+                
+                const res = await fetch(`/api/application/${row.original._id}/star`, {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ isStarred: newStatus }),
+                });
+
+                if (!res.ok) {
+                    row.original.isStarred = original;
+                    if (onRefresh) onRefresh();
+                    toast.error("Failed to update star status");
+                }
+              } catch (e) {
+                toast.error("Failed to update star status");
+              }
+            }}
+          >
+            <Star
+              className={`h-4 w-4 ${
+                row.original.isStarred ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"
+              }`}
+            />
+          </Button>
+        </div>
       ),
     }
   );

@@ -87,6 +87,7 @@ const applicationsSchema = new mongoose.Schema(
     travelReimbursementCurrency: { type: String, required: false },
     comments: { type: String, required: false },
     skillTags: { type: [String], required: false },
+    isStarred: { type: Boolean, default: false },
   },
   {
     timestamps: {
