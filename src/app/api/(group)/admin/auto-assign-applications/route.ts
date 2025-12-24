@@ -168,7 +168,8 @@ export const POST = async (req: NextRequest) => {
       const existingCount = reviewer.assignedApplications?.length || 0;
       reviewerAssignments.set(reviewer.email, {
         email: reviewer.email,
-        count: existingCount,
+      // count: existingCount,
+        count: 0,
         applications: [...(reviewer.assignedApplications || [])],
       });
     }
