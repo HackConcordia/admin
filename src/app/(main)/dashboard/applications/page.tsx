@@ -92,6 +92,7 @@ function mapApplications(docs: any[]): ApplicationTableRow[] {
     travelReimbursementCurrency: a.travelReimbursementCurrency,
     isTravelReimbursementApproved: a.isTravelReimbursementApproved,
     isStarred: a.isStarred || false,
+    createdAt: a.createdAt ? formatDateDDMMMYYYY(a.createdAt) : undefined,
   }));
 }
 
@@ -186,7 +187,7 @@ async function getPaginatedApplications(
 
   const apps = await Application.find(
     query,
-    "email firstName lastName status school processedBy processedAt travelReimbursementAmount travelReimbursementCurrency isTravelReimbursementApproved isStarred"
+    "email firstName lastName status school processedBy processedAt travelReimbursementAmount travelReimbursementCurrency isTravelReimbursementApproved isStarred createdAt"
   )
     .sort({ createdAt: 1 })
     .skip(skip)
@@ -248,7 +249,7 @@ async function getPaginatedAssignedApplications(
 
   const apps = await Application.find(
     query,
-    "email firstName lastName status school processedBy processedAt travelReimbursementAmount travelReimbursementCurrency isTravelReimbursementApproved isStarred"
+    "email firstName lastName status school processedBy processedAt travelReimbursementAmount travelReimbursementCurrency isTravelReimbursementApproved isStarred createdAt"
   )
     .sort({ createdAt: 1 })
     .skip(skip)

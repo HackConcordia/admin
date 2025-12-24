@@ -1,7 +1,7 @@
 import * as React from "react";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { CircleCheck, Eye, Loader, Trash2, UserPlus, Star } from "lucide-react";
+import { Eye, Trash2, UserPlus, Star } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,7 @@ export type ApplicationTableRow = {
   travelReimbursementCurrency?: string;
   isTravelReimbursementApproved?: boolean;
   isStarred?: boolean;
+  createdAt?: string;
 };
 
 // Assign single
@@ -150,9 +151,70 @@ function RowActions({ row, isSuperAdmin, onRefresh }: any) {
   const [open, setOpen] = React.useState(false);
   const id = row.original._id;
 
+  async function handleDelete() {
+    if (!window.confirm("Are you sure you want to delete this application?")) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/application/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to delete application");
+      }
+
+      toast.success("Application deleted");
+      if (onRefresh) onRefresh();
+    } catch (error) {
+      console.error("Failed to delete application", error);
+      toast.error("Failed to delete application");
+    }
+  }
+
   return (
     <>
       <div className="flex gap-2">
+      <Button
+          variant="ghost"
+          size="icon"
+          onClick={async () => {
+            try {
+              const newStatus = !row.original.isStarred;
+              // Optimistic update
+              const original = row.original.isStarred;
+              row.original.isStarred = newStatus;
+              if (onRefresh) onRefresh(); // Trigger re-render
+
+              const res = await fetch(
+                `/api/application/${row.original._id}/star`,
+                {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ isStarred: newStatus }),
+                }
+              );
+
+              if (!res.ok) {
+                row.original.isStarred = original;
+                if (onRefresh) onRefresh();
+                toast.error("Failed to update star status");
+              }
+            } catch (e) {
+              toast.error("Failed to update star status");
+            }
+          }}
+        >
+          <Star
+            className={`h-4 w-4 ${
+              row.original.isStarred
+                ? "fill-yellow-400 text-yellow-400"
+                : "text-muted-foreground"
+            }`}
+          />
+        </Button>
+
         <Button size="icon" variant="outline" asChild>
           <Link href={`/dashboard/applications/${id}`}>
             <Eye className="h-4 w-4" />
@@ -160,16 +222,20 @@ function RowActions({ row, isSuperAdmin, onRefresh }: any) {
         </Button>
 
         {isSuperAdmin && (
-          <Button size="icon" variant="outline" onClick={() => setOpen(true)}>
-            <UserPlus className="h-4 w-4" />
-          </Button>
+          <>
+            <Button size="icon" variant="outline" onClick={() => setOpen(true)}>
+              <UserPlus className="h-4 w-4" />
+            </Button>
+            <Button
+              size="icon"
+              variant="outline"
+              className="text-destructive"
+              onClick={handleDelete}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </>
         )}
-
-        {/* {isSuperAdmin && (
-          <Button size="icon" variant="outline" className="text-destructive">
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        )} */}
       </div>
 
       {isSuperAdmin && (
@@ -263,57 +329,30 @@ export function getApplicationsColumns(
       cell: ({ row }) => row.original.processedBy || "Not assigned",
     },
     {
+      accessorKey: "createdAt",
+      header: "Created At",
+      cell: ({ row }) => row.original.createdAt || "--",
+    },
+    {
       accessorKey: "processedAt",
       header: "Processed At",
       cell: ({ row }) => row.original.processedAt || "--",
-    },
-    {
-      id: "actions",
-      header: "Actions",
-      cell: ({ row }) => (
-        <div className="flex items-center gap-2">
-            <RowActions
-            row={row}
-            isSuperAdmin={isSuperAdmin}
-            onRefresh={onRefresh}
-            />
-            <Button
-            variant="ghost"
-            size="icon"
-            onClick={async () => {
-              try {
-                const newStatus = !row.original.isStarred;
-                // Optimistic update
-                const original = row.original.isStarred;
-                row.original.isStarred = newStatus;
-                if (onRefresh) onRefresh(); // Trigger re-render
-
-                const res = await fetch(`/api/application/${row.original._id}/star`, {
-                  method: "PATCH",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ isStarred: newStatus }),
-                });
-
-                if (!res.ok) {
-                    row.original.isStarred = original;
-                    if (onRefresh) onRefresh();
-                    toast.error("Failed to update star status");
-                }
-              } catch (e) {
-                toast.error("Failed to update star status");
-              }
-            }}
-          >
-            <Star
-              className={`h-4 w-4 ${
-                row.original.isStarred ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"
-              }`}
-            />
-          </Button>
-        </div>
-      ),
     }
   );
+
+  columns.push({
+    id: "actions",
+    header: "Actions",
+    cell: ({ row }) => (
+      <div className="flex items-center gap-2">
+        <RowActions
+          row={row}
+          isSuperAdmin={isSuperAdmin}
+          onRefresh={onRefresh}
+        />
+      </div>
+    ),
+  });
 
   return columns;
 }

@@ -323,3 +323,40 @@ export const PUT = async (
     return sendErrorResponse("Failed to update application", error, 500);
   }
 };
+
+/**
+ * DELETE: Removes an application by ID
+ */
+export const DELETE = async (
+  req: NextRequest,
+  { params }: { params: Promise<{ applicationId: string }> }
+) => {
+  try {
+    const { applicationId } = await params;
+    const token = req.cookies.get(COOKIE_NAME)?.value;
+    if (!token) {
+      return sendErrorResponse("Unauthorized", null, 401);
+    }
+
+    const payload = await verifyAuthToken(token);
+    if (!payload) {
+      return sendErrorResponse("Unauthorized", null, 401);
+    }
+
+    await connectMongoDB();
+
+    const deleted = await Application.findByIdAndDelete(applicationId);
+    if (!deleted) {
+      return sendErrorResponse("Application not found", null, 404);
+    }
+
+    return sendSuccessResponse(
+      "Application deleted successfully",
+      null,
+      200
+    );
+  } catch (error) {
+    console.error("Error in DELETE /api/application/[applicationId]:", error);
+    return sendErrorResponse("Failed to delete application", error, 500);
+  }
+};
