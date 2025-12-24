@@ -141,125 +141,113 @@ export default function ApplicationsFilters({
   }, [initialTravelReimbursement]);
 
   return (
-    <div className="flex w-full gap-3">
-      <div className="flex-1">
-        <Input
-          placeholder="Search by email and full name…"
-          value={search}
-          onChange={(e) => handleSearchChange(e.target.value)}
-        />
-      </div>
-      <div className="flex gap-2">
-        <Popover open={statusOpen} onOpenChange={setStatusOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-9 border-dashed"
-              aria-label="Filter by status"
-            >
-              <ChevronDown className="mr-2 h-4 w-4" />
-              Status
+    <div className="flex flex-col gap-3 w-full">
+    <div className="flex w-full flex-col gap-2">
+      <div className="flex w-full gap-3">
+        <div className="flex-1">
+          <Input
+            placeholder="Search by email and full name…"
+            value={search}
+            onChange={(e) => handleSearchChange(e.target.value)}
+          />
+        </div>
+        <div className="flex gap-2">
+          <Popover open={statusOpen} onOpenChange={setStatusOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 border-dashed"
+                aria-label="Filter by status"
+              >
+                <ChevronDown className="mr-2 h-4 w-4" />
+                Status
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[200px] p-0" align="start">
+              <div className="max-h-[300px] overflow-auto p-2">
+                {STATUS_OPTIONS.map((option) => {
+                  const isSelected = selectedStatuses.includes(option);
+                  return (
+                    <div
+                      key={option}
+                      className={cn(
+                        "flex cursor-pointer items-center rounded-sm px-2 py-1.5 text-sm hover:bg-accent",
+                        isSelected && "bg-accent"
+                      )}
+                      onClick={() => handleStatusToggle(option)}
+                    >
+                      <div
+                        className={cn(
+                          "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                          isSelected
+                            ? "bg-primary text-primary-foreground"
+                            : "opacity-50 [&_svg]:invisible"
+                        )}
+                      >
+                        <Check className="h-4 w-4" />
+                      </div>
+                      <span>{option}</span>
+                    </div>
+                  );
+                })}
+              </div>
               {selectedStatuses.length > 0 && (
                 <>
-                  <div className="mx-2 h-4 w-[1px] bg-border" />
-                  <Badge
-                    variant="secondary"
-                    className="rounded-sm px-1 font-normal lg:hidden"
-                  >
-                    {selectedStatuses.length}
-                  </Badge>
-                  <div className="hidden space-x-1 lg:flex">
-                    {selectedStatuses.length > 2 ? (
-                      <Badge
-                        variant="secondary"
-                        className="rounded-sm px-1 font-normal"
-                      >
-                        {selectedStatuses.length} selected
-                      </Badge>
-                    ) : (
-                      STATUS_OPTIONS.filter((option) =>
-                        selectedStatuses.includes(option)
-                      ).map((option) => (
-                        <Badge
-                          variant="secondary"
-                          key={option}
-                          className="rounded-sm px-1 font-normal"
-                        >
-                          {option}
-                        </Badge>
-                      ))
-                    )}
+                  <div className="border-t" />
+                  <div className="p-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-center"
+                      onClick={handleClearStatuses}
+                    >
+                      Clear filters
+                    </Button>
                   </div>
                 </>
               )}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-[200px] p-0" align="start">
-            <div className="max-h-[300px] overflow-auto p-2">
-              {STATUS_OPTIONS.map((option) => {
-                const isSelected = selectedStatuses.includes(option);
-                return (
-                  <div
-                    key={option}
-                    className={cn(
-                      "flex cursor-pointer items-center rounded-sm px-2 py-1.5 text-sm hover:bg-accent",
-                      isSelected && "bg-accent"
-                    )}
-                    onClick={() => handleStatusToggle(option)}
-                  >
-                    <div
-                      className={cn(
-                        "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
-                        isSelected
-                          ? "bg-primary text-primary-foreground"
-                          : "opacity-50 [&_svg]:invisible"
-                      )}
-                    >
-                      <Check className="h-4 w-4" />
-                    </div>
-                    <span>{option}</span>
-                  </div>
-                );
-              })}
-            </div>
-            {selectedStatuses.length > 0 && (
-              <>
-                <div className="border-t" />
-                <div className="p-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full justify-center"
-                    onClick={handleClearStatuses}
-                  >
-                    Clear filters
-                  </Button>
-                </div>
-              </>
-            )}
-          </PopoverContent>
-        </Popover>
-        <Select
-          value={travelReimbursement}
-          onValueChange={handleTravelReimbursementChange}
-        >
-          <SelectTrigger
-            aria-label="Filter by travel reimbursement"
-            className="w-[160px]"
+            </PopoverContent>
+          </Popover>
+          <Select
+            value={travelReimbursement}
+            onValueChange={handleTravelReimbursementChange}
           >
-            <SelectValue placeholder="Travel reimbursement" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL_VALUE}>All applicants</SelectItem>
-            {TRAVEL_REIMBURSEMENT_OPTIONS.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+            <SelectTrigger
+              aria-label="Filter by travel reimbursement"
+              className="w-[160px]"
+            >
+              <SelectValue placeholder="Travel reimbursement" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_VALUE}>All applicants</SelectItem>
+              {TRAVEL_REIMBURSEMENT_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
+    </div>
+    <div className="flex flex-wrap gap-1">
+      {selectedStatuses.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {STATUS_OPTIONS.filter((option) =>
+            selectedStatuses.includes(option)
+          ).map((option) => (
+            <Badge
+              key={option}
+              variant="secondary"
+              className="rounded-sm px-1 font-normal"
+            >
+              {option}
+            </Badge>
+          ))}
+        </div>
+      )}
+    </div>
     </div>
   );
 }

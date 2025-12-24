@@ -49,19 +49,19 @@ export function Actions({
         onStatusChange={onStatusChange}
         onTravelReimbursementChange={onTravelReimbursementChange}
       />
-      <div className="flex items-center gap-2">
+      <div className="flex gap-2">
         <DataTableViewOptions table={table} />
         {isSuperAdmin && (
           <>
-            <Button variant="outline" size="sm" onClick={onOpenBulkAssign} disabled={selectedCount === 0}>
+            <Button variant="outline" onClick={onOpenBulkAssign} disabled={selectedCount === 0}>
               <UserPlus />
               <span className="hidden lg:inline">Assign {selectedCount ? `(${selectedCount})` : ""}</span>
             </Button>
-            <Button variant="outline" size="sm" onClick={onOpenAutoAssign}>
+            <Button variant="outline" onClick={onOpenAutoAssign}>
               <Sparkles />
               <span className="hidden lg:inline">Auto Assign</span>
             </Button>
-            <Button variant="outline" size="sm" onClick={onOpenExport}>
+            <Button variant="outline" onClick={onOpenExport}>
               <Download />
               <span className="hidden lg:inline">Export</span>
             </Button>
