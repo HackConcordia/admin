@@ -6,12 +6,9 @@ import { GridFSBucket } from "mongodb";
 
 import connectMongoDB from '@/repository/mongoose';
 
-export const GET = async (
-  req: NextRequest,
-  { params }: { params: { fileId: string } }
-) => {
+export const GET = async (req: NextRequest, { params }: { params: Promise<{ fileId: string }> }) => {
   try {
-    const fileId = params.fileId;
+    const { fileId } = await params;
 
     if (!fileId) {
       return new NextResponse("Invalid fileId", { status: 400 });
