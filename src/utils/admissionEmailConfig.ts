@@ -220,7 +220,7 @@ Nous sommes ravis de l'intérêt marqué et de la qualité des candidatures que 
 
 Cela signifie que si une place se libère, nous vous contacterons dès que possible pour vous donner des instructions supplémentaires sur la manière de confirmer votre participation. Nous vous encourageons à surveiller votre boîte de réception, car des places pourraient se libérer à l'approche de l'événement.
 
-N'hésitez pas à contacter team.hackconcordia@ecaconcordia.ca si vous avez des questions ou des préoccupations. Veuillez noter que notre équipe d'assistance n'est pas impliquée dans le processus d'examen des candidatures et qu'elle n'est pas en mesure d'offrir ou d'attribuer des places.
+N'hésitez pas à contacter team.hackconcordia@ecaconcordia.ca si vous avez des questions ou des préoccupations. Veuillez noter que notre équipe d'assistance n'est pas impliquée dans le processus d'évaluation des candidatures et qu'elle n'est pas en mesure d'offrir ou d'attribuer des places.
 
 Cordialement,
 
@@ -318,7 +318,7 @@ Cette décision n'a pas été facile à prendre et ne reflète en aucun cas vos 
 
 Nous espérons que vous continuerez à vous impliquer dans la communauté des hackathons et vous souhaitons beaucoup de succès dans vos futurs projets et entreprises.
 
-N'hésitez pas à contacter team.hackconcordia@ecaconcordia.ca si vous avez des questions ou des préoccupations. Veuillez noter que notre équipe d'assistance n'est pas impliquée dans le processus d'examen des candidatures et qu'elle n'est pas en mesure d'offrir ou d'attribuer des places.
+N'hésitez pas à contacter team.hackconcordia@ecaconcordia.ca si vous avez des questions ou des préoccupations. Veuillez noter que notre équipe d'assistance n'est pas impliquée dans le processus d'évaluation des candidatures et qu'elle n'est pas en mesure d'offrir ou d'attribuer des places.
 
 Cordialement,
 
@@ -353,7 +353,7 @@ L'équipe HackConcordia`,
 
 <p>Nous espérons que vous continuerez à vous impliquer dans la communauté des hackathons et vous souhaitons beaucoup de succès dans vos futurs projets et entreprises.</p>
 
-<p>N'hésitez pas à contacter <a href="mailto:team.hackconcordia@ecaconcordia.ca">team.hackconcordia@ecaconcordia.ca</a> si vous avez des questions ou des préoccupations. Veuillez noter que notre équipe d'assistance n'est pas impliquée dans le processus d'examen des candidatures et qu'elle n'est pas en mesure d'offrir ou d'attribuer des places.</p>
+<p>N'hésitez pas à contacter <a href="mailto:team.hackconcordia@ecaconcordia.ca">team.hackconcordia@ecaconcordia.ca</a> si vous avez des questions ou des préoccupations. Veuillez noter que notre équipe d'assistance n'est pas impliquée dans le processus d'évaluation des candidatures et qu'elle n'est pas en mesure d'offrir ou d'attribuer des places.</p>
 
 <p>Cordialement,</p>
 
