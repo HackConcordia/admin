@@ -251,7 +251,7 @@ L'équipe HackConcordia`,
 
 <p>Cela signifie que si une place se libère, nous vous contacterons dès que possible pour vous donner des instructions supplémentaires sur la manière de confirmer votre participation. Nous vous encourageons à surveiller votre boîte de réception, car des places pourraient se libérer à l'approche de l'événement.</p>
 
-<p>N'hésitez pas à contacter <a href="mailto:team.hackconcordia@ecaconcordia.ca">team.hackconcordia@ecaconcordia.ca</a> si vous avez des questions ou des préoccupations. Veuillez noter que notre équipe d'assistance n'est pas impliquée dans le processus d'examen des candidatures et qu'elle n'est pas en mesure d'offrir ou d'attribuer des places.</p>
+<p>N'hésitez pas à contacter <a href="mailto:team.hackconcordia@ecaconcordia.ca">team.hackconcordia@ecaconcordia.ca</a> si vous avez des questions ou des préoccupations. Veuillez noter que notre équipe d'assistance n'est pas impliquée dans le processus d'évaluation des candidatures et qu'elle n'est pas en mesure d'offrir ou d'attribuer des places.</p>
 
 <p>Cordialement,</p>
 
