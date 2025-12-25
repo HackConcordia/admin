@@ -287,60 +287,77 @@ export async function sendRefusedEmail(
       from: { email: config.fromEmail, name: "HackConcordia" },
       replyTo: { email: config.replyToEmail, name: "HackConcordia" },
       subject:
-        "HackConcordia Application Update / Mise à jour de votre candidature",
-      text: `Dear ${firstName} ${lastName},
+        "ConUHacks X Application Update // Mise à jour de votre candidature ConUHacks X",
+      text: `Version française ci-dessous
 
-Thank you for your interest in ConUHacks X!
+Dear ${firstName} ${lastName},
 
-After careful consideration, we regret to inform you that we are unable to offer you a spot at this year's event. We received a large number of applications and had to make difficult decisions.
+Thank you for taking the time to apply to ConUHacks X.
 
-We encourage you to apply again in the future and wish you the best in your endeavors.
+We received a large number of applications this year, and after careful consideration, we regret to inform you that we are unable to offer you a spot at ConUHacks X at this time.
 
-Best regards,
+This decision was not easy, and it is in no way a reflection of your skills or potential. We truly appreciate your interest in ConUHacks and encourage you to apply again for future events.
+
+We hope you'll continue to stay involved in the hackathon community, and we wish you the very best in your future projects and endeavors.
+
+Feel free to reach out to team.hackconcordia@ecaconcordia.ca if you have any questions or concerns. Please note that our support team is not involved in the application review process and they are unable to offer or assign spots.
+
+Kind regards,
+
 The HackConcordia Team
 
 ---
 
-Cher/Chère ${firstName} ${lastName},
+Cher(ère) ${firstName} ${lastName},
 
-Merci pour votre intérêt envers ConUHacks X!
+Merci d'avoir pris le temps de postuler à ConUHacks X.
 
-Après un examen attentif, nous avons le regret de vous informer que nous ne sommes pas en mesure de vous offrir une place à l'événement de cette année. Nous avons reçu un grand nombre de candidatures et avons dû prendre des décisions difficiles.
+Nous avons reçu un grand nombre de candidatures cette année, et après mûre réflexion, nous avons le regret de vous informer que nous ne sommes pas en mesure de vous offrir une place à ConUHacks X pour le moment.
 
-Nous vous encourageons à postuler à nouveau à l'avenir et vous souhaitons le meilleur dans vos projets.
+Cette décision n'a pas été facile à prendre et ne reflète en aucun cas vos compétences ou votre potentiel. Nous apprécions sincèrement votre intérêt pour ConUHacks et vous encourageons à postuler à nouveau pour de futurs événements.
+
+Nous espérons que vous continuerez à vous impliquer dans la communauté des hackathons et vous souhaitons beaucoup de succès dans vos futurs projets et entreprises.
+
+N'hésitez pas à contacter team.hackconcordia@ecaconcordia.ca si vous avez des questions ou des préoccupations. Veuillez noter que notre équipe d'assistance n'est pas impliquée dans le processus d'examen des candidatures et qu'elle n'est pas en mesure d'offrir ou d'attribuer des places.
 
 Cordialement,
-L'équipe HackConcordia
 
----
+L'équipe HackConcordia`,
+      html: `<p><em>Version française ci-dessous</em></p>
 
-This is an automated email. Please do not reply to this message.
-Ceci est un courriel automatisé. Veuillez ne pas répondre à ce message.`,
-      html: `<p>Dear ${firstName} ${lastName},</p>
+<p>Dear ${firstName} ${lastName},</p>
 
-<p>Thank you for your interest in ConUHacks X!</p>
+<p>Thank you for taking the time to apply to ConUHacks X.</p>
 
-<p>After careful consideration, we regret to inform you that we are unable to offer you a spot at this year's event. We received a large number of applications and had to make difficult decisions.</p>
+<p>We received a large number of applications this year, and after careful consideration, we regret to inform you that we are unable to offer you a spot at ConUHacks X at this time.</p>
 
-<p>We encourage you to apply again in the future and wish you the best in your endeavors.</p>
+<p>This decision was not easy, and it is in no way a reflection of your skills or potential. We truly appreciate your interest in ConUHacks and encourage you to apply again for future events.</p>
 
-<p>Best regards,<br>The HackConcordia Team</p>
+<p>We hope you'll continue to stay involved in the hackathon community, and we wish you the very best in your future projects and endeavors.</p>
 
-<hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;">
+<p>Feel free to reach out to <a href="mailto:team.hackconcordia@ecaconcordia.ca">team.hackconcordia@ecaconcordia.ca</a> if you have any questions or concerns. Please note that our support team is not involved in the application review process and they are unable to offer or assign spots.</p>
 
-<p>Cher/Chère ${firstName} ${lastName},</p>
+<p>Kind regards,</p>
 
-<p>Merci pour votre intérêt envers ConUHacks X!</p>
-
-<p>Après un examen attentif, nous avons le regret de vous informer que nous ne sommes pas en mesure de vous offrir une place à l'événement de cette année. Nous avons reçu un grand nombre de candidatures et avons dû prendre des décisions difficiles.</p>
-
-<p>Nous vous encourageons à postuler à nouveau à l'avenir et vous souhaitons le meilleur dans vos projets.</p>
-
-<p>Cordialement,<br>L'équipe HackConcordia</p>
+<p>The HackConcordia Team</p>
 
 <hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;">
 
-<p style="font-size: 0.875rem; color: #666;"><em>This is an automated email. Please do not reply to this message.<br>Ceci est un courriel automatisé. Veuillez ne pas répondre à ce message.</em></p>`,
+<p>Cher(ère) ${firstName} ${lastName},</p>
+
+<p>Merci d'avoir pris le temps de postuler à ConUHacks X.</p>
+
+<p>Nous avons reçu un grand nombre de candidatures cette année, et après mûre réflexion, nous avons le regret de vous informer que nous ne sommes pas en mesure de vous offrir une place à ConUHacks X pour le moment.</p>
+
+<p>Cette décision n'a pas été facile à prendre et ne reflète en aucun cas vos compétences ou votre potentiel. Nous apprécions sincèrement votre intérêt pour ConUHacks et vous encourageons à postuler à nouveau pour de futurs événements.</p>
+
+<p>Nous espérons que vous continuerez à vous impliquer dans la communauté des hackathons et vous souhaitons beaucoup de succès dans vos futurs projets et entreprises.</p>
+
+<p>N'hésitez pas à contacter <a href="mailto:team.hackconcordia@ecaconcordia.ca">team.hackconcordia@ecaconcordia.ca</a> si vous avez des questions ou des préoccupations. Veuillez noter que notre équipe d'assistance n'est pas impliquée dans le processus d'examen des candidatures et qu'elle n'est pas en mesure d'offrir ou d'attribuer des places.</p>
+
+<p>Cordialement,</p>
+
+<p>L'équipe HackConcordia</p>`,
     };
 
     await sgMail.send(msg);
