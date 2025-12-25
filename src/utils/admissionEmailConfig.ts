@@ -61,7 +61,7 @@ You have been approved for a travel reimbursement of up to $${travelReimbursemen
       travelTextFrench = `
 Remboursement des frais de déplacement :
 
-Vous avez été approuvé pour un remboursement de voyage d'un montant maximum de $${travelReimbursement.amount} ${travelReimbursement.currency}. Veuillez consulter le document suivant pour plus de détails sur les dépenses éligibles au remboursement : https://drive.google.com/file/d/1Bqh9FSkdL2RlPJEXvq7vAmCLb-T9pM1W/view?usp=drive_link. Les instructions sur la façon de soumettre les demandes de remboursement seront fournies à l'approche de la date de l'événement.
+Vous avez été approuvé pour un remboursement de voyage d'un montant maximum de $${travelReimbursement.amount} ${travelReimbursement.currency}. Veuillez consulter le document suivant pour plus de détails sur les dépenses éligibles au remboursement: https://drive.google.com/file/d/1Bqh9FSkdL2RlPJEXvq7vAmCLb-T9pM1W/view?usp=drive_link. Les instructions sur la façon de soumettre les demandes de remboursement seront fournies à l'approche de la date de l'événement.
 `;
       travelHtmlEnglish = `
 <p><strong>Travel Reimbursement:</strong></p>
@@ -69,7 +69,7 @@ Vous avez été approuvé pour un remboursement de voyage d'un montant maximum d
 `;
       travelHtmlFrench = `
 <p><strong>Remboursement des frais de déplacement :</strong></p>
-<p>Vous avez été approuvé pour un remboursement de voyage d'un montant <strong>maximum de $${travelReimbursement.amount} ${travelReimbursement.currency}.</strong> Veuillez consulter le document suivant pour plus de détails sur les dépenses éligibles au remboursement : <a href="https://drive.google.com/file/d/1Bqh9FSkdL2RlPJEXvq7vAmCLb-T9pM1W/view?usp=drive_link">Directives concernant le remboursement des frais de déplacement pour ConUHacks X</a>. Les instructions sur la façon de soumettre les demandes de remboursement seront fournies à l'approche de la date de l'événement.</p>
+<p>Vous avez été approuvé pour un remboursement de voyage d'un montant <strong>maximum de $${travelReimbursement.amount} ${travelReimbursement.currency}.</strong> Veuillez consulter le document suivant pour plus de détails sur les dépenses éligibles au remboursement: <a href="https://drive.google.com/file/d/1Bqh9FSkdL2RlPJEXvq7vAmCLb-T9pM1W/view?usp=drive_link">Directives concernant le remboursement des frais de déplacement pour ConUHacks X</a>. Les instructions sur la façon de soumettre les demandes de remboursement seront fournies à l'approche de la date de l'événement.</p>
 `;
     } else if (travelReimbursement?.approved === false) {
       // Travel reimbursement rejected
@@ -99,7 +99,7 @@ Nous avons reçu un grand nombre de demandes de remboursement de voyage cette an
       from: { email: config.fromEmail, name: "HackConcordia" },
       replyTo: { email: config.replyToEmail, name: "HackConcordia" },
       subject:
-        "You have been accepted to ConUHacks X, please confirm your attendance! // Vous avez été accepté à ConUHacks X, veuillez confirmer votre présence !",
+        "You have been accepted to ConUHacks X, please confirm your attendance! // Vous avez été accepté à ConUHacks X, veuillez confirmer votre présence!",
       text: `Version française ci-dessous
 
 Dear ${firstName} ${lastName},
@@ -120,9 +120,9 @@ The HackConcordia Team
 
 Cher(ère) ${firstName} ${lastName},
 
-Félicitations ! Nous sommes heureux de vous informer que vous avez été admis à ConUHacks X !
+Félicitations! Nous sommes heureux de vous informer que vous avez été admis à ConUHacks X!
 ${travelTextFrench}
-Veuillez confirmer (ou refuser) votre participation ici : https://register.conuhacks.io/
+Veuillez confirmer (ou refuser) votre participation ici: https://register.conuhacks.io/
 
 ConUHacks X se déroulera du samedi 24 janvier au dimanche 25 janvier à l'édifice John Molson de l'Université Concordia (1600 Boulevard De Maisonneuve Ouest, Montréal, Québec H3H 0A1).
 
@@ -151,9 +151,9 @@ ${travelHtmlEnglish}
 
 <p>Cher(ère) ${firstName} ${lastName},</p>
 
-<p><strong>Félicitations !</strong> Nous sommes heureux de vous informer que vous avez été admis à ConUHacks X !</p>
+<p><strong>Félicitations!</strong> Nous sommes heureux de vous informer que vous avez été admis à ConUHacks X!</p>
 ${travelHtmlFrench}
-<p>Veuillez <strong>confirmer (ou refuser) votre participation</strong> ici : <a href="https://register.conuhacks.io/">https://register.conuhacks.io/</a></p>
+<p>Veuillez <strong>confirmer (ou refuser) votre participation</strong> ici: <a href="https://register.conuhacks.io/">https://register.conuhacks.io/</a></p>
 
 <p>ConUHacks X se déroulera du samedi 24 janvier au dimanche 25 janvier à l'édifice John Molson de l'Université Concordia (1600 Boulevard De Maisonneuve Ouest, Montréal, Québec H3H 0A1).</p>
 
