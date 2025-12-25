@@ -57,7 +57,7 @@ export const POST = async (req: NextRequest): Promise<NextResponse> => {
     // Add user to team
     team.members.push({
       userId: userId,
-      isAdmitted: false,
+      isAdmitted: true,
     });
 
     await team.save();
