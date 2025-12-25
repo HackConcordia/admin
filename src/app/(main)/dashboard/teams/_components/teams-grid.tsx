@@ -55,6 +55,7 @@ interface TeamsGridProps {
   initialTeams: TeamCardProps[];
   initialPagination: Pagination;
   initialFilters?: Partial<Filters>;
+  isSuperAdmin?: boolean;
 }
 
 const defaultFilters: Filters = {
@@ -82,6 +83,7 @@ export function TeamsGrid({
   initialTeams,
   initialPagination,
   initialFilters,
+  isSuperAdmin = false,
 }: TeamsGridProps) {
   const router = useRouter();
 
@@ -439,7 +441,24 @@ export function TeamsGrid({
             <TeamCard
               key={team._id}
               {...team}
+              isSuperAdmin={isSuperAdmin}
               onMemberAdded={() =>
+                fetchTeams(
+                  pagination.page,
+                  pagination.limit,
+                  searchValue,
+                  filters
+                )
+              }
+              onTeamDeleted={() =>
+                fetchTeams(
+                  pagination.page,
+                  pagination.limit,
+                  searchValue,
+                  filters
+                )
+              }
+              onMemberRemoved={() =>
                 fetchTeams(
                   pagination.page,
                   pagination.limit,
