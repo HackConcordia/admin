@@ -69,12 +69,12 @@ export const PATCH = async (
       newStatus = "Waitlisted";
       updateFields.status = newStatus;
 
-      // emailToSend = () =>
-      //   sendWaitlistedEmail(
-      //     application.email as string,
-      //     application.firstName as string,
-      //     application.lastName as string
-      //   );
+      emailToSend = () =>
+        sendWaitlistedEmail(
+          application.email as string,
+          application.firstName as string,
+          application.lastName as string
+        );
     } else if (action === "reject") {
       newStatus = "Refused";
       updateFields.status = newStatus;
