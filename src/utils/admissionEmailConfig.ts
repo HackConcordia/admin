@@ -100,7 +100,7 @@ Nous avons reçu un grand nombre de demandes de remboursement de voyage cette an
       replyTo: { email: config.replyToEmail, name: "HackConcordia" },
       subject:
         "You have been accepted to ConUHacks X, please confirm your attendance! // Vous avez été accepté à ConUHacks X, veuillez confirmer votre présence!",
-      text: `Version française ci-dessous
+      text: `Version française suivra
 
 Dear ${firstName} ${lastName},
 
@@ -131,7 +131,7 @@ N'hésitez pas à contacter team.hackconcordia@ecaconcordia.ca si vous avez des 
 Nous espérons vous y voir,
 
 L'équipe HackConcordia`,
-      html: `<p><em>Version française ci-dessous</em></p>
+      html: `<p><em>Version française suivra</em></p>
 
 <p>Dear ${firstName} ${lastName},</p>
 
@@ -194,7 +194,7 @@ export async function sendWaitlistedEmail(
       replyTo: { email: config.replyToEmail, name: "HackConcordia" },
       subject:
         "ConUHacks X Application Update // Mise à jour de votre candidature ConUHacks X",
-      text: `Version française ci-dessous
+      text: `Version française suivra
 
 Dear ${firstName} ${lastName},
 
@@ -225,7 +225,7 @@ N'hésitez pas à contacter team.hackconcordia@ecaconcordia.ca si vous avez des 
 Cordialement,
 
 L'équipe HackConcordia`,
-      html: `<p><em>Version française ci-dessous</em></p>
+      html: `<p><em>Version française suivra</em></p>
 
 <p>Dear ${firstName} ${lastName},</p>
 
@@ -288,7 +288,7 @@ export async function sendRefusedEmail(
       replyTo: { email: config.replyToEmail, name: "HackConcordia" },
       subject:
         "ConUHacks X Application Update // Mise à jour de votre candidature ConUHacks X",
-      text: `Version française ci-dessous
+      text: `Version française suivra
 
 Dear ${firstName} ${lastName},
 
@@ -323,7 +323,7 @@ N'hésitez pas à contacter team.hackconcordia@ecaconcordia.ca si vous avez des 
 Cordialement,
 
 L'équipe HackConcordia`,
-      html: `<p><em>Version française ci-dessous</em></p>
+      html: `<p><em>Version française suivra</em></p>
 
 <p>Dear ${firstName} ${lastName},</p>
 
