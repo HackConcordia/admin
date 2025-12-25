@@ -130,7 +130,8 @@ export const GET = async (req: NextRequest): Promise<NextResponse> => {
     const validSortOrder = VALID_SORT_ORDERS.includes(sortOrder as any) ? sortOrder : "asc";
     const sortDirection = validSortOrder === "asc" ? 1 : -1;
 
-    pipeline.push({ $sort: { [validSortField]: sortDirection } });
+    // Add _id as secondary sort to ensure deterministic ordering across pages
+    pipeline.push({ $sort: { [validSortField]: sortDirection, _id: 1 } });
 
     // Pagination
     pipeline.push({ $skip: skip });
