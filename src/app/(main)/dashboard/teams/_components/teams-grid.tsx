@@ -458,6 +458,14 @@ export function TeamsGrid({
                   filters
                 )
               }
+              onMemberRemoved={() =>
+                fetchTeams(
+                  pagination.page,
+                  pagination.limit,
+                  searchValue,
+                  filters
+                )
+              }
             />
           ))}
         </div>

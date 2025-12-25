@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Copy, Star, Users, UserPlus, Loader2, Check, AlertCircle, Trash2 } from "lucide-react";
+import { Copy, Star, Users, UserPlus, Loader2, Check, AlertCircle, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -58,6 +58,7 @@ export interface TeamCardProps {
   isSuperAdmin?: boolean;
   onMemberAdded?: () => void;
   onTeamDeleted?: () => void;
+  onMemberRemoved?: () => void;
 }
 
 function getInitials(firstName?: string, lastName?: string): string {
@@ -65,12 +66,15 @@ function getInitials(firstName?: string, lastName?: string): string {
   return `${firstName?.[0] || ""}${lastName?.[0] || ""}`.toUpperCase();
 }
 
-export function TeamCard({ _id, teamName, teamCode, members, teamOwner, isSuperAdmin, onMemberAdded, onTeamDeleted }: TeamCardProps) {
+export function TeamCard({ _id, teamName, teamCode, members, teamOwner, isSuperAdmin, onMemberAdded, onTeamDeleted, onMemberRemoved }: TeamCardProps) {
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
+  const [isRemoveMemberDialogOpen, setIsRemoveMemberDialogOpen] = React.useState(false);
+  const [memberToRemove, setMemberToRemove] = React.useState<TeamMember | null>(null);
   const [email, setEmail] = React.useState("");
   const [isAdding, setIsAdding] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
+  const [isRemovingMember, setIsRemovingMember] = React.useState(false);
   const [suggestions, setSuggestions] = React.useState<UserSuggestion[]>([]);
   const [isSearching, setIsSearching] = React.useState(false);
   const [showSuggestions, setShowSuggestions] = React.useState(false);
@@ -101,6 +105,50 @@ export function TeamCard({ _id, teamName, teamCode, members, teamOwner, isSuperA
     } finally {
       setIsDeleting(false);
     }
+  };
+
+  const handleRemoveMember = async () => {
+    if (!memberToRemove) return;
+
+    setIsRemovingMember(true);
+    try {
+      const res = await fetch("/api/teams/remove-member", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ teamId: _id, userId: memberToRemove.userId }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to remove member");
+      }
+
+      // Check if the team was deleted (last member removed)
+      if (data.data?.action === "team_deleted") {
+        toast.success("Team deleted as the last member was removed");
+        onTeamDeleted?.();
+      } else {
+        toast.success(
+          data.data?.newOwner
+            ? "Member removed and new team owner assigned"
+            : "Member removed successfully"
+        );
+        onMemberRemoved?.();
+      }
+
+      setIsRemoveMemberDialogOpen(false);
+      setMemberToRemove(null);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to remove member");
+    } finally {
+      setIsRemovingMember(false);
+    }
+  };
+
+  const openRemoveMemberDialog = (member: TeamMember) => {
+    setMemberToRemove(member);
+    setIsRemoveMemberDialogOpen(true);
   };
 
   const copyTeamCode = async () => {
@@ -270,7 +318,7 @@ export function TeamCard({ _id, teamName, teamCode, members, teamOwner, isSuperA
                 members.map((member) => (
                   <div
                     key={member.userId}
-                    className="bg-muted/30 hover:bg-muted/50 flex items-center gap-3 rounded-lg border p-2.5 transition-colors"
+                    className="bg-muted/30 hover:bg-muted/50 group/member flex items-center gap-3 rounded-lg border p-2.5 transition-colors"
                   >
                     <Avatar className="h-8 w-8">
                       <AvatarFallback className="text-xs font-medium">
@@ -290,6 +338,17 @@ export function TeamCard({ _id, teamName, teamCode, members, teamOwner, isSuperA
                       </div>
                       <p className="text-muted-foreground truncate text-xs">{member.email || "No email provided"}</p>
                     </div>
+                    {isSuperAdmin && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 shrink-0 opacity-0 transition-opacity group-hover/member:opacity-100 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => openRemoveMemberDialog(member)}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                        <span className="sr-only">Remove member</span>
+                      </Button>
+                    )}
                   </div>
                 ))
               )}
@@ -455,6 +514,64 @@ export function TeamCard({ _id, teamName, teamCode, members, teamOwner, isSuperA
                 <>
                   <Trash2 className="mr-2 h-4 w-4" />
                   Delete Team
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Remove Member Confirmation Dialog */}
+      <AlertDialog 
+        open={isRemoveMemberDialogOpen} 
+        onOpenChange={(open) => {
+          setIsRemoveMemberDialogOpen(open);
+          if (!open) setMemberToRemove(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Team Member</AlertDialogTitle>
+            <AlertDialogDescription>
+              {memberToRemove && (
+                <>
+                  Are you sure you want to remove{" "}
+                  <span className="font-semibold">
+                    {memberToRemove.firstName && memberToRemove.lastName
+                      ? `${memberToRemove.firstName} ${memberToRemove.lastName}`
+                      : memberToRemove.email || "this member"}
+                  </span>{" "}
+                  from <span className="font-semibold">{teamName}</span>?
+                  {memberToRemove.userId === teamOwner && members.length > 1 && (
+                    <span className="mt-2 block text-amber-600 dark:text-amber-400">
+                      This member is the team owner. A new owner will be randomly assigned.
+                    </span>
+                  )}
+                  {memberToRemove.userId === teamOwner && members.length === 1 && (
+                    <span className="mt-2 block text-destructive">
+                      This is the only member. The entire team will be deleted.
+                    </span>
+                  )}
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isRemovingMember}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleRemoveMember}
+              disabled={isRemovingMember}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isRemovingMember ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Removing...
+                </>
+              ) : (
+                <>
+                  <X className="mr-2 h-4 w-4" />
+                  Remove Member
                 </>
               )}
             </AlertDialogAction>
