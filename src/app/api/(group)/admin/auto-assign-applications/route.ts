@@ -236,7 +236,6 @@ export const POST = async (req: NextRequest) => {
         {
           $set: {
             processedBy: reviewerEmail,
-            processedAt: now,
           },
         }
       );

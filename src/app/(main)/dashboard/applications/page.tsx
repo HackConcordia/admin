@@ -49,6 +49,7 @@ type SearchParams = {
   search?: string;
   status?: string;
   travelReimbursement?: string;
+  assignedStatus?: string;
 };
 
 type PaginationInfo = {
@@ -103,6 +104,7 @@ function buildQuery(
   search: string,
   status: string,
   travelReimbursement: string,
+  assignedStatus?: string,
   assignedIds?: string[]
 ): Record<string, any> {
   const query: Record<string, any> = {};
@@ -157,6 +159,12 @@ function buildQuery(
   } else if (travelReimbursement === "starred") {
     query.isStarred = true;
   }
+  // Filter by assigned status
+  if (assignedStatus === "assigned") {
+    query.processedBy = { $ne: "Not processed" };
+  } else if (assignedStatus === "not-assigned") {
+    query.processedBy = "Not processed";
+  }
 
   // Filter by assigned applications (for non-super admins)
   if (assignedIds !== undefined) {
@@ -173,13 +181,14 @@ async function getPaginatedApplications(
   search: string,
   status: string,
   travelReimbursement: string,
+  assignedStatus: string,
   page: number,
   limit: number
 ): Promise<{
   applications: ApplicationTableRow[];
   pagination: PaginationInfo;
 }> {
-  const query = buildQuery(search, status, travelReimbursement);
+  const query = buildQuery(search, status, travelReimbursement, assignedStatus);
 
   const total = await Application.countDocuments(query);
   const totalPages = Math.ceil(total / limit);
@@ -209,6 +218,7 @@ async function getPaginatedAssignedApplications(
   search: string,
   status: string,
   travelReimbursement: string,
+  assignedStatus: string,
   page: number,
   limit: number
 ): Promise<{
@@ -241,7 +251,7 @@ async function getPaginatedAssignedApplications(
     };
   }
 
-  const query = buildQuery(search, status, travelReimbursement, assignedIds);
+  const query = buildQuery(search, status, travelReimbursement, assignedStatus, assignedIds);
 
   const total = await Application.countDocuments(query);
   const totalPages = Math.ceil(total / limit);
@@ -273,12 +283,14 @@ async function getApplicationsSSR(searchParams: SearchParams): Promise<{
   search: string;
   status: string;
   travelReimbursement: string;
+  assignedStatus: string;
 }> {
   const page = parseInt(searchParams.page || "1", 10);
   const limit = parseInt(searchParams.limit || "10", 10);
   const search = searchParams.search || "";
   const status = searchParams.status || "";
   const travelReimbursement = searchParams.travelReimbursement || "";
+  const assignedStatus = searchParams.assignedStatus || "";
 
   try {
     const auth = await getAuthFromCookies();
@@ -290,6 +302,7 @@ async function getApplicationsSSR(searchParams: SearchParams): Promise<{
         search,
         status,
         travelReimbursement,
+        assignedStatus,
       };
     }
 
@@ -300,6 +313,7 @@ async function getApplicationsSSR(searchParams: SearchParams): Promise<{
         search,
         status,
         travelReimbursement,
+        assignedStatus,
         page,
         limit
       );
@@ -310,6 +324,7 @@ async function getApplicationsSSR(searchParams: SearchParams): Promise<{
         search,
         status,
         travelReimbursement,
+        assignedStatus,
       };
     }
 
@@ -318,6 +333,7 @@ async function getApplicationsSSR(searchParams: SearchParams): Promise<{
       search,
       status,
       travelReimbursement,
+      assignedStatus,
       page,
       limit
     );
@@ -328,6 +344,7 @@ async function getApplicationsSSR(searchParams: SearchParams): Promise<{
       search,
       status,
       travelReimbursement,
+      assignedStatus,
     };
   } catch (err) {
     console.error("[getApplicationsSSR] Failed:", err);
@@ -338,6 +355,7 @@ async function getApplicationsSSR(searchParams: SearchParams): Promise<{
       search,
       status,
       travelReimbursement,
+      assignedStatus,
     };
   }
 }
@@ -355,6 +373,7 @@ export default async function Page({ searchParams }: PageProps) {
     search,
     status,
     travelReimbursement,
+    assignedStatus,
   } = await getApplicationsSSR(params);
 
   return (
@@ -365,6 +384,8 @@ export default async function Page({ searchParams }: PageProps) {
       initialSearch={search}
       initialStatus={status}
       initialTravelReimbursement={travelReimbursement}
+      initialAssignedStatus={assignedStatus}
     />
   );
 }
+

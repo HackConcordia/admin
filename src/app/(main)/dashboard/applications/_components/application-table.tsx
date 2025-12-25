@@ -32,6 +32,7 @@ type TableCardsProps = {
   initialSearch: string;
   initialStatus: string;
   initialTravelReimbursement: string;
+  initialAssignedStatus?: string;
 };
 
 type AutoAssignStats = {
@@ -46,6 +47,7 @@ export function ApplicationTable({
   initialSearch,
   initialStatus,
   initialTravelReimbursement,
+  initialAssignedStatus,
 }: TableCardsProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -174,6 +176,14 @@ export function ApplicationTable({
   const handleTravelReimbursementChange = useCallback(
     (newValue: string) => {
       updateUrlParams({ travelReimbursement: newValue, page: "1" });
+    },
+    [updateUrlParams]
+  );
+
+  // Handle assigned status filter change
+  const handleAssignedStatusChange = useCallback(
+    (newValue: string) => {
+      updateUrlParams({ assignedStatus: newValue, page: "1" });
     },
     [updateUrlParams]
   );
@@ -420,9 +430,11 @@ export function ApplicationTable({
           initialSearch={initialSearch}
           initialStatus={initialStatus}
           initialTravelReimbursement={initialTravelReimbursement}
+          initialAssignedStatus={initialAssignedStatus}
           onSearchChange={handleSearchChange}
           onStatusChange={handleStatusChange}
           onTravelReimbursementChange={handleTravelReimbursementChange}
+          onAssignedStatusChange={handleAssignedStatusChange}
         />
         <div className="mb-2 rounded-md border">
           <DataTable table={table} columns={columns} />

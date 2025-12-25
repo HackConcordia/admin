@@ -35,19 +35,26 @@ export function Actions({
   initialSearch,
   initialStatus,
   initialTravelReimbursement,
+  initialAssignedStatus,
   onSearchChange,
   onStatusChange,
   onTravelReimbursementChange,
-}: ActionsProps) {
+  onAssignedStatusChange,
+}: ActionsProps & {
+  initialAssignedStatus?: string;
+  onAssignedStatusChange?: (status: string) => void;
+}) {
   return (
     <div className="mt-3 mb-1 flex w-full gap-3">
       <ApplicationsFilters
         initialSearch={initialSearch}
         initialStatus={initialStatus}
         initialTravelReimbursement={initialTravelReimbursement}
+        initialAssignedStatus={initialAssignedStatus}
         onSearchChange={onSearchChange}
         onStatusChange={onStatusChange}
         onTravelReimbursementChange={onTravelReimbursementChange}
+        onAssignedStatusChange={onAssignedStatusChange}
       />
       <div className="flex gap-2">
         <DataTableViewOptions table={table} />

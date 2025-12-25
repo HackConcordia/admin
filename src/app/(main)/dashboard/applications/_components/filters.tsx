@@ -57,10 +57,15 @@ export default function ApplicationsFilters({
   initialSearch,
   initialStatus,
   initialTravelReimbursement,
+  initialAssignedStatus,
   onSearchChange,
   onStatusChange,
   onTravelReimbursementChange,
-}: ApplicationsFiltersProps) {
+  onAssignedStatusChange,
+}: ApplicationsFiltersProps & {
+  initialAssignedStatus?: string;
+  onAssignedStatusChange?: (status: string) => void;
+}) {
   const ALL_VALUE = "__all__";
   const [search, setSearch] = React.useState<string>(initialSearch);
   const [selectedStatuses, setSelectedStatuses] = React.useState<string[]>(
@@ -68,6 +73,9 @@ export default function ApplicationsFilters({
   );
   const [travelReimbursement, setTravelReimbursement] = React.useState<string>(
     initialTravelReimbursement || ALL_VALUE
+  );
+  const [assignedStatus, setAssignedStatus] = React.useState<string>(
+    initialAssignedStatus || ALL_VALUE
   );
   const [statusOpen, setStatusOpen] = React.useState(false);
   const debounceTimerRef = React.useRef<NodeJS.Timeout | null>(null);
@@ -118,6 +126,15 @@ export default function ApplicationsFilters({
     [onTravelReimbursementChange]
   );
 
+  // Assigned status change handler
+  const handleAssignedStatusChange = React.useCallback(
+    (value: string) => {
+      setAssignedStatus(value);
+      onAssignedStatusChange?.(value === ALL_VALUE ? "" : value);
+    },
+    [onAssignedStatusChange]
+  );
+
   // Cleanup timer on unmount
   React.useEffect(() => {
     return () => {
@@ -140,6 +157,10 @@ export default function ApplicationsFilters({
     setTravelReimbursement(initialTravelReimbursement || ALL_VALUE);
   }, [initialTravelReimbursement]);
 
+  React.useEffect(() => {
+    setAssignedStatus(initialAssignedStatus || ALL_VALUE);
+  }, [initialAssignedStatus]);
+
   return (
     <div className="flex flex-col gap-3 w-full">
     <div className="flex w-full flex-col gap-2">
@@ -152,6 +173,7 @@ export default function ApplicationsFilters({
           />
         </div>
         <div className="flex gap-2">
+
           <Popover open={statusOpen} onOpenChange={setStatusOpen}>
             <PopoverTrigger asChild>
               <Button
@@ -219,13 +241,29 @@ export default function ApplicationsFilters({
             >
               <SelectValue placeholder="Travel reimbursement" />
             </SelectTrigger>
-            <SelectContent>
+          <SelectContent>
               <SelectItem value={ALL_VALUE}>All applicants</SelectItem>
               {TRAVEL_REIMBURSEMENT_OPTIONS.map((opt) => (
                 <SelectItem key={opt.value} value={opt.value}>
                   {opt.label}
                 </SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+           <Select
+            value={assignedStatus}
+            onValueChange={handleAssignedStatusChange}
+          >
+            <SelectTrigger
+              aria-label="Filter by assigned status"
+              className="w-[160px]"
+            >
+              <SelectValue placeholder="Assigned Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_VALUE}>All assignments</SelectItem>
+              <SelectItem value="assigned">Assigned</SelectItem>
+              <SelectItem value="not-assigned">Not Assigned</SelectItem>
             </SelectContent>
           </Select>
         </div>
