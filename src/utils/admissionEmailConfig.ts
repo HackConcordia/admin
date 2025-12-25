@@ -41,53 +41,127 @@ export async function sendAdmittedEmail(
       return true;
     }
 
-    let reimbursementText = "";
+    // Determine travel reimbursement text based on scenario
+    let travelTextEnglish = "";
+    let travelTextFrench = "";
+    let travelHtmlEnglish = "";
+    let travelHtmlFrench = "";
 
     if (
       travelReimbursement?.approved &&
       travelReimbursement.amount &&
       travelReimbursement.currency
     ) {
-      reimbursementText = `\n\nTravel Reimbursement:\nYou have been approved for ${travelReimbursement.amount} ${travelReimbursement.currency} in travel reimbursement. Details on how to claim your reimbursement will be provided closer to the event date.`;
+      // Travel reimbursement accepted
+      travelTextEnglish = `
+Travel Reimbursement:
+
+You have been approved for a travel reimbursement of up to $${travelReimbursement.amount} ${travelReimbursement.currency}. Please refer to the following document for further guidelines on eligible reimbursement expenses: https://drive.google.com/file/d/1-7HbWwvpoTLa2Mpw406qMu4K0Dit9GOt/view?usp=drive_link. Instructions on how to submit reimbursement requests will be provided closer to the event date.
+`;
+      travelTextFrench = `
+Remboursement des frais de déplacement :
+
+Vous avez été approuvé pour un remboursement de voyage d'un montant maximum de $${travelReimbursement.amount} ${travelReimbursement.currency}. Veuillez consulter le document suivant pour plus de détails sur les dépenses éligibles au remboursement : https://drive.google.com/file/d/1Bqh9FSkdL2RlPJEXvq7vAmCLb-T9pM1W/view?usp=drive_link. Les instructions sur la façon de soumettre les demandes de remboursement seront fournies à l'approche de la date de l'événement.
+`;
+      travelHtmlEnglish = `
+<p><strong>Travel Reimbursement:</strong></p>
+<p>You have been approved for a travel reimbursement of <strong>up to $${travelReimbursement.amount} ${travelReimbursement.currency}.</strong> Please refer to the following document for further guidelines on eligible reimbursement expenses: <a href="https://drive.google.com/file/d/1-7HbWwvpoTLa2Mpw406qMu4K0Dit9GOt/view?usp=drive_link">ConUHacks X Travel Reimbursement Guidelines</a>. Instructions on how to submit reimbursement requests will be provided closer to the event date.</p>
+`;
+      travelHtmlFrench = `
+<p><strong>Remboursement des frais de déplacement :</strong></p>
+<p>Vous avez été approuvé pour un remboursement de voyage d'un montant <strong>maximum de $${travelReimbursement.amount} ${travelReimbursement.currency}.</strong> Veuillez consulter le document suivant pour plus de détails sur les dépenses éligibles au remboursement : <a href="https://drive.google.com/file/d/1Bqh9FSkdL2RlPJEXvq7vAmCLb-T9pM1W/view?usp=drive_link">Directives concernant le remboursement des frais de déplacement pour ConUHacks X</a>. Les instructions sur la façon de soumettre les demandes de remboursement seront fournies à l'approche de la date de l'événement.</p>
+`;
     } else if (travelReimbursement?.approved === false) {
-      reimbursementText = `\n\nTravel Reimbursement:\nYour travel reimbursement request has been reviewed. Unfortunately, we are unable to provide travel reimbursement at this time.`;
+      // Travel reimbursement rejected
+      travelTextEnglish = `
+Travel Reimbursement:
+
+We received a large number of travel reimbursement applications this year, and after careful consideration, we regret to inform you that we are not able to provide you with a travel reimbursement at this time. Regardless, we still hope to see you at ConUHacks X.
+`;
+      travelTextFrench = `
+Remboursement des frais de déplacement :
+
+Nous avons reçu un grand nombre de demandes de remboursement de voyage cette année, et après une étude approfondie, nous avons le regret de vous informer que nous ne sommes pas en mesure de vous offrir un remboursement de voyage pour le moment. Néanmoins, nous espérons toujours vous voir à ConUHacks X.
+`;
+      travelHtmlEnglish = `
+<p><strong>Travel Reimbursement:</strong></p>
+<p>We received a large number of travel reimbursement applications this year, and after careful consideration, we regret to inform you that we are not able to provide you with a travel reimbursement at this time. Regardless, we still hope to see you at ConUHacks X.</p>
+`;
+      travelHtmlFrench = `
+<p><strong>Remboursement des frais de déplacement :</strong></p>
+<p>Nous avons reçu un grand nombre de demandes de remboursement de voyage cette année, et après une étude approfondie, nous avons le regret de vous informer que nous ne sommes pas en mesure de vous offrir un remboursement de voyage pour le moment. Néanmoins, nous espérons toujours vous voir à ConUHacks X.</p>
+`;
     }
+    // If travelReimbursement is undefined/null, no travel section is included
 
     const msg = {
       to: email,
       from: { email: config.fromEmail, name: "HackConcordia" },
       replyTo: { email: config.replyToEmail, name: "HackConcordia" },
-      subject: "Congratulations! You've Been Admitted to ConUHacks X / Félicitations! Vous avez été admis à ConUHacks X",
-      text: `Dear ${firstName} ${lastName},
+      subject:
+        "You have been accepted to ConUHacks X, please confirm your attendance! // Vous avez été accepté à ConUHacks X, veuillez confirmer votre présence !",
+      text: `Version française ci-dessous
+
+Dear ${firstName} ${lastName},
 
 Congratulations! We are excited to inform you that you have been admitted to ConUHacks X!
+${travelTextEnglish}
+Please confirm (or decline) your attendance here: https://register.conuhacks.io/
 
-We look forward to seeing you at the event. Further details about the hackathon will be sent to you soon.
-${reimbursementText}
+ConUHacks X will take place from Saturday, January 24th to Sunday, January 25th at Concordia University's John Molson Building (1600 Blvd. De Maisonneuve Ouest, Montreal, Quebec H3H 0A1).
 
-Best regards,
+Feel free to reach out to team.hackconcordia@ecaconcordia.ca if you have any questions or concerns.
+
+We hope to see you there,
+
 The HackConcordia Team
 
 ---
 
-This is an automated email. Please do not reply to this message.`,
-      html: `<p>Dear ${firstName} ${lastName},</p>
+Cher(ère) ${firstName} ${lastName},
+
+Félicitations ! Nous sommes heureux de vous informer que vous avez été admis à ConUHacks X !
+${travelTextFrench}
+Veuillez confirmer (ou refuser) votre participation ici : https://register.conuhacks.io/
+
+ConUHacks X se déroulera du samedi 24 janvier au dimanche 25 janvier à l'édifice John Molson de l'Université Concordia (1600 Boulevard De Maisonneuve Ouest, Montréal, Québec H3H 0A1).
+
+N'hésitez pas à contacter team.hackconcordia@ecaconcordia.ca si vous avez des questions ou des préoccupations.
+
+Nous espérons vous y voir,
+
+L'équipe HackConcordia`,
+      html: `<p><em>Version française ci-dessous</em></p>
+
+<p>Dear ${firstName} ${lastName},</p>
 
 <p><strong>Congratulations!</strong> We are excited to inform you that you have been admitted to ConUHacks X!</p>
+${travelHtmlEnglish}
+<p>Please <strong>confirm (or decline) your attendance</strong> here: <a href="https://register.conuhacks.io/">https://register.conuhacks.io/</a></p>
 
-<p>We look forward to seeing you at the event. Further details about the hackathon will be sent to you soon.</p>${
-        reimbursementText
-          ? `<p><strong>Travel Reimbursement:</strong><br>${reimbursementText
-              .replace(/\n\n/g, "<br>")
-              .replace(/\n/g, "<br>")}</p>`
-          : ""
-      }
+<p>ConUHacks X will take place from Saturday, January 24th to Sunday, January 25th at Concordia University's John Molson Building (1600 Blvd. De Maisonneuve Ouest, Montreal, Quebec H3H 0A1).</p>
 
-<p>Best regards,<br>The HackConcordia Team</p>
+<p>Feel free to reach out to <a href="mailto:team.hackconcordia@ecaconcordia.ca">team.hackconcordia@ecaconcordia.ca</a> if you have any questions or concerns.</p>
+
+<p>We hope to see you there,</p>
+
+<p>The HackConcordia Team</p>
 
 <hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;">
 
-<p style="font-size: 0.875rem; color: #666;"><em>This is an automated email. Please do not reply to this message.</em></p>`,
+<p>Cher(ère) ${firstName} ${lastName},</p>
+
+<p><strong>Félicitations !</strong> Nous sommes heureux de vous informer que vous avez été admis à ConUHacks X !</p>
+${travelHtmlFrench}
+<p>Veuillez <strong>confirmer (ou refuser) votre participation</strong> ici : <a href="https://register.conuhacks.io/">https://register.conuhacks.io/</a></p>
+
+<p>ConUHacks X se déroulera du samedi 24 janvier au dimanche 25 janvier à l'édifice John Molson de l'Université Concordia (1600 Boulevard De Maisonneuve Ouest, Montréal, Québec H3H 0A1).</p>
+
+<p>N'hésitez pas à contacter <a href="mailto:team.hackconcordia@ecaconcordia.ca">team.hackconcordia@ecaconcordia.ca</a> si vous avez des questions ou des préoccupations.</p>
+
+<p>Nous espérons vous y voir,</p>
+
+<p>L'équipe HackConcordia</p>`,
     };
 
     await sgMail.send(msg);
