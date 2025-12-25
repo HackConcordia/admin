@@ -255,10 +255,10 @@ export default async function TeamsPage({ searchParams }: PageProps) {
 
   return (
     <Suspense fallback={<TeamsLoading />}>
-      <TeamsGrid 
-        initialTeams={teams} 
-        initialPagination={pagination} 
-        initialFilters={filters} 
+      <TeamsGrid
+        initialTeams={teams}
+        initialPagination={pagination}
+        initialFilters={filters}
         isSuperAdmin={isSuperAdmin}
       />
     </Suspense>

@@ -63,9 +63,9 @@ export const DELETE = async (
 
     return sendSuccessResponse(
       "Team deleted successfully",
-      { 
+      {
         deletedTeamId: teamId,
-        updatedApplications: memberUserIds.length 
+        updatedApplications: memberUserIds.length
       },
       200
     );

@@ -522,8 +522,8 @@ export function TeamCard({ _id, teamName, teamCode, members, teamOwner, isSuperA
       </AlertDialog>
 
       {/* Remove Member Confirmation Dialog */}
-      <AlertDialog 
-        open={isRemoveMemberDialogOpen} 
+      <AlertDialog
+        open={isRemoveMemberDialogOpen}
         onOpenChange={(open) => {
           setIsRemoveMemberDialogOpen(open);
           if (!open) setMemberToRemove(null);

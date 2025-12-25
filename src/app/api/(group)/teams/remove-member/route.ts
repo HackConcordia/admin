@@ -69,7 +69,7 @@ export const POST = async (req: NextRequest) => {
     if (memberCount === 1) {
       // Update the application to remove teamId
       await Application.findByIdAndUpdate(userId, { $set: { teamId: "" } });
-      
+
       // Delete the team
       await Team.findByIdAndDelete(teamId);
 
