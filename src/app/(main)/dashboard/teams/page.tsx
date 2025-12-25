@@ -1,9 +1,11 @@
 import { Suspense } from "react";
+import { cookies } from "next/headers";
 import { Loader2 } from "lucide-react";
 
 import connectMongoDB from "@/repository/mongoose";
 import Team from "@/repository/models/team";
 import Application from "@/repository/models/application";
+import { COOKIE_NAME, verifyAuthToken } from "@/lib/auth-token";
 
 import { TeamsGrid } from "./_components/teams-grid";
 import type { TeamCardProps } from "./_components/team-card";
@@ -38,6 +40,19 @@ interface TeamMemberInfo {
 // Valid sort fields and orders
 const VALID_SORT_FIELDS = ["teamName", "teamCode", "memberCount", "createdAt"];
 const VALID_SORT_ORDERS = ["asc", "desc"];
+
+async function getIsSuperAdminSSR(): Promise<boolean> {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get(COOKIE_NAME)?.value;
+    if (!token) return false;
+
+    const payload = await verifyAuthToken(token);
+    return !!payload?.isSuperAdmin;
+  } catch {
+    return false;
+  }
+}
 
 async function getTeamsSSR(searchParams: {
   page?: string;
@@ -233,11 +248,19 @@ function TeamsLoading() {
 
 export default async function TeamsPage({ searchParams }: PageProps) {
   const params = await searchParams;
-  const { teams, pagination, filters } = await getTeamsSSR(params);
+  const [{ teams, pagination, filters }, isSuperAdmin] = await Promise.all([
+    getTeamsSSR(params),
+    getIsSuperAdminSSR(),
+  ]);
 
   return (
     <Suspense fallback={<TeamsLoading />}>
-      <TeamsGrid initialTeams={teams} initialPagination={pagination} initialFilters={filters} />
+      <TeamsGrid 
+        initialTeams={teams} 
+        initialPagination={pagination} 
+        initialFilters={filters} 
+        isSuperAdmin={isSuperAdmin}
+      />
     </Suspense>
   );
 }

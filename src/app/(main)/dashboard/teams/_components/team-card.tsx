@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Copy, Star, Users, UserPlus, Loader2, Check, AlertCircle } from "lucide-react";
+import { Copy, Star, Users, UserPlus, Loader2, Check, AlertCircle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +16,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
@@ -45,7 +55,9 @@ export interface TeamCardProps {
   members: TeamMember[];
   teamOwner: string;
   memberCount?: number;
+  isSuperAdmin?: boolean;
   onMemberAdded?: () => void;
+  onTeamDeleted?: () => void;
 }
 
 function getInitials(firstName?: string, lastName?: string): string {
@@ -53,10 +65,12 @@ function getInitials(firstName?: string, lastName?: string): string {
   return `${firstName?.[0] || ""}${lastName?.[0] || ""}`.toUpperCase();
 }
 
-export function TeamCard({ _id, teamName, teamCode, members, teamOwner, onMemberAdded }: TeamCardProps) {
+export function TeamCard({ _id, teamName, teamCode, members, teamOwner, isSuperAdmin, onMemberAdded, onTeamDeleted }: TeamCardProps) {
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
   const [email, setEmail] = React.useState("");
   const [isAdding, setIsAdding] = React.useState(false);
+  const [isDeleting, setIsDeleting] = React.useState(false);
   const [suggestions, setSuggestions] = React.useState<UserSuggestion[]>([]);
   const [isSearching, setIsSearching] = React.useState(false);
   const [showSuggestions, setShowSuggestions] = React.useState(false);
@@ -65,6 +79,29 @@ export function TeamCard({ _id, teamName, teamCode, members, teamOwner, onMember
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   const canAddMember = members.length < 4;
+
+  const handleDeleteTeam = async () => {
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/teams/${_id}`, {
+        method: "DELETE",
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to delete team");
+      }
+
+      toast.success("Team deleted successfully");
+      setIsDeleteDialogOpen(false);
+      onTeamDeleted?.();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to delete team");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const copyTeamCode = async () => {
     await navigator.clipboard.writeText(teamCode);
@@ -198,6 +235,17 @@ export function TeamCard({ _id, teamName, teamCode, members, teamOwner, onMember
                 <Copy className="h-4 w-4" />
                 <span className="sr-only">Copy team code</span>
               </Button>
+              {isSuperAdmin && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 shrink-0 opacity-0 transition-opacity group-hover:opacity-100 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={() => setIsDeleteDialogOpen(true)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  <span className="sr-only">Delete team</span>
+                </Button>
+              )}
             </div>
           </div>
           <div className="text-muted-foreground flex items-center gap-2 text-sm">
@@ -380,6 +428,39 @@ export function TeamCard({ _id, teamName, teamCode, members, teamOwner, onMember
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Team Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Team</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <span className="font-semibold">{teamName}</span>? This action cannot be undone.
+              All {members.length} member{members.length !== 1 ? "s" : ""} will be removed from the team.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteTeam}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete Team
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
