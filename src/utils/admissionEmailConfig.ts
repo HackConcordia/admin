@@ -193,52 +193,69 @@ export async function sendWaitlistedEmail(
       from: { email: config.fromEmail, name: "HackConcordia" },
       replyTo: { email: config.replyToEmail, name: "HackConcordia" },
       subject:
-        "HackConcordia Application Update - Waitlisted / Mise à jour de votre candidature - Liste d'attente",
-      text: `Dear ${firstName} ${lastName},
+        "ConUHacks X Application Update // Mise à jour de votre candidature ConUHacks X",
+      text: `Version française ci-dessous
 
-Thank you for your interest in HackConcordia!
+Dear ${firstName} ${lastName},
 
-Your application has been reviewed and you have been placed on our waitlist for ConUHacks X. We will notify you if a spot becomes available.
+Thank you for taking the time to apply to ConUHacks X.
 
-Best regards,
+We're excited by the strong interest and by the quality of applications we received this year. At this time you have been placed on the waitlist for ConUHacks X.
+
+This means that if a spot becomes available, we will reach out to you as soon as possible with further instructions on how to confirm your attendance. We encourage you to keep an eye on your inbox, as spots may open up leading up to the event.
+
+Feel free to reach out to team.hackconcordia@ecaconcordia.ca if you have any questions or concerns. Please note that our support team is not involved in the application review process and they are unable to offer or assign spots.
+
+Kind regards,
+
 The HackConcordia Team
 
 ---
 
-Cher/Chère ${firstName} ${lastName},
+Cher(ère) ${firstName} ${lastName},
 
-Merci pour votre intérêt envers HackConcordia!
+Merci d'avoir pris le temps de postuler à ConUHacks X.
 
-Votre candidature a été examinée et vous avez été placé sur notre liste d'attente pour ConUHacks X. Nous vous informerons si une place se libère.
+Nous sommes ravis de l'intérêt marqué et de la qualité des candidatures que nous avons reçues cette année. Pour l'instant, vous avez été placé sur la liste d'attente pour ConUHacks X.
+
+Cela signifie que si une place se libère, nous vous contacterons dès que possible pour vous donner des instructions supplémentaires sur la manière de confirmer votre participation. Nous vous encourageons à surveiller votre boîte de réception, car des places pourraient se libérer à l'approche de l'événement.
+
+N'hésitez pas à contacter team.hackconcordia@ecaconcordia.ca si vous avez des questions ou des préoccupations. Veuillez noter que notre équipe d'assistance n'est pas impliquée dans le processus d'examen des candidatures et qu'elle n'est pas en mesure d'offrir ou d'attribuer des places.
 
 Cordialement,
-L'équipe HackConcordia
 
----
+L'équipe HackConcordia`,
+      html: `<p><em>Version française ci-dessous</em></p>
 
-This is an automated email. Please do not reply to this message.
-Ceci est un courriel automatisé. Veuillez ne pas répondre à ce message.`,
-      html: `<p>Dear ${firstName} ${lastName},</p>
+<p>Dear ${firstName} ${lastName},</p>
 
-<p>Thank you for your interest in ConUHacks X!</p>
+<p>Thank you for taking the time to apply to ConUHacks X.</p>
 
-<p>Your application has been reviewed and you have been placed on our waitlist. We will notify you if a spot becomes available.</p>
+<p>We're excited by the strong interest and by the quality of applications we received this year. At this time you have been placed on the waitlist for ConUHacks X.</p>
 
-<p>Best regards,<br>The HackConcordia Team</p>
+<p>This means that if a spot becomes available, we will reach out to you as soon as possible with further instructions on how to confirm your attendance. We encourage you to keep an eye on your inbox, as spots may open up leading up to the event.</p>
 
-<hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;">
+<p>Feel free to reach out to <a href="mailto:team.hackconcordia@ecaconcordia.ca">team.hackconcordia@ecaconcordia.ca</a> if you have any questions or concerns. Please note that our support team is not involved in the application review process and they are unable to offer or assign spots.</p>
 
-<p>Cher/Chère ${firstName} ${lastName},</p>
+<p>Kind regards,</p>
 
-<p>Merci pour votre intérêt envers ConUHacks X!</p>
-
-<p>Votre candidature a été examinée et vous avez été placé sur notre liste d'attente. Nous vous informerons si une place se libère.</p>
-
-<p>Cordialement,<br>L'équipe HackConcordia</p>
+<p>The HackConcordia Team</p>
 
 <hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;">
 
-<p style="font-size: 0.875rem; color: #666;"><em>This is an automated email. Please do not reply to this message.<br>Ceci est un courriel automatisé. Veuillez ne pas répondre à ce message.</em></p>`,
+<p>Cher(ère) ${firstName} ${lastName},</p>
+
+<p>Merci d'avoir pris le temps de postuler à ConUHacks X.</p>
+
+<p>Nous sommes ravis de l'intérêt marqué et de la qualité des candidatures que nous avons reçues cette année. Pour l'instant, vous avez été placé sur la liste d'attente pour ConUHacks X.</p>
+
+<p>Cela signifie que si une place se libère, nous vous contacterons dès que possible pour vous donner des instructions supplémentaires sur la manière de confirmer votre participation. Nous vous encourageons à surveiller votre boîte de réception, car des places pourraient se libérer à l'approche de l'événement.</p>
+
+<p>N'hésitez pas à contacter <a href="mailto:team.hackconcordia@ecaconcordia.ca">team.hackconcordia@ecaconcordia.ca</a> si vous avez des questions ou des préoccupations. Veuillez noter que notre équipe d'assistance n'est pas impliquée dans le processus d'examen des candidatures et qu'elle n'est pas en mesure d'offrir ou d'attribuer des places.</p>
+
+<p>Cordialement,</p>
+
+<p>L'équipe HackConcordia</p>`,
     };
 
     await sgMail.send(msg);
