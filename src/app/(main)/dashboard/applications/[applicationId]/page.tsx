@@ -89,6 +89,7 @@ export default async function Page({
     travelReimbursementCurrency: app.travelReimbursementCurrency,
     comments: app.comments,
     skillTags: app.skillTags,
+    isStarred: app.isStarred,
   };
 
   // Fetch team data if the applicant is in a team

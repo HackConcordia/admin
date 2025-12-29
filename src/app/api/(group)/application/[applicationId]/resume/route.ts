@@ -80,7 +80,9 @@ export const POST = async (
     // Delete existing resume if it exists
     if (application.resume?.id) {
       try {
-        const existingResumeId = new mongoose.Types.ObjectId(application.resume.id);
+        const existingResumeId = new mongoose.Types.ObjectId(
+          application.resume.id
+        );
         await gridFSBucket.delete(existingResumeId);
       } catch (deleteError) {
         // Log but don't fail if old file deletion fails
@@ -135,7 +137,11 @@ export const POST = async (
     );
 
     if (!updatedApplication) {
-      return sendErrorResponse("Failed to update application with resume", null, 500);
+      return sendErrorResponse(
+        "Failed to update application with resume",
+        null,
+        500
+      );
     }
 
     return sendSuccessResponse(
@@ -146,7 +152,10 @@ export const POST = async (
       200
     );
   } catch (error) {
-    console.error("Error in POST /api/application/[applicationId]/resume:", error);
+    console.error(
+      "Error in POST /api/application/[applicationId]/resume:",
+      error
+    );
     return sendErrorResponse("Failed to upload resume", error, 500);
   }
 };
@@ -221,8 +230,10 @@ export const DELETE = async (
 
     return sendSuccessResponse("Resume deleted successfully", null, 200);
   } catch (error) {
-    console.error("Error in DELETE /api/application/[applicationId]/resume:", error);
+    console.error(
+      "Error in DELETE /api/application/[applicationId]/resume:",
+      error
+    );
     return sendErrorResponse("Failed to delete resume", error, 500);
   }
 };
-

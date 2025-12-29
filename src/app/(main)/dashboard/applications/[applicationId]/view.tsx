@@ -97,6 +97,7 @@ import {
   Upload,
   Trash2,
   AlertTriangle,
+  Star,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -314,6 +315,7 @@ export type ApplicationDetails = {
   travelReimbursementCurrency?: string;
   comments?: string;
   skillTags?: string[];
+  isStarred?: boolean;
 };
 
 export default function ApplicationView({
@@ -374,6 +376,9 @@ export default function ApplicationView({
   const [openMultiselect, setOpenMultiselect] = React.useState<string | null>(
     null
   );
+
+  // Star state
+  const [isStarring, setIsStarring] = React.useState(false);
 
   // Update local state when application prop changes
   React.useEffect(() => {
@@ -713,6 +718,35 @@ export default function ApplicationView({
       toast.success("Resume deleted successfully");
     } catch (e: any) {
       toast.error(e?.message ?? "Failed to delete resume");
+    }
+  }
+
+  // Toggle star status
+  async function toggleStar() {
+    try {
+      setIsStarring(true);
+      const newStatus = !application.isStarred;
+      
+      // Optimistic update
+      setApplication((prev) => ({ ...prev, isStarred: newStatus }));
+
+      const res = await fetch(`/api/application/${application._id}/star`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isStarred: newStatus }),
+      });
+
+      if (!res.ok) {
+        // Revert on error
+        setApplication((prev) => ({ ...prev, isStarred: !newStatus }));
+        toast.error("Failed to update star status");
+      }
+    } catch (e) {
+      // Revert on error
+      setApplication((prev) => ({ ...prev, isStarred: !application.isStarred }));
+      toast.error("Failed to update star status");
+    } finally {
+      setIsStarring(false);
     }
   }
 
@@ -1147,13 +1181,30 @@ export default function ApplicationView({
                     </div>
                   </div>
                 ) : (
-                  <div>
-                    <h2>
-                      {application.firstName} {application.lastName}
-                    </h2>
-                    <p className="text-muted-foreground text-sm mb-2">
-                      {application.email}
-                    </p>
+                  <div className="flex items-start gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={toggleStar}
+                      disabled={isStarring}
+                      className="mt-1 shrink-0"
+                    >
+                      <Star
+                        className={`h-5 w-5 ${
+                          application.isStarred
+                            ? "fill-yellow-400 text-yellow-400"
+                            : "text-muted-foreground"
+                        }`}
+                      />
+                    </Button>
+                    <div>
+                      <h2>
+                        {application.firstName} {application.lastName}
+                      </h2>
+                      <p className="text-muted-foreground text-sm mb-2">
+                        {application.email}
+                      </p>
+                    </div>
                   </div>
                 )}
                 {isEditMode ? (
