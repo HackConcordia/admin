@@ -726,7 +726,6 @@ export default function ApplicationView({
     try {
       setIsStarring(true);
       const newStatus = !application.isStarred;
-      
       // Optimistic update
       setApplication((prev) => ({ ...prev, isStarred: newStatus }));
 
