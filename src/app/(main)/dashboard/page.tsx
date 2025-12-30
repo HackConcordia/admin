@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 import Link from "next/link";
 
-import { FileText, Users, Trophy, UserX, Shield } from "lucide-react";
+import { FileText, Users, Trophy, UserX, Star } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -185,12 +185,12 @@ export default function DashboardPage() {
         {/* Small Stats Grid */}
         <div className="grid grid-cols-2 gap-4">
           <StatCard
-            title="OAuth Users"
-            value={`${stats.oauthUsersPercentage.toFixed(2)}%`}
-            subtitle="SSO users"
-            icon={Shield}
-            iconColor="#22c55e"
-            iconBgColor="rgba(34, 197, 94, 0.15)"
+            title="Starred Applicants"
+            value={`${stats.starredApplicantsCount} / ${stats.validApplicantsCount}`}
+            subtitle={`${stats.starredPercentage.toFixed(2)}% of valid applicants`}
+            icon={Star}
+            iconColor="#eab308"
+            iconBgColor="rgba(234, 179, 8, 0.15)"
           />
           <StatCard
             title="Not Assigned"

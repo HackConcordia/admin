@@ -9,8 +9,8 @@ import {
   Users,
   Trophy,
   UserX,
-  Shield,
   BarChart3,
+  Star,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -190,12 +190,12 @@ export default function DashboardPage() {
         {/* Small Stats Grid */}
         <div className="grid grid-cols-2 gap-4">
           <StatCard
-            title="OAuth Users"
-            value={`${stats.oauthUsersPercentage.toFixed(2)}%`}
-            subtitle="SSO users"
-            icon={Shield}
-            iconColor="#22c55e"
-            iconBgColor="rgba(34, 197, 94, 0.15)"
+            title="Starred Applicants"
+            value={`${stats.starredApplicantsCount} / ${stats.validApplicantsCount}`}
+            subtitle={`${stats.starredPercentage.toFixed(2)}% of valid applicants`}
+            icon={Star}
+            iconColor="#eab308"
+            iconBgColor="rgba(234, 179, 8, 0.15)"
           />
           <StatCard
             title="Not Assigned"

@@ -31,6 +31,8 @@ export interface IStats {
     restriction: string;
     count: number;
   }[];
-  oauthUsersPercentage: number;
+  starredApplicantsCount: number;
+  validApplicantsCount: number;
+  starredPercentage: number;
   unassignedApplications: number;
 }

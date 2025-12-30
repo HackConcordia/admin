@@ -6,8 +6,6 @@ import Application from "@/repository/models/application";
 
 import Team from "@/repository/models/team";
 
-import User from "@/repository/models/user"; // Import the User model
-
 import { statuses } from "@/constants/statuses";
 
 // Utility function to format dietary restriction names
@@ -29,7 +27,7 @@ export const GET = async () => {
     // Fetch all applications, including dietaryRestrictions (as a string representation of array)
     const applications = await Application.find(
       {},
-      "status school shirtSize createdAt dietaryRestrictions processedBy"
+      "status school shirtSize createdAt dietaryRestrictions processedBy isStarred"
     );
 
     if (!applications) {
@@ -40,15 +38,6 @@ export const GET = async () => {
     const teams = await Team.find({});
     const totalTeams = teams.length;
 
-    // Fetch all users
-    const users = await User.find({}, "isOAuthUser");
-    const totalUsers = users.length;
-
-    // Calculate OAuth users
-    const oauthUsers = await User.countDocuments({ isOAuthUser: true });
-    const oauthUsersPercentage =
-      totalUsers > 0 ? (oauthUsers / totalUsers) * 100 : 0;
-
     // Total applicants
     const totalApplicants = applications.length;
 
@@ -56,6 +45,20 @@ export const GET = async () => {
     const unassignedApplications = applications.filter(
       (a) => (a.processedBy === "Not processed" && a.status === "Submitted")
     ).length;
+
+    // Start of Starred Applicants Logic
+    const validApplications = applications.filter(
+      (app) => app.status !== "Unverified" && app.status !== "Incomplete"
+    );
+    const validApplicantsCount = validApplications.length;
+    const starredApplicantsCount = validApplications.filter(
+      (app) => app.isStarred
+    ).length;
+
+    const starredPercentage =
+      validApplicantsCount > 0
+        ? (starredApplicantsCount / validApplicantsCount) * 100
+        : 0;
 
     // Group by status
     const statusCounts = applications.reduce((acc, app) => {
@@ -197,7 +200,9 @@ export const GET = async () => {
       tshirtCounts,
       totalTeams,
       dietaryRestrictionsData,
-      oauthUsersPercentage,
+      starredApplicantsCount,
+      validApplicantsCount,
+      starredPercentage,
       unassignedApplications,
     };
     return sendSuccessResponse(
