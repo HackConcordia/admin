@@ -59,7 +59,10 @@ export function StatusOverview({
     (statusCounts["Checked-in"] ?? 0);
 
   console.log(totalProcessedCount, totalApplicants);
-  const processedPercentage = totalProcessedCount > 0 ? ((totalProcessedCount / totalApplicants) * 100).toFixed(2) : "0.00";
+  const processedPercentage =
+    totalProcessedCount > 0
+      ? ((totalProcessedCount / totalApplicants) * 100).toFixed(2)
+      : "0.00";
 
   return (
     <div className="space-y-4">
@@ -83,7 +86,7 @@ export function StatusOverview({
               <p className="text-muted-foreground text-xs">{label}</p>
               <p className="text-lg font-semibold">
                 {key === "Confirmed"
-                  ? `${statusCounts[key] || 0}/${statusCounts["Checked-in"] || 0}`
+                  ? `${statusCounts[key] || 0}/${statusCounts["Admitted"] || 0}`
                   : statusCounts[key] || 0}
               </p>
             </div>
