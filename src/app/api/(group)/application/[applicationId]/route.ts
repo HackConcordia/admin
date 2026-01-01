@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 import connectMongoDB from "@/repository/mongoose";
 import { sendErrorResponse, sendSuccessResponse } from "@/repository/response";
 import Application from "@/repository/models/application";
+import CheckIn from "@/repository/models/checkin";
 import { COOKIE_NAME, verifyAuthToken } from "@/lib/auth-token";
 
 // Fields that require validation
@@ -292,6 +293,11 @@ export const PUT = async (
       }
     }
 
+    // Check if status is being changed to "Confirmed"
+    const isChangingToConfirmed =
+      updateFields.status === "Confirmed" &&
+      existingApplication.status !== "Confirmed";
+
     // Update application
     const updatedApplication = await Application.findByIdAndUpdate(
       applicationId,
@@ -301,6 +307,25 @@ export const PUT = async (
 
     if (!updatedApplication) {
       return sendErrorResponse("Failed to update application", null, 500);
+    }
+
+    // If status changed to "Confirmed", create a CheckIn document
+    if (isChangingToConfirmed) {
+      try {
+        const existingCheckIn = await CheckIn.findOne({
+          email: existingApplication.email,
+        });
+        if (!existingCheckIn) {
+          const newCheckIn = new CheckIn({
+            email: existingApplication.email,
+            isCheckedIn: false,
+          });
+          await newCheckIn.save();
+        }
+      } catch (checkInError) {
+        console.error("Error creating CheckIn document:", checkInError);
+        // Don't fail the whole request, just log the error
+      }
     }
 
     return sendSuccessResponse(
