@@ -472,7 +472,7 @@ export default function ApplicationView({
     if (!confirmationAction) return;
 
     if (confirmationAction === "admit" && !application.travelReimbursement) {
-       updateStatus("admit");
+      updateStatus("admit");
     } else {
       updateStatus(confirmationAction);
     }
@@ -742,7 +742,10 @@ export default function ApplicationView({
       }
     } catch (e) {
       // Revert on error
-      setApplication((prev) => ({ ...prev, isStarred: !application.isStarred }));
+      setApplication((prev) => ({
+        ...prev,
+        isStarred: !application.isStarred,
+      }));
       toast.error("Failed to update star status");
     } finally {
       setIsStarring(false);
@@ -1946,31 +1949,28 @@ export default function ApplicationView({
                           <SaveAllIcon />{" "}
                           {isSavingMetadata ? "Saving..." : "Save"}
                         </Button>
-                        {isSuperAdmin && (
-                          <>
-                            <Button
-                              onClick={handleAdmitClick}
-                              disabled={isSaving !== null}
-                              variant="default"
-                            >
-                              <CheckCircle2 /> Admit
-                            </Button>
-                            <Button
-                              onClick={handleWaitlistClick}
-                              disabled={isSaving !== null}
-                              variant="secondary"
-                            >
-                              <Hourglass /> Waitlist
-                            </Button>
-                            <Button
-                              onClick={handleRejectClick}
-                              disabled={isSaving !== null}
-                              variant="destructive"
-                            >
-                              <XCircle /> Reject
-                            </Button>
-                          </>
-                        )}
+
+                        <Button
+                          onClick={handleAdmitClick}
+                          disabled={isSaving !== null}
+                          variant="default"
+                        >
+                          <CheckCircle2 /> Admit
+                        </Button>
+                        <Button
+                          onClick={handleWaitlistClick}
+                          disabled={isSaving !== null}
+                          variant="secondary"
+                        >
+                          <Hourglass /> Waitlist
+                        </Button>
+                        <Button
+                          onClick={handleRejectClick}
+                          disabled={isSaving !== null}
+                          variant="destructive"
+                        >
+                          <XCircle /> Reject
+                        </Button>
                       </div>
                     );
                   }
@@ -1987,24 +1987,21 @@ export default function ApplicationView({
                           <SaveAllIcon />{" "}
                           {isSavingMetadata ? "Saving..." : "Save"}
                         </Button>
-                        {isSuperAdmin && (
-                          <>
-                            <Button
-                              onClick={handleAdmitClick}
-                              disabled={isSaving !== null}
-                              variant="default"
-                            >
-                              <CheckCircle2 /> Admit
-                            </Button>
-                            <Button
-                              onClick={handleRejectClick}
-                              disabled={isSaving !== null}
-                              variant="destructive"
-                            >
-                              <XCircle /> Reject
-                            </Button>
-                          </>
-                        )}
+
+                        <Button
+                          onClick={handleAdmitClick}
+                          disabled={isSaving !== null}
+                          variant="default"
+                        >
+                          <CheckCircle2 /> Admit
+                        </Button>
+                        <Button
+                          onClick={handleRejectClick}
+                          disabled={isSaving !== null}
+                          variant="destructive"
+                        >
+                          <XCircle /> Reject
+                        </Button>
                       </div>
                     );
                   }
