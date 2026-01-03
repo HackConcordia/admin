@@ -353,7 +353,7 @@ async function getApplicationsSSR(searchParams: SearchParams): Promise<{
       );
 
       // Fetch all admins for the filter list
-      const reviewers = await Admin.find({isSuperAdmin: false})
+      const reviewers = await Admin.find({ isSuperAdmin: false })
         .select("firstName lastName email")
         .lean()
         .exec();
