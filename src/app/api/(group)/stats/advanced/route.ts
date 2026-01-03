@@ -113,6 +113,9 @@ export const GET = async () => {
         isRegisteredForCoop: 1,
         nextCoopTerm: 1,
         country: 1,
+        isTravelReimbursementApproved: 1,
+        travelReimbursementAmount: 1,
+        travelReimbursementCurrency: 1,
       }
     );
 
@@ -122,27 +125,23 @@ export const GET = async () => {
 
     const totalApplicants = applications.length;
 
-    // Age eligibility (isEighteenOrAbove)
-    const ageEligibility = applications.reduce(
-      (acc, app) => {
-        const value = app.isEighteenOrAbove?.toLowerCase() || "not specified";
-        if (value === "yes") acc.yes++;
-        else if (value === "no") acc.no++;
-        else acc.notSpecified++;
-        return acc;
-      },
-      { yes: 0, no: 0, notSpecified: 0 }
-    );
+    // Total Travel Reimbursement
+    const totalTravelReimbursement = applications.reduce((acc, app) => {
+      if (app.isTravelReimbursementApproved !== true) return acc;
+
+      let amount = parseFloat(app.travelReimbursementAmount as any) || 0;
+      if (app.travelReimbursementCurrency === "USD") {
+        amount = amount * 1.39;
+      }
+      return acc + amount;
+    }, 0);
 
     // Faculty distribution
-    const facultyCounts = applications.reduce(
-      (acc, app) => {
-        const faculty = app.faculty || "not specified";
-        acc[faculty] = (acc[faculty] || 0) + 1;
-        return acc;
-      },
-      {} as Record<string, number>
-    );
+    const facultyCounts = applications.reduce((acc, app) => {
+      const faculty = app.faculty || "not specified";
+      acc[faculty] = (acc[faculty] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
 
     const facultyDistribution = Object.entries(facultyCounts)
       .map(([faculty, count]) => ({
@@ -152,14 +151,11 @@ export const GET = async () => {
       .sort((a, b) => b.count - a.count);
 
     // Level of study distribution
-    const levelOfStudyCounts = applications.reduce(
-      (acc, app) => {
-        const level = app.levelOfStudy || "not specified";
-        acc[level] = (acc[level] || 0) + 1;
-        return acc;
-      },
-      {} as Record<string, number>
-    );
+    const levelOfStudyCounts = applications.reduce((acc, app) => {
+      const level = app.levelOfStudy || "not specified";
+      acc[level] = (acc[level] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
 
     const levelOfStudyDistribution = Object.entries(levelOfStudyCounts)
       .map(([level, count]) => ({
@@ -169,14 +165,11 @@ export const GET = async () => {
       .sort((a, b) => b.count - a.count);
 
     // Program distribution
-    const programCounts = applications.reduce(
-      (acc, app) => {
-        const program = app.program || "not specified";
-        acc[program] = (acc[program] || 0) + 1;
-        return acc;
-      },
-      {} as Record<string, number>
-    );
+    const programCounts = applications.reduce((acc, app) => {
+      const program = app.program || "not specified";
+      acc[program] = (acc[program] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
 
     const programDistribution = Object.entries(programCounts)
       .map(([program, count]) => ({
@@ -187,14 +180,11 @@ export const GET = async () => {
       .slice(0, 10); // Top 10 programs
 
     // Graduation year distribution
-    const graduationYearCounts = applications.reduce(
-      (acc, app) => {
-        const year = app.graduationYear || "not specified";
-        acc[year] = (acc[year] || 0) + 1;
-        return acc;
-      },
-      {} as Record<string, number>
-    );
+    const graduationYearCounts = applications.reduce((acc, app) => {
+      const year = app.graduationYear || "not specified";
+      acc[year] = (acc[year] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
 
     const graduationYearDistribution = Object.entries(graduationYearCounts)
       .map(([year, count]) => ({
@@ -214,14 +204,11 @@ export const GET = async () => {
     );
 
     // Preferred language distribution
-    const languageCounts = applications.reduce(
-      (acc, app) => {
-        const lang = app.preferredLanguage || "not specified";
-        acc[lang] = (acc[lang] || 0) + 1;
-        return acc;
-      },
-      {} as Record<string, number>
-    );
+    const languageCounts = applications.reduce((acc, app) => {
+      const lang = app.preferredLanguage || "not specified";
+      acc[lang] = (acc[lang] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
 
     const preferredLanguageDistribution = Object.entries(languageCounts)
       .map(([language, count]) => ({
@@ -231,14 +218,11 @@ export const GET = async () => {
       .sort((a, b) => b.count - a.count);
 
     // Gender distribution
-    const genderCounts = applications.reduce(
-      (acc, app) => {
-        const gender = app.gender || "not specified";
-        acc[gender] = (acc[gender] || 0) + 1;
-        return acc;
-      },
-      {} as Record<string, number>
-    );
+    const genderCounts = applications.reduce((acc, app) => {
+      const gender = app.gender || "not specified";
+      acc[gender] = (acc[gender] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
 
     const genderDistribution = Object.entries(genderCounts)
       .map(([gender, count]) => ({
@@ -248,14 +232,11 @@ export const GET = async () => {
       .sort((a, b) => b.count - a.count);
 
     // Country distribution (top 10)
-    const countryCounts = applications.reduce(
-      (acc, app) => {
-        const country = app.country || "not specified";
-        acc[country] = (acc[country] || 0) + 1;
-        return acc;
-      },
-      {} as Record<string, number>
-    );
+    const countryCounts = applications.reduce((acc, app) => {
+      const country = app.country || "not specified";
+      acc[country] = (acc[country] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
 
     const countryDistribution = Object.entries(countryCounts)
       .map(([country, count]) => ({
@@ -317,7 +298,7 @@ export const GET = async () => {
 
     const responseData = {
       totalApplicants,
-      ageEligibility,
+      totalTravelReimbursement,
       facultyDistribution,
       levelOfStudyDistribution,
       programDistribution,

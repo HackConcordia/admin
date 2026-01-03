@@ -6,7 +6,17 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { IAdvancedStats } from "@/interfaces/IAdvancedStats";
 import Link from "next/link";
-import { ArrowLeft, Users, GraduationCap, Globe, Briefcase, Languages, Plane, UserCheck, Building } from "lucide-react";
+import {
+  ArrowLeft,
+  Users,
+  GraduationCap,
+  Globe,
+  Briefcase,
+  Languages,
+  Plane,
+  UserCheck,
+  Building,
+} from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -19,7 +29,12 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from "recharts";
-import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import {
+  ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
 
 const COLORS = [
   "#3b82f6",
@@ -72,7 +87,9 @@ export default function AdvancedAnalyticsPage() {
             <div className="space-y-4 text-center">
               <h3 className="text-lg font-semibold">Error Loading Analytics</h3>
               <p className="text-muted-foreground text-sm">{error}</p>
-              <Button onClick={() => window.location.reload()}>Try Again</Button>
+              <Button onClick={() => window.location.reload()}>
+                Try Again
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -90,9 +107,12 @@ export default function AdvancedAnalyticsPage() {
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Advanced Analytics</h1>
+          <h1 className="text-2xl font-bold tracking-tight">
+            Advanced Analytics
+          </h1>
           <p className="text-muted-foreground text-sm">
-            Detailed insights from {stats.totalApplicants.toLocaleString()} applications
+            Detailed insights from {stats.totalApplicants.toLocaleString()}{" "}
+            applications
           </p>
         </div>
       </div>
@@ -100,9 +120,8 @@ export default function AdvancedAnalyticsPage() {
       {/* Quick Stats Row */}
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <QuickStatCard
-          title="18+ Eligible"
-          value={stats.ageEligibility.yes}
-          total={stats.totalApplicants}
+          title="Total Travel Reimbursement (CAD)"
+          value={stats.totalTravelReimbursement}
           icon={UserCheck}
           color="#22c55e"
         />
@@ -120,7 +139,12 @@ export default function AdvancedAnalyticsPage() {
           icon={Briefcase}
           color="#3b82f6"
         />
-        <QuickStatCard title="Countries" value={stats.countryDistribution.length} icon={Globe} color="#8b5cf6" />
+        <QuickStatCard
+          title="Countries"
+          value={stats.countryDistribution.length}
+          icon={Globe}
+          color="#8b5cf6"
+        />
       </div>
 
       {/* Row 1: Gender & Language */}
@@ -209,7 +233,9 @@ export default function AdvancedAnalyticsPage() {
           </CardHeader>
           <CardContent>
             {stats.jobTypesDistribution.length > 0 ? (
-              <HorizontalBarChart data={stats.jobTypesDistribution.slice(0, 6)} />
+              <HorizontalBarChart
+                data={stats.jobTypesDistribution.slice(0, 6)}
+              />
             ) : (
               <div className="text-muted-foreground flex h-32 items-center justify-center text-sm">
                 No data available for job types
@@ -227,7 +253,9 @@ export default function AdvancedAnalyticsPage() {
           </CardHeader>
           <CardContent>
             {stats.workRegionsDistribution.length > 0 ? (
-              <HorizontalBarChart data={stats.workRegionsDistribution.slice(0, 6)} />
+              <HorizontalBarChart
+                data={stats.workRegionsDistribution.slice(0, 6)}
+              />
             ) : (
               <div className="text-muted-foreground flex h-32 items-center justify-center text-sm">
                 No data available for work regions
@@ -248,9 +276,14 @@ export default function AdvancedAnalyticsPage() {
         <CardContent>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
             {stats.countryDistribution.map((country, index) => (
-              <div key={country.code} className="flex items-center justify-between rounded-lg border p-3">
+              <div
+                key={country.code}
+                className="flex items-center justify-between rounded-lg border p-3"
+              >
                 <span className="text-sm font-medium">{country.code}</span>
-                <span className="text-muted-foreground text-sm">{country.count}</span>
+                <span className="text-muted-foreground text-sm">
+                  {country.count}
+                </span>
               </div>
             ))}
           </div>
@@ -289,8 +322,19 @@ function QuickStatCard({
           <div>
             <p className="text-muted-foreground text-xs">{title}</p>
             <div className="flex items-baseline gap-1">
-              <p className="text-xl font-bold">{value.toLocaleString()}</p>
-              {percentage && <span className="text-muted-foreground text-xs">({percentage}%)</span>}
+              <p className="text-xl font-bold">
+                {title.includes("(CAD)")
+                  ? new Intl.NumberFormat("en-CA", {
+                      style: "currency",
+                      currency: "CAD",
+                    }).format(value)
+                  : value.toLocaleString()}
+              </p>
+              {percentage && (
+                <span className="text-muted-foreground text-xs">
+                  ({percentage}%)
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -300,7 +344,11 @@ function QuickStatCard({
 }
 
 // Pie Chart Component
-function PieChartComponent({ data }: { data: { name: string; count: number }[] }) {
+function PieChartComponent({
+  data,
+}: {
+  data: { name: string; count: number }[];
+}) {
   const filteredData = data.filter((item) => item.count > 0);
 
   return (
@@ -312,7 +360,9 @@ function PieChartComponent({ data }: { data: { name: string; count: number }[] }
               className="h-3 w-3 flex-shrink-0 rounded-sm"
               style={{ backgroundColor: COLORS[index % COLORS.length] }}
             />
-            <span className="text-muted-foreground flex-1 truncate text-sm">{item.name}</span>
+            <span className="text-muted-foreground flex-1 truncate text-sm">
+              {item.name}
+            </span>
             <span className="text-sm font-semibold">{item.count}</span>
           </div>
         ))}
@@ -333,7 +383,12 @@ function PieChartComponent({ data }: { data: { name: string; count: number }[] }
               {filteredData.map((entry, index) => (
                 <Cell
                   key={`cell-${index}`}
-                  fill={COLORS[data.findIndex((d) => d.name === entry.name) % COLORS.length]}
+                  fill={
+                    COLORS[
+                      data.findIndex((d) => d.name === entry.name) %
+                        COLORS.length
+                    ]
+                  }
                   strokeWidth={0}
                 />
               ))}
@@ -344,7 +399,9 @@ function PieChartComponent({ data }: { data: { name: string; count: number }[] }
                   return (
                     <div className="bg-background rounded-lg border px-3 py-2 shadow-lg">
                       <p className="text-sm font-medium">{payload[0].name}</p>
-                      <p className="text-muted-foreground text-sm">{payload[0].value?.toLocaleString()} applicants</p>
+                      <p className="text-muted-foreground text-sm">
+                        {payload[0].value?.toLocaleString()} applicants
+                      </p>
                     </div>
                   );
                 }
@@ -359,14 +416,24 @@ function PieChartComponent({ data }: { data: { name: string; count: number }[] }
 }
 
 // Horizontal Bar Chart Component
-function HorizontalBarChart({ data }: { data: { name: string; count: number }[] }) {
+function HorizontalBarChart({
+  data,
+}: {
+  data: { name: string; count: number }[];
+}) {
   const maxCount = Math.max(...data.map((d) => d.count));
 
   return (
     <div className="space-y-3">
       {data.map((item, index) => (
-        <div key={item.name} className="flex items-center gap-3" title={item.name}>
-          <div className="text-muted-foreground w-36 truncate text-sm md:w-44">{item.name}</div>
+        <div
+          key={item.name}
+          className="flex items-center gap-3"
+          title={item.name}
+        >
+          <div className="text-muted-foreground w-36 truncate text-sm md:w-44">
+            {item.name}
+          </div>
           <div className="bg-muted h-6 flex-1 overflow-hidden rounded">
             <div
               className="h-full rounded transition-all duration-500"
@@ -376,7 +443,9 @@ function HorizontalBarChart({ data }: { data: { name: string; count: number }[] 
               }}
             />
           </div>
-          <div className="w-14 text-right text-sm font-semibold">{item.count}</div>
+          <div className="w-14 text-right text-sm font-semibold">
+            {item.count}
+          </div>
         </div>
       ))}
     </div>
@@ -384,7 +453,11 @@ function HorizontalBarChart({ data }: { data: { name: string; count: number }[] 
 }
 
 // Graduation Year Bar Chart
-function GraduationYearChart({ data }: { data: { year: string; count: number }[] }) {
+function GraduationYearChart({
+  data,
+}: {
+  data: { year: string; count: number }[];
+}) {
   const chartConfig = {
     count: {
       label: "Applicants",
@@ -394,12 +467,29 @@ function GraduationYearChart({ data }: { data: { year: string; count: number }[]
 
   return (
     <ChartContainer config={chartConfig} className="h-[200px] w-full">
-      <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-        <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-muted" />
-        <XAxis dataKey="year" tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
+      <BarChart
+        data={data}
+        margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+      >
+        <CartesianGrid
+          vertical={false}
+          strokeDasharray="3 3"
+          className="stroke-muted"
+        />
+        <XAxis
+          dataKey="year"
+          tickLine={false}
+          axisLine={false}
+          tick={{ fontSize: 12 }}
+        />
         <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
         <ChartTooltip content={<ChartTooltipContent />} />
-        <Bar dataKey="count" fill="var(--color-count)" radius={[4, 4, 0, 0]} maxBarSize={40} />
+        <Bar
+          dataKey="count"
+          fill="var(--color-count)"
+          radius={[4, 4, 0, 0]}
+          maxBarSize={40}
+        />
       </BarChart>
     </ChartContainer>
   );
