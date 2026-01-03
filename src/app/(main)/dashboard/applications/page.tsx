@@ -50,6 +50,7 @@ type SearchParams = {
   status?: string;
   travelReimbursement?: string;
   assignedStatus?: string;
+  assignedTo?: string; // New param
 };
 
 type PaginationInfo = {
@@ -105,7 +106,8 @@ function buildQuery(
   status: string,
   travelReimbursement: string,
   assignedStatus?: string,
-  assignedIds?: string[]
+  assignedIds?: string[],
+  assignedTo?: string // New param
 ): Record<string, any> {
   const query: Record<string, any> = {};
 
@@ -166,6 +168,14 @@ function buildQuery(
     query.processedBy = "Not processed";
   }
 
+  // Filter by specific reviewers (assignedTo)
+  if (assignedTo) {
+    const reviewers = assignedTo.split(",").filter(Boolean);
+    if (reviewers.length > 0) {
+      query.processedBy = { $in: reviewers };
+    }
+  }
+
   // Filter by assigned applications (for non-super admins)
   if (assignedIds !== undefined) {
     query._id = { $in: assignedIds };
@@ -182,13 +192,21 @@ async function getPaginatedApplications(
   status: string,
   travelReimbursement: string,
   assignedStatus: string,
+  assignedTo: string,
   page: number,
   limit: number
 ): Promise<{
   applications: ApplicationTableRow[];
   pagination: PaginationInfo;
 }> {
-  const query = buildQuery(search, status, travelReimbursement, assignedStatus);
+  const query = buildQuery(
+    search,
+    status,
+    travelReimbursement,
+    assignedStatus,
+    undefined,
+    assignedTo
+  );
 
   const total = await Application.countDocuments(query);
   const totalPages = Math.ceil(total / limit);
@@ -251,7 +269,13 @@ async function getPaginatedAssignedApplications(
     };
   }
 
-  const query = buildQuery(search, status, travelReimbursement, assignedStatus, assignedIds);
+  const query = buildQuery(
+    search,
+    status,
+    travelReimbursement,
+    assignedStatus,
+    assignedIds
+  );
 
   const total = await Application.countDocuments(query);
   const totalPages = Math.ceil(total / limit);
@@ -284,6 +308,13 @@ async function getApplicationsSSR(searchParams: SearchParams): Promise<{
   status: string;
   travelReimbursement: string;
   assignedStatus: string;
+  assignedTo: string; // New param
+  reviewers?: {
+    email: string;
+    firstName: string;
+    lastName: string;
+    _id: string;
+  }[]; // New field
 }> {
   const page = parseInt(searchParams.page || "1", 10);
   const limit = parseInt(searchParams.limit || "10", 10);
@@ -291,6 +322,7 @@ async function getApplicationsSSR(searchParams: SearchParams): Promise<{
   const status = searchParams.status || "";
   const travelReimbursement = searchParams.travelReimbursement || "";
   const assignedStatus = searchParams.assignedStatus || "";
+  const assignedTo = searchParams.assignedTo || ""; // New param
 
   try {
     const auth = await getAuthFromCookies();
@@ -303,6 +335,7 @@ async function getApplicationsSSR(searchParams: SearchParams): Promise<{
         status,
         travelReimbursement,
         assignedStatus,
+        assignedTo: "",
       };
     }
 
@@ -314,9 +347,17 @@ async function getApplicationsSSR(searchParams: SearchParams): Promise<{
         status,
         travelReimbursement,
         assignedStatus,
+        assignedTo,
         page,
         limit
       );
+
+      // Fetch all admins for the filter list
+      const reviewers = await Admin.find({isSuperAdmin: false})
+        .select("firstName lastName email")
+        .lean()
+        .exec();
+
       return {
         applications: result.applications,
         isSuperAdmin: true,
@@ -325,6 +366,13 @@ async function getApplicationsSSR(searchParams: SearchParams): Promise<{
         status,
         travelReimbursement,
         assignedStatus,
+        assignedTo,
+        reviewers: reviewers.map((r: any) => ({
+          _id: String(r._id),
+          firstName: r.firstName,
+          lastName: r.lastName,
+          email: r.email,
+        })),
       };
     }
 
@@ -345,6 +393,7 @@ async function getApplicationsSSR(searchParams: SearchParams): Promise<{
       status,
       travelReimbursement,
       assignedStatus,
+      assignedTo: "",
     };
   } catch (err) {
     console.error("[getApplicationsSSR] Failed:", err);
@@ -356,6 +405,7 @@ async function getApplicationsSSR(searchParams: SearchParams): Promise<{
       status,
       travelReimbursement,
       assignedStatus,
+      assignedTo: "",
     };
   }
 }
@@ -374,6 +424,8 @@ export default async function Page({ searchParams }: PageProps) {
     status,
     travelReimbursement,
     assignedStatus,
+    assignedTo,
+    reviewers,
   } = await getApplicationsSSR(params);
 
   return (
@@ -385,7 +437,8 @@ export default async function Page({ searchParams }: PageProps) {
       initialStatus={status}
       initialTravelReimbursement={travelReimbursement}
       initialAssignedStatus={assignedStatus}
+      initialAssignedTo={assignedTo}
+      reviewers={reviewers}
     />
   );
 }
-

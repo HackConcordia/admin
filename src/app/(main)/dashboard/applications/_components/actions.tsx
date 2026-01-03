@@ -40,9 +40,22 @@ export function Actions({
   onStatusChange,
   onTravelReimbursementChange,
   onAssignedStatusChange,
+  // New props
+  initialAssignedTo,
+  reviewers,
+  onAssignedToChange,
 }: ActionsProps & {
   initialAssignedStatus?: string;
   onAssignedStatusChange?: (status: string) => void;
+  // New props
+  initialAssignedTo?: string;
+  reviewers?: {
+    email: string;
+    firstName: string;
+    lastName: string;
+    _id: string;
+  }[];
+  onAssignedToChange?: (assignedTo: string) => void;
 }) {
   return (
     <div className="mt-3 mb-1 flex w-full gap-3">
@@ -51,18 +64,27 @@ export function Actions({
         initialStatus={initialStatus}
         initialTravelReimbursement={initialTravelReimbursement}
         initialAssignedStatus={initialAssignedStatus}
+        initialAssignedTo={initialAssignedTo}
+        reviewers={reviewers}
         onSearchChange={onSearchChange}
         onStatusChange={onStatusChange}
         onTravelReimbursementChange={onTravelReimbursementChange}
         onAssignedStatusChange={onAssignedStatusChange}
+        onAssignedToChange={onAssignedToChange}
       />
       <div className="flex gap-2">
         <DataTableViewOptions table={table} />
         {isSuperAdmin && (
           <>
-            <Button variant="outline" onClick={onOpenBulkAssign} disabled={selectedCount === 0}>
+            <Button
+              variant="outline"
+              onClick={onOpenBulkAssign}
+              disabled={selectedCount === 0}
+            >
               <UserPlus />
-              <span className="hidden lg:inline">Assign {selectedCount ? `(${selectedCount})` : ""}</span>
+              <span className="hidden lg:inline">
+                Assign {selectedCount ? `(${selectedCount})` : ""}
+              </span>
             </Button>
             <Button variant="outline" onClick={onOpenAutoAssign}>
               <Sparkles />

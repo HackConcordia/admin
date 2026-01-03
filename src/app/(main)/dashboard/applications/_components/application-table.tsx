@@ -33,6 +33,13 @@ type TableCardsProps = {
   initialStatus: string;
   initialTravelReimbursement: string;
   initialAssignedStatus?: string;
+  initialAssignedTo?: string; // New prop
+  reviewers?: {
+    email: string;
+    firstName: string;
+    lastName: string;
+    _id: string;
+  }[]; // New prop
 };
 
 type AutoAssignStats = {
@@ -48,6 +55,8 @@ export function ApplicationTable({
   initialStatus,
   initialTravelReimbursement,
   initialAssignedStatus,
+  initialAssignedTo,
+  reviewers,
 }: TableCardsProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -90,7 +99,10 @@ export function ApplicationTable({
   useEffect(() => {
     if (typeof window === "undefined") return;
     const visibility = table.getState().columnVisibility;
-    window.localStorage.setItem(VISIBILITY_STORAGE_KEY, JSON.stringify(visibility));
+    window.localStorage.setItem(
+      VISIBILITY_STORAGE_KEY,
+      JSON.stringify(visibility)
+    );
   }, [table, table.getState().columnVisibility]);
 
   const [bulkOpen, setBulkOpen] = useState(false);
@@ -184,6 +196,14 @@ export function ApplicationTable({
   const handleAssignedStatusChange = useCallback(
     (newValue: string) => {
       updateUrlParams({ assignedStatus: newValue, page: "1" });
+    },
+    [updateUrlParams]
+  );
+
+  // Handle assigned to filter change
+  const handleAssignedToChange = useCallback(
+    (newValue: string) => {
+      updateUrlParams({ assignedTo: newValue, page: "1" });
     },
     [updateUrlParams]
   );
@@ -435,6 +455,10 @@ export function ApplicationTable({
           onStatusChange={handleStatusChange}
           onTravelReimbursementChange={handleTravelReimbursementChange}
           onAssignedStatusChange={handleAssignedStatusChange}
+          // New props
+          initialAssignedTo={initialAssignedTo}
+          reviewers={reviewers}
+          onAssignedToChange={handleAssignedToChange}
         />
         <div className="mb-2 rounded-md border">
           <DataTable table={table} columns={columns} />
