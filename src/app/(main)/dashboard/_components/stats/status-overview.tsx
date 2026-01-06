@@ -61,7 +61,7 @@ export function StatusOverview({
   console.log(totalProcessedCount, totalApplicants);
   const processedPercentage =
     totalProcessedCount > 0
-      ? ((totalProcessedCount / totalApplicants) * 100).toFixed(2)
+      ? ((totalProcessedCount / statusCounts.Submitted) * 100).toFixed(2)
       : "0.00";
 
   return (
