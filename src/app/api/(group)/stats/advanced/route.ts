@@ -2,6 +2,7 @@ import connectMongoDB from "@/repository/mongoose";
 import { sendSuccessResponse, sendErrorResponse } from "@/repository/response";
 import Application from "@/repository/models/application";
 import Admin from "@/repository/models/admin";
+import { Countries as CountryList } from "@/app/data/Countries";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -139,6 +140,11 @@ export const GET = async () => {
       return acc + amount;
     }, 0);
 
+    // Build country code -> name map (English labels)
+    const countryNameByCode = new Map<string, string>(
+      CountryList.map((c) => [c.value, c.label])
+    );
+
     // Faculty distribution
     const facultyCounts = applications.reduce((acc, app) => {
       const faculty = app.faculty || "not specified";
@@ -242,10 +248,16 @@ export const GET = async () => {
     }, {} as Record<string, number>);
 
     const countryDistribution = Object.entries(countryCounts)
-      .map(([country, count]) => ({
-        code: country,
-        count: count as number,
-      }))
+      .map(([countryCode, count]) => {
+        const name =
+          countryNameByCode.get(countryCode) ||
+          countryCode ||
+          "Not specified";
+        return {
+          code: name,
+          count: count as number,
+        };
+      })
       .sort((a, b) => b.count - a.count)
       .slice(0, 10);
 
@@ -304,9 +316,9 @@ export const GET = async () => {
       .lean<{ firstName: string; lastName: string; email: string; assignedApplications?: string[] }[]>()
       .exec();
 
-    const applicationById = new Map<string, (typeof applications)[number]>();
+    const applicationById = new Map<string, any>();
     for (const app of applications) {
-      applicationById.set(app._id.toString(), app as any);
+      applicationById.set(String((app as any)._id), app);
     }
 
     const adminAssignmentMetrics = admins.map((admin) => {
