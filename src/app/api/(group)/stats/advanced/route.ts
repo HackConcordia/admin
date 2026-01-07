@@ -1,6 +1,7 @@
 import connectMongoDB from "@/repository/mongoose";
 import { sendSuccessResponse, sendErrorResponse } from "@/repository/response";
 import Application from "@/repository/models/application";
+import Admin from "@/repository/models/admin";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -116,8 +117,10 @@ export const GET = async () => {
         isTravelReimbursementApproved: 1,
         travelReimbursementAmount: 1,
         travelReimbursementCurrency: 1,
+        processedBy: 1,
+        status: 1,
       }
-    );
+    ).lean();
 
     if (!applications || applications.length === 0) {
       return sendErrorResponse("No applications found", {}, 404);
@@ -296,6 +299,35 @@ export const GET = async () => {
       }))
       .sort((a, b) => b.count - a.count);
 
+    // Per-admin assignment metrics
+    const admins = await Admin.find({}, "firstName lastName email assignedApplications")
+      .lean<{ firstName: string; lastName: string; email: string; assignedApplications?: string[] }[]>()
+      .exec();
+
+    const applicationById = new Map<string, (typeof applications)[number]>();
+    for (const app of applications) {
+      applicationById.set(app._id.toString(), app as any);
+    }
+
+    const adminAssignmentMetrics = admins.map((admin) => {
+      const assignedIds = admin.assignedApplications || [];
+      let submittedCount = 0;
+
+      for (const appId of assignedIds) {
+        const app = applicationById.get(appId);
+        if (app && app.status === "Submitted") {
+          submittedCount++;
+        }
+      }
+
+      return {
+        adminName: `${admin.firstName} ${admin.lastName}`,
+        email: admin.email,
+        totalAssigned: assignedIds.length,
+        submittedAssigned: submittedCount,
+      };
+    }).filter((metric) => metric.totalAssigned > 0);
+
     const responseData = {
       totalApplicants,
       totalTravelReimbursement,
@@ -310,6 +342,7 @@ export const GET = async () => {
       coopStats,
       jobTypesDistribution,
       workRegionsDistribution,
+      adminAssignmentMetrics,
     };
 
     return sendSuccessResponse(

@@ -45,4 +45,10 @@ export interface IAdvancedStats {
     name: string;
     count: number;
   }[];
+  adminAssignmentMetrics: {
+    adminName: string;
+    email: string;
+    totalAssigned: number;
+    submittedAssigned: number;
+  }[];
 }

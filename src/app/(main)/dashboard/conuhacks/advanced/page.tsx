@@ -16,6 +16,7 @@ import {
   Plane,
   UserCheck,
   Building,
+  ListChecks,
 } from "lucide-react";
 import {
   Bar,
@@ -146,6 +147,51 @@ export default function AdvancedAnalyticsPage() {
           color="#8b5cf6"
         />
       </div>
+
+      {/* Admin Assignment Metrics */}
+      {stats.adminAssignmentMetrics?.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <ListChecks className="h-5 w-5" />
+              Admin Assignment Overview
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+              {stats.adminAssignmentMetrics.map((admin) => (
+                <div
+                  key={admin.email}
+                  className="flex flex-col rounded-lg border p-3 text-sm"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="font-medium">{admin.adminName}</div>
+                    <span className="text-muted-foreground text-xs">
+                      {admin.email}
+                    </span>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between">
+                    <span className="text-muted-foreground text-xs">
+                      Assigned
+                    </span>
+                    <span className="font-semibold">
+                      {admin.totalAssigned.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="mt-1 flex items-center justify-between">
+                    <span className="text-muted-foreground text-xs">
+                      Still Submitted
+                    </span>
+                    <span className="font-semibold">
+                      {admin.submittedAssigned.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Row 1: Gender & Language */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
