@@ -17,7 +17,6 @@ import {
   Building,
   ListChecks,
 } from "lucide-react";
-import { RadarChart } from "@mui/x-charts/RadarChart";
 import {
   Bar,
   BarChart,
@@ -243,7 +242,7 @@ export default function AdvancedAnalyticsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <LevelOfStudyChart data={stats.levelOfStudyDistribution} />
+            <HorizontalBarChart data={stats.levelOfStudyDistribution} />
           </CardContent>
         </Card>
       </div>
@@ -255,7 +254,7 @@ export default function AdvancedAnalyticsPage() {
             <CardTitle className="text-lg">Top Programs</CardTitle>
           </CardHeader>
           <CardContent>
-            <ProgramsRadarChart data={stats.programDistribution} />
+            <HorizontalBarChart data={stats.programDistribution.slice(0, 8)} />
           </CardContent>
         </Card>
 
@@ -471,114 +470,6 @@ function PieChartComponent({
           </PieChart>
         </ResponsiveContainer>
       </div>
-    </div>
-  );
-}
-
-// Level of Study Chart (horizontal bars for readability)
-function LevelOfStudyChart({
-  data,
-}: {
-  data: { name: string; count: number }[];
-}) {
-  const filteredData = data.filter((item) => item.count > 0);
-  const chartHeight = Math.max(260, filteredData.length * 36);
-
-  if (filteredData.length === 0) {
-    return (
-      <div className="text-muted-foreground flex h-64 items-center justify-center text-sm">
-        No data available for level of study
-      </div>
-    );
-  }
-
-  const chartConfig = {
-    count: {
-      label: "Applicants",
-      color: "#8b5cf6",
-    },
-  } satisfies ChartConfig;
-
-  return (
-    <ChartContainer
-      config={chartConfig}
-      className="w-full"
-      style={{ height: chartHeight }}
-    >
-      <BarChart
-        data={filteredData}
-        layout="vertical"
-        margin={{ top: 10, right: 16, left: 12, bottom: 0 }}
-        barCategoryGap="25%"
-      >
-        <CartesianGrid
-          strokeDasharray="3 3"
-          className="stroke-muted"
-          horizontal={false}
-        />
-        <XAxis
-          type="number"
-          tickLine={false}
-          axisLine={false}
-          tick={{ fontSize: 12 }}
-          tickMargin={8}
-        />
-        <YAxis
-          type="category"
-          dataKey="name"
-          tickLine={false}
-          axisLine={false}
-          tick={{ fontSize: 12 }}
-          interval={0}
-          width={220}
-          tickMargin={24}
-        />
-        <ChartTooltip content={<ChartTooltipContent />} />
-        <Bar
-          dataKey="count"
-          fill="var(--color-count)"
-          radius={[4, 4, 4, 4]}
-          barSize={24}
-        />
-      </BarChart>
-    </ChartContainer>
-  );
-}
-
-// Program Radar Chart Component
-function ProgramsRadarChart({
-  data,
-}: {
-  data: { name: string; count: number }[];
-}) {
-  const topPrograms = data.filter((item) => item.count > 0).slice(0, 8);
-  const maxValue =
-    topPrograms.length > 0 ? Math.max(...topPrograms.map((item) => item.count)) : 1;
-
-  if (topPrograms.length === 0) {
-    return (
-      <div className="text-muted-foreground flex h-64 items-center justify-center text-sm">
-        No data available for programs
-      </div>
-    );
-  }
-
-  return (
-    <div className="h-80 w-full">
-      <RadarChart
-        height={320}
-        series={[
-          {
-            label: "Applicants",
-            data: topPrograms.map((item) => item.count),
-            color: "#3b82f6",
-          },
-        ]}
-        radar={{
-          max: Math.max(maxValue, 1),
-          metrics: topPrograms.map((item) => item.name),
-        }}
-      />
     </div>
   );
 }
