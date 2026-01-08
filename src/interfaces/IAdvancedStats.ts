@@ -1,6 +1,7 @@
 export interface IAdvancedStats {
   totalApplicants: number;
-  totalTravelReimbursement: number;
+  overallTravelReimbursement: number;
+  confirmedTravelReimbursement: number;
   facultyDistribution: {
     name: string;
     count: number;

@@ -130,15 +130,31 @@ export const GET = async () => {
     const totalApplicants = applications.length;
 
     // Total Travel Reimbursement
-    const totalTravelReimbursement = applications.reduce((acc, app) => {
-      if (app.isTravelReimbursementApproved !== true) return acc;
+    // Travel Reimbursement Stats
+    const { overallTravelReimbursement, confirmedTravelReimbursement } =
+      applications.reduce(
+        (acc, app) => {
+          if (app.isTravelReimbursementApproved !== true) return acc;
 
-      let amount = parseFloat(app.travelReimbursementAmount as any) || 0;
-      if (app.travelReimbursementCurrency === "USD") {
-        amount = amount * 1.39;
-      }
-      return acc + amount;
-    }, 0);
+          let amount = parseFloat(app.travelReimbursementAmount as any) || 0;
+          if (app.travelReimbursementCurrency === "USD") {
+            amount = amount * 1.39;
+          }
+
+          // Overall: Admitted or Confirmed
+          if (app.status === "Admitted" || app.status === "Confirmed") {
+            acc.overallTravelReimbursement += amount;
+          }
+
+          // Confirmed: Confirmed only
+          if (app.status === "Confirmed") {
+            acc.confirmedTravelReimbursement += amount;
+          }
+
+          return acc;
+        },
+        { overallTravelReimbursement: 0, confirmedTravelReimbursement: 0 }
+      );
 
     // Build country code -> name map (English labels)
     const countryNameByCode = new Map<string, string>(
@@ -250,9 +266,7 @@ export const GET = async () => {
     const countryDistribution = Object.entries(countryCounts)
       .map(([countryCode, count]) => {
         const name =
-          countryNameByCode.get(countryCode) ||
-          countryCode ||
-          "Not specified";
+          countryNameByCode.get(countryCode) || countryCode || "Not specified";
         return {
           code: name,
           count: count as number,
@@ -312,8 +326,18 @@ export const GET = async () => {
       .sort((a, b) => b.count - a.count);
 
     // Per-admin assignment metrics
-    const admins = await Admin.find({}, "firstName lastName email assignedApplications")
-      .lean<{ firstName: string; lastName: string; email: string; assignedApplications?: string[] }[]>()
+    const admins = await Admin.find(
+      {},
+      "firstName lastName email assignedApplications"
+    )
+      .lean<
+        {
+          firstName: string;
+          lastName: string;
+          email: string;
+          assignedApplications?: string[];
+        }[]
+      >()
       .exec();
 
     const applicationById = new Map<string, any>();
@@ -321,28 +345,31 @@ export const GET = async () => {
       applicationById.set(String((app as any)._id), app);
     }
 
-    const adminAssignmentMetrics = admins.map((admin) => {
-      const assignedIds = admin.assignedApplications || [];
-      let submittedCount = 0;
+    const adminAssignmentMetrics = admins
+      .map((admin) => {
+        const assignedIds = admin.assignedApplications || [];
+        let submittedCount = 0;
 
-      for (const appId of assignedIds) {
-        const app = applicationById.get(appId);
-        if (app && app.status === "Submitted") {
-          submittedCount++;
+        for (const appId of assignedIds) {
+          const app = applicationById.get(appId);
+          if (app && app.status === "Submitted") {
+            submittedCount++;
+          }
         }
-      }
 
-      return {
-        adminName: `${admin.firstName} ${admin.lastName}`,
-        email: admin.email,
-        totalAssigned: assignedIds.length,
-        submittedAssigned: submittedCount,
-      };
-    }).filter((metric) => metric.totalAssigned > 0);
+        return {
+          adminName: `${admin.firstName} ${admin.lastName}`,
+          email: admin.email,
+          totalAssigned: assignedIds.length,
+          submittedAssigned: submittedCount,
+        };
+      })
+      .filter((metric) => metric.totalAssigned > 0);
 
     const responseData = {
       totalApplicants,
-      totalTravelReimbursement,
+      overallTravelReimbursement,
+      confirmedTravelReimbursement,
       facultyDistribution,
       levelOfStudyDistribution,
       programDistribution,

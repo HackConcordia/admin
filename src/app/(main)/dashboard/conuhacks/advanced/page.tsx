@@ -14,7 +14,6 @@ import {
   Briefcase,
   Languages,
   Plane,
-  UserCheck,
   Building,
   ListChecks,
 } from "lucide-react";
@@ -121,9 +120,10 @@ export default function AdvancedAnalyticsPage() {
       {/* Quick Stats Row */}
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <QuickStatCard
-          title="Total Travel Reimbursement (CAD)"
-          value={stats.totalTravelReimbursement}
-          icon={UserCheck}
+          title="Travel Reimbursement (CAD)"
+          value={stats.overallTravelReimbursement}
+          secondaryValue={stats.confirmedTravelReimbursement}
+          icon={Plane}
           color="#22c55e"
         />
         <QuickStatCard
@@ -346,12 +346,14 @@ function QuickStatCard({
   total,
   icon: Icon,
   color,
+  secondaryValue,
 }: {
   title: string;
   value: number;
   total?: number;
   icon: React.ElementType;
   color: string;
+  secondaryValue?: number;
 }) {
   const percentage = total ? ((value / total) * 100).toFixed(1) : null;
 
@@ -367,19 +369,30 @@ function QuickStatCard({
           </div>
           <div>
             <p className="text-muted-foreground text-xs">{title}</p>
-            <div className="flex items-baseline gap-1">
-              <p className="text-xl font-bold">
-                {title.includes("(CAD)")
-                  ? new Intl.NumberFormat("en-CA", {
-                      style: "currency",
-                      currency: "CAD",
-                    }).format(value)
-                  : value.toLocaleString()}
-              </p>
-              {percentage && (
-                <span className="text-muted-foreground text-xs">
-                  ({percentage}%)
-                </span>
+            <div className="flex flex-col">
+              <div className="flex items-baseline gap-1">
+                <p className="text-xl font-bold">
+                  {title.includes("(CAD)")
+                    ? new Intl.NumberFormat("en-CA", {
+                        style: "currency",
+                        currency: "CAD",
+                      }).format(value)
+                    : value.toLocaleString()}
+                </p>
+                {percentage && (
+                  <span className="text-muted-foreground text-xs">
+                    ({percentage}%)
+                  </span>
+                )}
+              </div>
+              {secondaryValue !== undefined && title.includes("(CAD)") && (
+                <p className="text-muted-foreground text-xs">
+                  Confirmed:{" "}
+                  {new Intl.NumberFormat("en-CA", {
+                    style: "currency",
+                    currency: "CAD",
+                  }).format(secondaryValue)}
+                </p>
               )}
             </div>
           </div>
