@@ -2,7 +2,7 @@ import connectMongoDB from "@/repository/mongoose";
 import { sendSuccessResponse, sendErrorResponse } from "@/repository/response";
 import Application from "@/repository/models/application";
 import Admin from "@/repository/models/admin";
-import { Countries as CountryList } from "@/app/data/Countries";
+import { Countries as CountryList } from "@/constants/Countries";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -157,8 +157,9 @@ export const GET = async () => {
       );
 
     // Build country code -> name map (English labels)
+    // Countries is a function that returns an array of { value, label }
     const countryNameByCode = new Map<string, string>(
-      CountryList.map((c) => [c.value, c.label])
+      CountryList().map((c) => [c.value, c.label])
     );
 
     // Faculty distribution
@@ -341,8 +342,8 @@ export const GET = async () => {
       .exec();
 
     const applicationById = new Map<string, any>();
-    for (const app of applications) {
-      applicationById.set(String((app as any)._id), app);
+    for (const app of applications as any[]) {
+      applicationById.set(String(app._id), app);
     }
 
     const adminAssignmentMetrics = admins
