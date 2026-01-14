@@ -115,6 +115,7 @@ import {
   TravelReimbursementDialog,
   type TravelReimbursementData,
 } from "@/components/ui/travel-reimbursement-dialog";
+import { QrCodeCheckinDialog } from "@/components/ui/qr-code-checkin-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -337,10 +338,13 @@ export default function ApplicationView({
     initialAdminEmail
   );
   const [error, setError] = React.useState<string | null>(null);
+  const [checkInError, setCheckInError] = React.useState<string | null>(null);
   const [isSaving, setIsSaving] = React.useState<
     null | "admit" | "waitlist" | "reject" | "checkin"
   >(null);
   const [travelReimbursementDialogOpen, setTravelReimbursementDialogOpen] =
+    React.useState(false);
+  const [qrCodeCheckinDialogOpen, setQrCodeCheckinDialogOpen] =
     React.useState(false);
   const [backConfirmationOpen, setBackConfirmationOpen] = React.useState(false);
   const [actionConfirmationOpen, setActionConfirmationOpen] =
@@ -484,24 +488,54 @@ export default function ApplicationView({
     updateStatus("admit", data);
   }
 
-  async function checkIn() {
+  function handleCheckInClick() {
+    setQrCodeCheckinDialogOpen(true);
+  }
+
+  async function checkIn(qrCodeNumber: number) {
     try {
       setIsSaving("checkin");
       setError(null);
+      setCheckInError(null); // Clear previous check-in errors
       const res = await fetch(`/api/check-in/${application._id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "Checked-in" }),
+        body: JSON.stringify({
+          status: "Checked-in",
+          qrCodeNumber,
+        }),
       });
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || `Check-in failed with ${res.status}`);
+
+      // Read response body once
+      const responseText = await res.text();
+      let responseData;
+
+      try {
+        responseData = JSON.parse(responseText);
+      } catch {
+        // If not JSON, treat as error
+        throw new Error(responseText || `Check-in failed with ${res.status}`);
       }
-      const json = await res.json();
-      const newStatus = json?.data?.status ?? "Checked-in";
+
+      if (!res.ok) {
+        // The API uses sendErrorResponse which returns { status: "error", message, error }
+        const errorMessage = responseData?.message || responseData?.error || `Check-in failed with ${res.status}`;
+        throw new Error(errorMessage);
+      }
+
+      // Success case
+      const newStatus = responseData?.data?.status ?? "Checked-in";
       setApplication((prev) => ({ ...prev, status: newStatus }));
+      setError(null); // Clear any previous errors
+      setCheckInError(null); // Clear check-in errors
+      setQrCodeCheckinDialogOpen(false);
+      toast.success("Successfully checked in");
     } catch (e: any) {
-      setError(e?.message ?? "Failed to check in");
+      const errorMessage = e?.message ?? "Failed to check in";
+      setCheckInError(errorMessage); // Store in check-in specific error state
+      toast.error(errorMessage);
+      // Keep dialog open on error - don't close it
+      // The error will be displayed in the dialog via externalError prop
     } finally {
       setIsSaving(null);
     }
@@ -1161,8 +1195,9 @@ export default function ApplicationView({
         <div className="space-y-4">
           {error ? (
             <div className="text-sm text-red-600">{error}</div>
-          ) : (
-            <>
+          ) : null}
+          {/* Always show application details - check-in errors are shown in dialog only */}
+          <div>
               {/* Header with name and status */}
               <div className="flex flex-wrap items-center justify-between gap-3">
                 {isEditMode ? (
@@ -1812,7 +1847,7 @@ export default function ApplicationView({
               <Separator />
 
               {/* Comments Section */}
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 mt-6">
                 <div>
                   <h3 className="mb-6 text-sm font-semibold">Comments</h3>
                   <div className="space-y-3">
@@ -1912,7 +1947,7 @@ export default function ApplicationView({
                 </div>
               </div>
 
-              <Separator />
+              <Separator className="my-6" />
 
               {/* Team Information Section - Subtle placement at bottom */}
               {teamData && (
@@ -1921,7 +1956,7 @@ export default function ApplicationView({
                     teamData={teamData}
                     currentApplicationId={application._id}
                   />
-                  <Separator />
+                  <Separator className="my-6" />
                 </>
               )}
 
@@ -2010,7 +2045,7 @@ export default function ApplicationView({
                     return (
                       <div className="flex flex-wrap items-center gap-2">
                         <Button
-                          onClick={checkIn}
+                          onClick={handleCheckInClick}
                           disabled={isSaving !== null}
                           variant="default"
                         >
@@ -2023,7 +2058,7 @@ export default function ApplicationView({
                   if (isCheckedIn) {
                     return (
                       <div className="flex flex-wrap items-center gap-2">
-                        <Button onClick={checkIn} disabled variant="default">
+                        <Button onClick={handleCheckInClick} disabled variant="default">
                           <CheckCircle2 /> Checked In
                         </Button>
                       </div>
@@ -2033,8 +2068,7 @@ export default function ApplicationView({
                   return null;
                 })()}
               </div>
-            </>
-          )}
+          </div>
         </div>
       </div>
 
@@ -2043,6 +2077,15 @@ export default function ApplicationView({
         onOpenChange={setTravelReimbursementDialogOpen}
         onSubmit={handleTravelReimbursementSubmit}
         candidateName={`${application.firstName} ${application.lastName}`}
+      />
+
+      <QrCodeCheckinDialog
+        open={qrCodeCheckinDialogOpen}
+        onOpenChange={setQrCodeCheckinDialogOpen}
+        onSubmit={checkIn}
+        candidateName={`${application.firstName} ${application.lastName}`}
+        externalError={checkInError || undefined}
+        isSubmitting={isSaving === "checkin"}
       />
 
       {/* Confirmation Dialog for Critical Changes */}
