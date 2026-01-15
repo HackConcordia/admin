@@ -336,7 +336,20 @@ export function TeamCard({ _id, teamName, teamCode, members, teamOwner, isSuperA
                           <Star className="h-3.5 w-3.5 shrink-0 fill-amber-400 text-amber-400" />
                         )}
                       </div>
-                      <p className="text-muted-foreground truncate text-xs">{member.email || "No email provided"}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-muted-foreground truncate text-xs">{member.email || "No email provided"}</p>
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "text-[10px] px-1.5 py-0 h-4 shrink-0",
+                            member.isAdmitted
+                              ? "border-green-500 text-green-600 bg-green-50 dark:bg-green-950/30 dark:text-green-400"
+                              : "border-amber-500 text-amber-600 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400"
+                          )}
+                        >
+                          {member.isAdmitted ? "Member" : "Pending"}
+                        </Badge>
+                      </div>
                     </div>
                     {isSuperAdmin && (
                       <Button
