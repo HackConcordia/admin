@@ -18,6 +18,7 @@ interface TeamMemberInfo {
   email?: string;
   firstName?: string;
   lastName?: string;
+  status?: string;
   profileImgUrl: string;
 }
 
@@ -52,7 +53,7 @@ export const GET = async (): Promise<NextResponse> => {
         // Fetch and enrich member details
         const membersInfo = await Promise.all(
           team.members.map(async (member: Member) => {
-            const user = await Application.findOne({ _id: member.userId }, "email firstName lastName");
+            const user = await Application.findOne({ _id: member.userId }, "email firstName lastName status");
 
             return {
               userId: member.userId,
@@ -60,6 +61,7 @@ export const GET = async (): Promise<NextResponse> => {
               email: user?.email,
               firstName: user?.firstName,
               lastName: user?.lastName,
+              status: user?.status,
               profileImgUrl: "/images/avatars/avatar.png",
             } as TeamMemberInfo;
           }),

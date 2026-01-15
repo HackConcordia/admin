@@ -34,6 +34,7 @@ interface TeamMemberInfo {
   email?: string;
   firstName?: string;
   lastName?: string;
+  status?: string;
   profileImgUrl: string;
 }
 
@@ -168,7 +169,7 @@ async function getTeamsSSR(searchParams: {
       teams.map(async (team: any) => {
         const membersInfo = await Promise.all(
           (team.members || []).map(async (member: Member) => {
-            const user = await Application.findOne({ _id: member.userId }, "email firstName lastName").lean();
+            const user = await Application.findOne({ _id: member.userId }, "email firstName lastName status").lean();
 
             return {
               userId: member.userId,
@@ -176,6 +177,7 @@ async function getTeamsSSR(searchParams: {
               email: (user as any)?.email,
               firstName: (user as any)?.firstName,
               lastName: (user as any)?.lastName,
+              status: (user as any)?.status,
               profileImgUrl: "/images/avatars/avatar.png",
             } as TeamMemberInfo;
           }),

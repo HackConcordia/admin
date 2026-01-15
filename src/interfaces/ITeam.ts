@@ -4,6 +4,7 @@ export interface ITeamMemberInfo {
   email?: string;
   firstName?: string;
   lastName?: string;
+  status?: string;
   profileImgUrl: string;
 }
 

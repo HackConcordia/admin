@@ -37,6 +37,7 @@ interface TeamMember {
   email?: string;
   firstName?: string;
   lastName?: string;
+  status?: string;
   profileImgUrl: string;
 }
 
@@ -319,9 +320,9 @@ export function TeamCard({ _id, teamName, teamCode, members, teamOwner, isSuperA
                 members.map((member) => (
                   <div
                     key={member.userId}
-                    className="bg-muted/30 hover:bg-muted/50 group/member flex items-center gap-3 rounded-lg border p-2.5 transition-colors"
+                    className="bg-muted/30 hover:bg-muted/50 group/member flex items-start gap-3 rounded-lg border p-2.5 transition-colors relative"
                   >
-                    <Avatar className="h-8 w-8">
+                    <Avatar className="h-8 w-8 mt-0.5">
                       <AvatarFallback className="text-xs font-medium">
                         {getInitials(member.firstName, member.lastName)}
                       </AvatarFallback>
@@ -337,22 +338,44 @@ export function TeamCard({ _id, teamName, teamCode, members, teamOwner, isSuperA
                           <Star className="h-3.5 w-3.5 shrink-0 fill-amber-400 text-amber-400" />
                         )}
                       </div>
-                      <div className="flex items-center gap-2">
-                        <p className="text-muted-foreground truncate text-xs">{member.email || "No email provided"}</p>
-                        <Badge
-                          variant="outline"
-                          className={cn(
-                            "text-[10px] px-1.5 py-0 h-4 shrink-0",
-                            member.isAdmitted
-                              ? "border-green-500 text-green-600 bg-green-50 dark:bg-green-950/30 dark:text-green-400"
-                              : "border-amber-500 text-amber-600 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400"
-                          )}
-                        >
-                          {member.isAdmitted ? "Member" : "Pending"}
-                        </Badge>
-                      </div>
+                      <p className="text-muted-foreground truncate text-xs">{member.email || "No email provided"}</p>
+                      {member.status && (
+                        <div className="flex items-center gap-1 mt-1">
+                          <span className="text-muted-foreground text-[10px]">Status:</span>
+                          <Badge
+                            variant="secondary"
+                            className={cn(
+                              "text-[10px] px-1.5 py-0 h-4 font-medium",
+                              member.status === "Confirmed" && "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400",
+                              member.status === "Admitted" && "bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400",
+                              member.status === "Submitted" && "bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400",
+                              member.status === "Checked-In" && "bg-teal-100 text-teal-700 dark:bg-teal-950/50 dark:text-teal-400",
+                              member.status === "Waitlisted" && "bg-slate-100 text-slate-600 dark:bg-slate-800/50 dark:text-slate-400",
+                              member.status === "Declined" && "bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-400",
+                              member.status === "Refused" && "bg-orange-100 text-orange-700 dark:bg-orange-950/50 dark:text-orange-400",
+                              member.status === "Not confirmed" && "bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-400",
+                              member.status === "Incomplete" && "bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-400",
+                              member.status === "Unverified" && "bg-neutral-200 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-400"
+                            )}
+                          >
+                            {member.status}
+                          </Badge>
+                        </div>
+                      )}
                     </div>
-                    <div className="flex items-center gap-1 shrink-0">
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "text-[10px] px-1.5 py-0 h-4",
+                          member.isAdmitted
+                            ? "border-green-500 text-green-600 bg-green-50 dark:bg-green-950/30 dark:text-green-400"
+                            : "border-amber-500 text-amber-600 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400"
+                        )}
+                      >
+                        {member.isAdmitted ? "Member" : "Pending"}
+                      </Badge>
+                      <div className="flex items-center gap-1">
                       <Button
                         variant="ghost"
                         size="icon"
@@ -375,6 +398,7 @@ export function TeamCard({ _id, teamName, teamCode, members, teamOwner, isSuperA
                           <span className="sr-only">Remove member</span>
                         </Button>
                       )}
+                      </div>
                     </div>
                   </div>
                 ))
