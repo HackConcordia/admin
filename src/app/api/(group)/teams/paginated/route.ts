@@ -14,6 +14,7 @@ interface Member {
 interface TeamMemberInfo {
   userId: string;
   isAdmitted: boolean;
+  status?: string;
   email?: string;
   firstName?: string;
   lastName?: string;
@@ -160,10 +161,11 @@ export const GET = async (req: NextRequest): Promise<NextResponse> => {
       teams.map(async (team: any) => {
         const membersInfo = await Promise.all(
           (team.members || []).map(async (member: Member) => {
-            const user = (await Application.findOne({ _id: member.userId }, "email firstName lastName").lean()) as {
+            const user = (await Application.findOne({ _id: member.userId }, "email firstName lastName status").lean()) as {
               email?: string;
               firstName?: string;
               lastName?: string;
+              status?: string;
             } | null;
 
             return {
@@ -172,6 +174,7 @@ export const GET = async (req: NextRequest): Promise<NextResponse> => {
               email: user?.email,
               firstName: user?.firstName,
               lastName: user?.lastName,
+              status: user?.status,
               profileImgUrl: "/images/avatars/avatar.png",
             } as TeamMemberInfo;
           }),
