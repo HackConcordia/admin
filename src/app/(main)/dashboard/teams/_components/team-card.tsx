@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { Copy, Star, Users, UserPlus, Loader2, Check, AlertCircle, Trash2, X } from "lucide-react";
+import { Copy, Star, Users, UserPlus, Loader2, Check, AlertCircle, Trash2, X, ExternalLink } from "lucide-react";
+import Link from "next/link";
 import { toast } from "sonner";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -351,17 +352,30 @@ export function TeamCard({ _id, teamName, teamCode, members, teamOwner, isSuperA
                         </Badge>
                       </div>
                     </div>
-                    {isSuperAdmin && (
+                    <div className="flex items-center gap-1 shrink-0">
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-6 w-6 shrink-0 opacity-0 transition-opacity group-hover/member:opacity-100 text-destructive hover:text-destructive hover:bg-destructive/10"
-                        onClick={() => openRemoveMemberDialog(member)}
+                        className="h-6 w-6 opacity-0 transition-opacity group-hover/member:opacity-100 hover:bg-accent"
+                        asChild
                       >
-                        <X className="h-3.5 w-3.5" />
-                        <span className="sr-only">Remove member</span>
+                        <Link href={`/dashboard/applications/${member.userId}`}>
+                          <ExternalLink className="h-3.5 w-3.5" />
+                          <span className="sr-only">View application</span>
+                        </Link>
                       </Button>
-                    )}
+                      {isSuperAdmin && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 opacity-0 transition-opacity group-hover/member:opacity-100 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => openRemoveMemberDialog(member)}
+                        >
+                          <X className="h-3.5 w-3.5" />
+                          <span className="sr-only">Remove member</span>
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 ))
               )}
