@@ -5,6 +5,7 @@ import { sendErrorResponse, sendSuccessResponse } from "@/repository/response";
 import Application from "@/repository/models/application";
 import CheckIn from "@/repository/models/checkin";
 import { COOKIE_NAME, verifyAuthToken } from "@/lib/auth-token";
+import { sendDiscordLink } from "@/utils/admissionEmailConfig";
 
 // Fields that require validation
 const REQUIRED_FIELDS = ["firstName", "lastName", "email", "isEighteenOrAbove"];
@@ -298,6 +299,13 @@ export const PUT = async (
       updateFields.status === "Confirmed" &&
       existingApplication.status !== "Confirmed";
 
+    // Check if status is being changed FROM "Confirmed" to something other than "CheckedIn"
+    const isChangingFromConfirmed =
+      existingApplication.status === "Confirmed" &&
+      updateFields.status !== undefined &&
+      updateFields.status !== "Confirmed" &&
+      updateFields.status !== "CheckedIn";
+
     // Update application
     const updatedApplication = await Application.findByIdAndUpdate(
       applicationId,
@@ -309,7 +317,7 @@ export const PUT = async (
       return sendErrorResponse("Failed to update application", null, 500);
     }
 
-    // If status changed to "Confirmed", create a CheckIn document
+    // If status changed to "Confirmed", create a CheckIn document and send Discord link email
     if (isChangingToConfirmed) {
       try {
         const existingCheckIn = await CheckIn.findOne({
@@ -324,6 +332,42 @@ export const PUT = async (
         }
       } catch (checkInError) {
         console.error("Error creating CheckIn document:", checkInError);
+        // Don't fail the whole request, just log the error
+      }
+
+      // Send Discord link email
+      try {
+        const emailSent = await sendDiscordLink(
+          existingApplication.email as string,
+          existingApplication.firstName as string,
+          existingApplication.lastName as string
+        );
+        if (!emailSent) {
+          console.log(
+            "Failed to send Discord link email, but status was updated successfully"
+          );
+        } else {
+          console.log("Discord link email sent successfully");
+        }
+      } catch (emailError) {
+        console.error("Error sending Discord link email:", emailError);
+        // Don't fail the whole request, just log the error
+      }
+    }
+
+    // If status changed FROM "Confirmed" to something other than "CheckedIn", delete the CheckIn document
+    if (isChangingFromConfirmed) {
+      try {
+        const deletedCheckIn = await CheckIn.findOneAndDelete({
+          email: existingApplication.email,
+        });
+        if (deletedCheckIn) {
+          console.log(
+            `CheckIn document deleted for ${existingApplication.email} due to status change from Confirmed to ${updateFields.status}`
+          );
+        }
+      } catch (checkInError) {
+        console.error("Error deleting CheckIn document:", checkInError);
         // Don't fail the whole request, just log the error
       }
     }

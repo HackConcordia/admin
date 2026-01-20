@@ -368,3 +368,57 @@ L'équipe HackConcordia`,
     return false;
   }
 }
+
+export async function sendDiscordLink(
+  email: string,
+  firstName: string,
+  lastName: string
+): Promise<boolean> {
+  try {
+    const config = getSendGridConfig();
+
+    if (!config) {
+      console.log(
+        `[Email Stub] Discord Link -> to: ${email}, name: ${firstName} ${lastName}`
+      );
+      return true;
+    }
+
+    // TODO: Add the actual Invitation link for the discord channel
+    const discordLink = "https://discord.gg/NrbYm59KYZ";
+
+    const msg = {
+      to: email,
+      from: { email: config.fromEmail, name: "HackConcordia" },
+      replyTo: { email: config.replyToEmail, name: "HackConcordia" },
+      subject:
+        "Join the ConUHacks X Discord Server / Rejoignez le serveur Discord ConUHacks X",
+      html: `<p><strong>Le message en français suivra</strong></p>
+            
+            <p>Hello ${firstName} ${lastName},</p>
+            <p>Welcome to ConUHacks X! Join our Discord server to get important updates, find or complete your team, and access everything you need for the event.</p>
+            <p><a href="${discordLink}">ConUHacks X Discord</a></p>
+            <p><b>Make sure to check the Welcome Guide in the server for all the instructions.</b></p>
+            <p>We can't wait to see you there!</p>
+            <p>Thank you,</p>
+            <p>The HackConcordia Team</p>
+            
+            <hr>
+            
+            <p>Bonjour ${firstName} ${lastName},</p>
+            <p>Bienvenue à ConUHacks X ! Rejoignez notre serveur Discord pour recevoir des mises à jour importantes, trouver ou compléter votre équipe, et accéder à tout ce dont vous avez besoin pour l'événement.</p>
+            <p><a href="${discordLink}">Discord ConUHacks X</a></p>
+            <p><b>Assurez-vous de consulter le Guide de bienvenue sur le serveur pour toutes les instructions.</b></p>
+            <p>Nous avons hâte de vous y voir !</p>
+            <p>Merci,</p>
+            <p>L'équipe HackConcordia</p>`,
+    };
+
+    await sgMail.send(msg);
+    console.log(`[Email] Successfully sent Discord link email to ${email}`);
+    return true;
+  } catch (error) {
+    console.error("[Email] Failed to send Discord link email:", error);
+    return false;
+  }
+}
