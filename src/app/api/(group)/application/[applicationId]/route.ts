@@ -299,6 +299,13 @@ export const PUT = async (
       updateFields.status === "Confirmed" &&
       existingApplication.status !== "Confirmed";
 
+    // Check if status is being changed FROM "Confirmed" to something other than "CheckedIn"
+    const isChangingFromConfirmed =
+      existingApplication.status === "Confirmed" &&
+      updateFields.status !== undefined &&
+      updateFields.status !== "Confirmed" &&
+      updateFields.status !== "CheckedIn";
+
     // Update application
     const updatedApplication = await Application.findByIdAndUpdate(
       applicationId,
@@ -344,6 +351,23 @@ export const PUT = async (
         }
       } catch (emailError) {
         console.error("Error sending Discord link email:", emailError);
+        // Don't fail the whole request, just log the error
+      }
+    }
+
+    // If status changed FROM "Confirmed" to something other than "CheckedIn", delete the CheckIn document
+    if (isChangingFromConfirmed) {
+      try {
+        const deletedCheckIn = await CheckIn.findOneAndDelete({
+          email: existingApplication.email,
+        });
+        if (deletedCheckIn) {
+          console.log(
+            `CheckIn document deleted for ${existingApplication.email} due to status change from Confirmed to ${updateFields.status}`
+          );
+        }
+      } catch (checkInError) {
+        console.error("Error deleting CheckIn document:", checkInError);
         // Don't fail the whole request, just log the error
       }
     }
