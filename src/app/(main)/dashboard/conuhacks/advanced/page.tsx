@@ -1,9 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { IAdvancedStats } from "@/interfaces/IAdvancedStats";
 import Link from "next/link";
 import {
@@ -16,6 +24,10 @@ import {
   Plane,
   Building,
   ListChecks,
+  Cake,
+  Search,
+  ExternalLink,
+  Loader2,
 } from "lucide-react";
 import {
   Bar,
@@ -49,10 +61,21 @@ const COLORS = [
   "#f43f5e",
 ];
 
+interface AgeApplicant {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  isEighteenOrAbove: string;
+  status: string;
+  school: string;
+}
+
 export default function AdvancedAnalyticsPage() {
   const [stats, setStats] = useState<IAdvancedStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [ageDialogOpen, setAgeDialogOpen] = useState(false);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -192,6 +215,41 @@ export default function AdvancedAnalyticsPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Age Distribution (Confirmed & Checked-in only) */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Cake className="h-5 w-5" />
+                  Age Distribution
+                </CardTitle>
+                <p className="text-muted-foreground text-xs mt-1">
+                  Confirmed &amp; Checked-in applicants only
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setAgeDialogOpen(true)}
+              >
+                View Details
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <AgeDistributionChart data={stats.ageDistribution} />
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Age Distribution Dialog */}
+      <AgeDistributionDialog
+        open={ageDialogOpen}
+        onOpenChange={setAgeDialogOpen}
+      />
 
       {/* Row 1: Gender & Language */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -511,6 +569,113 @@ function HorizontalBarChart({
   );
 }
 
+// Age Distribution Donut Chart Component
+function AgeDistributionChart({
+  data,
+}: {
+  data: { eighteenOrAbove: number; underEighteen: number };
+}) {
+  const total = data.eighteenOrAbove + data.underEighteen;
+  const chartData = [
+    { name: "18 or Above", count: data.eighteenOrAbove },
+    { name: "Under 18", count: data.underEighteen },
+  ].filter((item) => item.count > 0);
+
+  const AGE_COLORS = ["#22c55e", "#f97316"]; // Green for 18+, Orange for under 18
+
+  if (total === 0) {
+    return (
+      <div className="text-muted-foreground flex h-32 items-center justify-center text-sm">
+        No confirmed or checked-in applicants yet
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-4 lg:flex-row">
+      <div className="flex-1 space-y-3">
+        <div className="flex items-center gap-2">
+          <div
+            className="h-3 w-3 flex-shrink-0 rounded-sm"
+            style={{ backgroundColor: AGE_COLORS[0] }}
+          />
+          <span className="text-muted-foreground flex-1 truncate text-sm">
+            18 or Above
+          </span>
+          <span className="text-sm font-semibold">
+            {data.eighteenOrAbove.toLocaleString()}
+          </span>
+          <span className="text-muted-foreground text-xs">
+            ({((data.eighteenOrAbove / total) * 100).toFixed(1)}%)
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div
+            className="h-3 w-3 flex-shrink-0 rounded-sm"
+            style={{ backgroundColor: AGE_COLORS[1] }}
+          />
+          <span className="text-muted-foreground flex-1 truncate text-sm">
+            Under 18
+          </span>
+          <span className="text-sm font-semibold">
+            {data.underEighteen.toLocaleString()}
+          </span>
+          <span className="text-muted-foreground text-xs">
+            ({((data.underEighteen / total) * 100).toFixed(1)}%)
+          </span>
+        </div>
+        <div className="border-muted mt-2 border-t pt-2">
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground text-sm">Total</span>
+            <span className="text-sm font-semibold">
+              {total.toLocaleString()}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div className="h-[180px] flex-1">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={chartData}
+              cx="50%"
+              cy="50%"
+              innerRadius={40}
+              outerRadius={70}
+              paddingAngle={2}
+              dataKey="count"
+              nameKey="name"
+            >
+              {chartData.map((entry, index) => (
+                <Cell
+                  key={`cell-${index}`}
+                  fill={AGE_COLORS[entry.name === "18 or Above" ? 0 : 1]}
+                  strokeWidth={0}
+                />
+              ))}
+            </Pie>
+            <Tooltip
+              content={({ active, payload }) => {
+                if (active && payload && payload.length) {
+                  return (
+                    <div className="bg-background rounded-lg border px-3 py-2 shadow-lg">
+                      <p className="text-sm font-medium">{payload[0].name}</p>
+                      <p className="text-muted-foreground text-sm">
+                        {payload[0].value?.toLocaleString()} applicants
+                      </p>
+                    </div>
+                  );
+                }
+                return null;
+              }}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
 // Graduation Year Bar Chart
 function GraduationYearChart({
   data,
@@ -581,6 +746,210 @@ function AdvancedAnalyticsSkeleton() {
         <Skeleton className="h-80" />
         <Skeleton className="h-80" />
       </div>
+    </div>
+  );
+}
+
+// Age Distribution Dialog Component
+function AgeDistributionDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const [activeTab, setActiveTab] = useState("all");
+  const [applicants, setApplicants] = useState<AgeApplicant[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Handle search input change with debounce
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+
+    // Clear existing timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    // Set new timer
+    debounceTimerRef.current = setTimeout(() => {
+      setDebouncedSearch(value);
+    }, 300);
+  }, []);
+
+  // Fetch applicants when dialog opens, tab changes, or search changes
+  const fetchApplicants = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (activeTab !== "all") {
+        params.set("filter", activeTab);
+      }
+      if (debouncedSearch) {
+        params.set("search", debouncedSearch);
+      }
+
+      const response = await fetch(`/api/stats/age-distribution?${params.toString()}`);
+      const data = await response.json();
+
+      if (data.status === "success") {
+        setApplicants(data.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch applicants:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [activeTab, debouncedSearch]);
+
+  useEffect(() => {
+    if (open) {
+      fetchApplicants();
+    }
+  }, [open, fetchApplicants]);
+
+  // Reset state when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setDebouncedSearch("");
+      setActiveTab("all");
+      if (searchInputRef.current) {
+        searchInputRef.current.value = "";
+      }
+      // Clear any pending debounce timer
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    }
+  }, [open]);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Cake className="h-5 w-5" />
+            Age Distribution Details
+          </DialogTitle>
+        </DialogHeader>
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="all">All</TabsTrigger>
+            <TabsTrigger value="below">Under 18</TabsTrigger>
+            <TabsTrigger value="above">18 or Above</TabsTrigger>
+          </TabsList>
+
+          <div className="relative mt-4">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              ref={searchInputRef}
+              placeholder="Search by name or email..."
+              onChange={handleSearchChange}
+              className="pl-9"
+            />
+          </div>
+
+          <div className="flex-1 mt-4 min-h-0 overflow-hidden">
+            <TabsContent value="all" className="h-full m-0">
+              <ApplicantList applicants={applicants} loading={loading} />
+            </TabsContent>
+            <TabsContent value="below" className="h-full m-0">
+              <ApplicantList applicants={applicants} loading={loading} />
+            </TabsContent>
+            <TabsContent value="above" className="h-full m-0">
+              <ApplicantList applicants={applicants} loading={loading} />
+            </TabsContent>
+          </div>
+        </Tabs>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Applicant List Component
+function ApplicantList({
+  applicants,
+  loading,
+}: {
+  applicants: AgeApplicant[];
+  loading: boolean;
+}) {
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (applicants.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64 text-muted-foreground text-sm">
+        No applicants found
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-[400px] overflow-y-auto pr-2 space-y-2">
+      {applicants.map((applicant) => (
+        <div
+          key={applicant._id}
+          className="flex items-center justify-between rounded-lg border p-3 hover:bg-muted/50 transition-colors"
+        >
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <p className="font-medium truncate">
+                {applicant.firstName} {applicant.lastName}
+              </p>
+              <span
+                className={`text-xs px-2 py-0.5 rounded-full ${
+                  applicant.isEighteenOrAbove === "yes"
+                    ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                    : "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
+                }`}
+              >
+                {applicant.isEighteenOrAbove === "yes" ? "18+" : "<18"}
+              </span>
+              <span
+                className={`text-xs px-2 py-0.5 rounded-full ${
+                  applicant.status === "Checked-in"
+                    ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                    : "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
+                }`}
+              >
+                {applicant.status}
+              </span>
+            </div>
+            <p className="text-sm text-muted-foreground truncate">
+              {applicant.email}
+            </p>
+            <p className="text-xs text-muted-foreground truncate">
+              {applicant.school}
+            </p>
+          </div>
+          <Link
+            href={`/dashboard/applications/${applicant._id}`}
+            target="_blank"
+            className="ml-2 p-2 hover:bg-muted rounded-md transition-colors"
+          >
+            <ExternalLink className="h-4 w-4 text-muted-foreground" />
+          </Link>
+        </div>
+      ))}
     </div>
   );
 }
