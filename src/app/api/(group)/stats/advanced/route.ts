@@ -374,7 +374,7 @@ export const GET = async () => {
         if (app.status !== "Confirmed" && app.status !== "Checked-in") {
           return acc;
         }
-        
+
         // isEighteenOrAbove is stored as "yes" or "no" string in the database
         if (app.isEighteenOrAbove === "yes") {
           acc.eighteenOrAbove++;

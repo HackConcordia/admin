@@ -28,7 +28,7 @@ export const GET = async (request: Request) => {
     // Add search filter (search by name or email)
     if (search) {
       const searchTerms = search.trim().split(/\s+/).filter(Boolean);
-      
+
       if (searchTerms.length === 1) {
         // Single word: search in firstName, lastName, or email
         baseQuery.$or = [

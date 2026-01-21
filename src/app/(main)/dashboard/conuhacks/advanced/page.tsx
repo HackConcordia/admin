@@ -768,12 +768,12 @@ function AgeDistributionDialog({
   // Handle search input change with debounce
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    
+
     // Clear existing timer
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
-    
+
     // Set new timer
     debounceTimerRef.current = setTimeout(() => {
       setDebouncedSearch(value);
@@ -791,10 +791,10 @@ function AgeDistributionDialog({
       if (debouncedSearch) {
         params.set("search", debouncedSearch);
       }
-      
+
       const response = await fetch(`/api/stats/age-distribution?${params.toString()}`);
       const data = await response.json();
-      
+
       if (data.status === "success") {
         setApplicants(data.data);
       }
