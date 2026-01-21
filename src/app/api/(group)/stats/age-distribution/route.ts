@@ -27,11 +27,46 @@ export const GET = async (request: Request) => {
 
     // Add search filter (search by name or email)
     if (search) {
-      baseQuery.$or = [
-        { firstName: { $regex: search, $options: "i" } },
-        { lastName: { $regex: search, $options: "i" } },
-        { email: { $regex: search, $options: "i" } },
-      ];
+      const searchTerms = search.trim().split(/\s+/).filter(Boolean);
+      
+      if (searchTerms.length === 1) {
+        // Single word: search in firstName, lastName, or email
+        baseQuery.$or = [
+          { firstName: { $regex: searchTerms[0], $options: "i" } },
+          { lastName: { $regex: searchTerms[0], $options: "i" } },
+          { email: { $regex: searchTerms[0], $options: "i" } },
+        ];
+      } else {
+        // Multiple words: could be "firstName lastName" or "lastName firstName"
+        // Match all terms against firstName + lastName combination
+        baseQuery.$or = [
+          // Match email with full search string
+          { email: { $regex: search, $options: "i" } },
+          // First term matches firstName AND second term matches lastName
+          {
+            $and: [
+              { firstName: { $regex: searchTerms[0], $options: "i" } },
+              { lastName: { $regex: searchTerms.slice(1).join(" "), $options: "i" } },
+            ],
+          },
+          // First term matches lastName AND second term matches firstName
+          {
+            $and: [
+              { lastName: { $regex: searchTerms[0], $options: "i" } },
+              { firstName: { $regex: searchTerms.slice(1).join(" "), $options: "i" } },
+            ],
+          },
+          // All terms must match somewhere in firstName or lastName
+          {
+            $and: searchTerms.map((term) => ({
+              $or: [
+                { firstName: { $regex: term, $options: "i" } },
+                { lastName: { $regex: term, $options: "i" } },
+              ],
+            })),
+          },
+        ];
+      }
     }
 
     const applications = await Application.find(baseQuery, {
