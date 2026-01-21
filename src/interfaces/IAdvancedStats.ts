@@ -52,4 +52,8 @@ export interface IAdvancedStats {
     totalAssigned: number;
     submittedAssigned: number;
   }[];
+  ageDistribution: {
+    eighteenOrAbove: number;
+    underEighteen: number;
+  };
 }

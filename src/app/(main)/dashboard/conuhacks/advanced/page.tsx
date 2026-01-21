@@ -16,6 +16,7 @@ import {
   Plane,
   Building,
   ListChecks,
+  Cake,
 } from "lucide-react";
 import {
   Bar,
@@ -192,6 +193,24 @@ export default function AdvancedAnalyticsPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Age Distribution (Confirmed & Checked-in only) */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Cake className="h-5 w-5" />
+              Age Distribution
+            </CardTitle>
+            <p className="text-muted-foreground text-xs">
+              Confirmed &amp; Checked-in applicants only
+            </p>
+          </CardHeader>
+          <CardContent>
+            <AgeDistributionChart data={stats.ageDistribution} />
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Row 1: Gender & Language */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -507,6 +526,113 @@ function HorizontalBarChart({
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+// Age Distribution Donut Chart Component
+function AgeDistributionChart({
+  data,
+}: {
+  data: { eighteenOrAbove: number; underEighteen: number };
+}) {
+  const total = data.eighteenOrAbove + data.underEighteen;
+  const chartData = [
+    { name: "18 or Above", count: data.eighteenOrAbove },
+    { name: "Under 18", count: data.underEighteen },
+  ].filter((item) => item.count > 0);
+
+  const AGE_COLORS = ["#22c55e", "#f97316"]; // Green for 18+, Orange for under 18
+
+  if (total === 0) {
+    return (
+      <div className="text-muted-foreground flex h-32 items-center justify-center text-sm">
+        No confirmed or checked-in applicants yet
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-4 lg:flex-row">
+      <div className="flex-1 space-y-3">
+        <div className="flex items-center gap-2">
+          <div
+            className="h-3 w-3 flex-shrink-0 rounded-sm"
+            style={{ backgroundColor: AGE_COLORS[0] }}
+          />
+          <span className="text-muted-foreground flex-1 truncate text-sm">
+            18 or Above
+          </span>
+          <span className="text-sm font-semibold">
+            {data.eighteenOrAbove.toLocaleString()}
+          </span>
+          <span className="text-muted-foreground text-xs">
+            ({((data.eighteenOrAbove / total) * 100).toFixed(1)}%)
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div
+            className="h-3 w-3 flex-shrink-0 rounded-sm"
+            style={{ backgroundColor: AGE_COLORS[1] }}
+          />
+          <span className="text-muted-foreground flex-1 truncate text-sm">
+            Under 18
+          </span>
+          <span className="text-sm font-semibold">
+            {data.underEighteen.toLocaleString()}
+          </span>
+          <span className="text-muted-foreground text-xs">
+            ({((data.underEighteen / total) * 100).toFixed(1)}%)
+          </span>
+        </div>
+        <div className="border-muted mt-2 border-t pt-2">
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground text-sm">Total</span>
+            <span className="text-sm font-semibold">
+              {total.toLocaleString()}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div className="h-[180px] flex-1">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={chartData}
+              cx="50%"
+              cy="50%"
+              innerRadius={40}
+              outerRadius={70}
+              paddingAngle={2}
+              dataKey="count"
+              nameKey="name"
+            >
+              {chartData.map((entry, index) => (
+                <Cell
+                  key={`cell-${index}`}
+                  fill={AGE_COLORS[entry.name === "18 or Above" ? 0 : 1]}
+                  strokeWidth={0}
+                />
+              ))}
+            </Pie>
+            <Tooltip
+              content={({ active, payload }) => {
+                if (active && payload && payload.length) {
+                  return (
+                    <div className="bg-background rounded-lg border px-3 py-2 shadow-lg">
+                      <p className="text-sm font-medium">{payload[0].name}</p>
+                      <p className="text-muted-foreground text-sm">
+                        {payload[0].value?.toLocaleString()} applicants
+                      </p>
+                    </div>
+                  );
+                }
+                return null;
+              }}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 }

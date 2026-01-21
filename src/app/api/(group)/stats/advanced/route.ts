@@ -367,6 +367,25 @@ export const GET = async () => {
       })
       .filter((metric) => metric.totalAssigned > 0);
 
+    // Age distribution (only for Confirmed and Checked-in applications)
+    const ageDistribution = applications.reduce(
+      (acc, app) => {
+        // Only include Confirmed and Checked-in applications
+        if (app.status !== "Confirmed" && app.status !== "Checked-in") {
+          return acc;
+        }
+        
+        // isEighteenOrAbove is stored as "yes" or "no" string in the database
+        if (app.isEighteenOrAbove === "yes") {
+          acc.eighteenOrAbove++;
+        } else if (app.isEighteenOrAbove === "no") {
+          acc.underEighteen++;
+        }
+        return acc;
+      },
+      { eighteenOrAbove: 0, underEighteen: 0 }
+    );
+
     const responseData = {
       totalApplicants,
       overallTravelReimbursement,
@@ -383,6 +402,7 @@ export const GET = async () => {
       jobTypesDistribution,
       workRegionsDistribution,
       adminAssignmentMetrics,
+      ageDistribution,
     };
 
     return sendSuccessResponse(
