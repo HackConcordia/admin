@@ -91,7 +91,7 @@ export function Actions({
               <span className="hidden lg:inline">Auto Assign</span>
             </Button>
             <Button variant="outline" onClick={onOpenExport}>
-              <Download className="mr-2 h-4 w-4" />
+              <Download />
               <span className="hidden lg:inline">Export</span>
             </Button>
           </>
