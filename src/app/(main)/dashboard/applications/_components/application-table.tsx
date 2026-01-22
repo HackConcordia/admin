@@ -13,6 +13,7 @@ import { Actions } from "./actions";
 import { AutoAssignDialog } from "./auto-assign-dialog";
 import { BulkAssignDialog } from "./bulk-assign-dialog";
 import { ApplicationTableRow, getApplicationsColumns } from "./columns";
+import { CreateApplicationDialog } from "./create-application-dialog";
 import { ExportDialog } from "./export-dialog";
 import { ServerPagination } from "./server-pagination";
 
@@ -67,9 +68,9 @@ export function ApplicationTable({
       getApplicationsColumns(
         isSuperAdmin,
         () => forceRerender((n) => n + 1),
-        initialTravelReimbursement === "approved"
+        initialTravelReimbursement === "approved",
       ),
-    [isSuperAdmin, initialTravelReimbursement]
+    [isSuperAdmin, initialTravelReimbursement],
   );
 
   const table = useDataTableInstance({
@@ -101,7 +102,7 @@ export function ApplicationTable({
     const visibility = table.getState().columnVisibility;
     window.localStorage.setItem(
       VISIBILITY_STORAGE_KEY,
-      JSON.stringify(visibility)
+      JSON.stringify(visibility),
     );
   }, [table, table.getState().columnVisibility]);
 
@@ -123,7 +124,7 @@ export function ApplicationTable({
   const selectedRows = table.getSelectedRowModel().rows;
   const selectedIds = useMemo(
     () => selectedRows.map((r) => r.original._id),
-    [selectedRows]
+    [selectedRows],
   );
   const selectedCount = selectedIds.length;
 
@@ -149,7 +150,7 @@ export function ApplicationTable({
         : pathname;
       router.push(newUrl, { scroll: false });
     },
-    [pathname, router, searchParams]
+    [pathname, router, searchParams],
   );
 
   // Handle page change
@@ -157,7 +158,7 @@ export function ApplicationTable({
     (newPage: number) => {
       updateUrlParams({ page: String(newPage) });
     },
-    [updateUrlParams]
+    [updateUrlParams],
   );
 
   // Handle page size change
@@ -165,7 +166,7 @@ export function ApplicationTable({
     (newSize: number) => {
       updateUrlParams({ limit: String(newSize), page: "1" });
     },
-    [updateUrlParams]
+    [updateUrlParams],
   );
 
   // Handle search change (debounced in the filter component)
@@ -173,7 +174,7 @@ export function ApplicationTable({
     (newSearch: string) => {
       updateUrlParams({ search: newSearch, page: "1" });
     },
-    [updateUrlParams]
+    [updateUrlParams],
   );
 
   // Handle status filter change
@@ -181,7 +182,7 @@ export function ApplicationTable({
     (newStatus: string) => {
       updateUrlParams({ status: newStatus, page: "1" });
     },
-    [updateUrlParams]
+    [updateUrlParams],
   );
 
   // Handle travel reimbursement filter change
@@ -189,7 +190,7 @@ export function ApplicationTable({
     (newValue: string) => {
       updateUrlParams({ travelReimbursement: newValue, page: "1" });
     },
-    [updateUrlParams]
+    [updateUrlParams],
   );
 
   // Handle assigned status filter change
@@ -197,7 +198,7 @@ export function ApplicationTable({
     (newValue: string) => {
       updateUrlParams({ assignedStatus: newValue, page: "1" });
     },
-    [updateUrlParams]
+    [updateUrlParams],
   );
 
   // Handle assigned to filter change
@@ -205,7 +206,7 @@ export function ApplicationTable({
     (newValue: string) => {
       updateUrlParams({ assignedTo: newValue, page: "1" });
     },
-    [updateUrlParams]
+    [updateUrlParams],
   );
 
   // Shared admin email loading (used for bulk assign and auto-assign)
@@ -300,13 +301,13 @@ export function ApplicationTable({
             totalAssigned !== 1 ? "s" : ""
           } (including ${teamMembersAdded} team member${
             teamMembersAdded !== 1 ? "s" : ""
-          })`
+          })`,
         );
       } else {
         toast.success(
           `Assigned ${totalAssigned} application${
             totalAssigned !== 1 ? "s" : ""
-          }`
+          }`,
         );
       }
 
@@ -333,7 +334,7 @@ export function ApplicationTable({
     setExporting(true);
     try {
       const promise = fetch(
-        `/api/resumes/export?statusFilter=${exportFilter}`
+        `/api/resumes/export?statusFilter=${exportFilter}`,
       ).then(async (response) => {
         if (!response.ok) {
           const err = await response.json().catch(() => ({}));
@@ -352,7 +353,7 @@ export function ApplicationTable({
           .slice(0, 10)}.zip`;
         if (contentDisposition) {
           const filenameMatch = contentDisposition.match(
-            /filename[^;=\n]*=\s*(['"]?)([^'"\n]*)\1/i
+            /filename[^;=\n]*=\s*(['"]?)([^'"\n]*)\1/i,
           );
           if (filenameMatch && filenameMatch[2]) {
             filename = filenameMatch[2];
@@ -404,7 +405,7 @@ export function ApplicationTable({
       toast.success("No unassigned applications found");
     } else {
       toast.success(
-        `Successfully assigned ${stats?.totalAssigned} applications to ${stats?.reviewerStats?.length} reviewers`
+        `Successfully assigned ${stats?.totalAssigned} applications to ${stats?.reviewerStats?.length} reviewers`,
       );
     }
 
@@ -434,11 +435,14 @@ export function ApplicationTable({
   return (
     <>
       <div className="flex flex-col gap-3">
-        <div>
-          <h2>Applications</h2>
-          <p className="text-xs text-muted-foreground">
-            Manage and review submitted applications
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">Applications</h2>
+            <p className="text-xs text-muted-foreground">
+              Manage and review submitted applications
+            </p>
+          </div>
+          {isSuperAdmin && <CreateApplicationDialog />}
         </div>
         <Actions
           table={table}
