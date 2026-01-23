@@ -8,7 +8,7 @@ import { sendErrorResponse, sendSuccessResponse } from "@/repository/response";
 export const dynamic = "force-dynamic";
 
 // Statuses that allow a user to join a team
-const ALLOWED_STATUSES = ["Submitted", "Admitted", "Waitlisted", "Confirmed", "CheckedIn"];
+const ALLOWED_STATUSES = ["Submitted", "Admitted", "Waitlisted", "Confirmed", "Checked-in"];
 
 interface UserResult {
   _id: string;

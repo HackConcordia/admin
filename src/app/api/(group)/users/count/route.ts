@@ -22,7 +22,7 @@ export const GET = async () => {
         // const notConfirmed = await User.countDocuments({status: "admitted",confirmed:false})
         confirmed: await User.countDocuments({ status: "Confirmed" }),
         declined: await User.countDocuments({ status: "Declined" }),
-        checkedIn: await User.countDocuments({ status: "CheckedIn" }),
+        checkedIn: await User.countDocuments({ status: "Checked-in" }),
       },
       shirtSize: {
         smallShirt: await User.countDocuments({ "confirmation.shirtSize": "S" }),
