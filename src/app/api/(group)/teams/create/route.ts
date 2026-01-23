@@ -19,7 +19,7 @@ const ALLOWED_STATUSES = [
   "Admitted",
   "Waitlisted",
   "Confirmed",
-  "CheckedIn",
+  "Checked-in",
 ];
 
 interface CreateTeamRequest {

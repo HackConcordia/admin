@@ -38,7 +38,7 @@ const STATUS_OPTIONS = [
   "Refused",
   "Confirmed",
   "Declined",
-  "CheckedIn",
+  "Checked-in",
 ];
 
 const TRAVEL_REIMBURSEMENT_OPTIONS = [
@@ -96,11 +96,13 @@ export default function ApplicationsFilters({
   const [statusOpen, setStatusOpen] = React.useState(false);
   const [reviewerOpen, setReviewerOpen] = React.useState(false); // New state
   const debounceTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+  const isTypingRef = React.useRef(false);
 
   // Debounced search handler
   const handleSearchChange = React.useCallback(
     (value: string) => {
       setSearch(value);
+      isTypingRef.current = true;
 
       // Clear existing timer
       if (debounceTimerRef.current) {
@@ -110,6 +112,10 @@ export default function ApplicationsFilters({
       // Set new debounce timer
       debounceTimerRef.current = setTimeout(() => {
         onSearchChange(value);
+        // Allow sync after navigation completes
+        setTimeout(() => {
+          isTypingRef.current = false;
+        }, 100);
       }, 400);
     },
     [onSearchChange]
@@ -179,12 +185,15 @@ export default function ApplicationsFilters({
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
       }
+      isTypingRef.current = false;
     };
   }, []);
 
-  // Sync with URL on initial load or when props change
+  // Sync with URL on initial load or when props change (but not while user is typing)
   React.useEffect(() => {
-    setSearch(initialSearch);
+    if (!isTypingRef.current) {
+      setSearch(initialSearch);
+    }
   }, [initialSearch]);
 
   React.useEffect(() => {
