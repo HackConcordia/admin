@@ -38,7 +38,7 @@ const STATUS_OPTIONS = [
   "Refused",
   "Confirmed",
   "Declined",
-  "CheckedIn",
+  "Checked-in",
 ];
 
 const TRAVEL_REIMBURSEMENT_OPTIONS = [
