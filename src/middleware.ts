@@ -1,16 +1,15 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 
+import { apiAuthMiddleware } from "./middleware/api-auth";
 import { authMiddleware } from "./middleware/auth-middleware";
 
 export async function middleware(req: NextRequest) {
-  const response = await authMiddleware(req);
-  if (response) {
-    return response;
+  if (req.nextUrl.pathname.startsWith("/api/")) {
+    return apiAuthMiddleware(req);
   }
-
-  return NextResponse.next();
+  return authMiddleware(req);
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/auth/:path*"],
+  matcher: ["/dashboard/:path*", "/auth/:path*", "/api/:path*"],
 };
