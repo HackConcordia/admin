@@ -1,4 +1,4 @@
-import { decodeJwt } from "jose";
+import { SignJWT, decodeJwt } from "jose";
 import { describe, expect, it } from "vitest";
 
 import { COOKIE_MAX_AGE_SECONDS, SESSION_TOKEN_SECONDS, signAuthToken, verifyAuthToken } from "@/lib/auth-token";
@@ -20,6 +20,16 @@ describe("auth-token", () => {
 
   it("rejects garbage", async () => {
     await expect(verifyAuthToken("not-a-jwt")).resolves.toBeNull();
+  });
+
+  it("rejects a validly signed token with no exp claim", async () => {
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET || "test-jwt-secret-0123456789-abcdefghijklmnop");
+    const token = await new SignJWT({ ...PAYLOAD })
+      .setProtectedHeader({ alg: "HS256", typ: "JWT" })
+      .setIssuedAt()
+      .setSubject(PAYLOAD.adminId)
+      .sign(secret);
+    await expect(verifyAuthToken(token)).resolves.toBeNull();
   });
 });
 

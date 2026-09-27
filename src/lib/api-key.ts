@@ -2,12 +2,11 @@ import { NextResponse } from "next/server";
 
 export const DISCORD_API_KEY_HEADER = "x-api-key";
 
-/** Constant-time comparison for equal-length strings. Runs on the edge runtime (no node:crypto). */
+/** Constant-time comparison: loop count depends only on expected (b's) length. Runs on the edge runtime (no node:crypto). */
 export function safeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let difference = 0;
-  for (let i = 0; i < a.length; i += 1) {
-    difference |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  let difference = a.length ^ b.length;
+  for (let i = 0; i < b.length; i += 1) {
+    difference |= b.charCodeAt(i) ^ (a.charCodeAt(i) || 0);
   }
   return difference === 0;
 }

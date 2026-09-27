@@ -36,7 +36,7 @@ export async function signAuthToken(payload: AuthTokenPayload, rememberFor30Days
 export async function verifyAuthToken(token: string): Promise<AuthTokenPayload | null> {
   try {
     const secret = getJwtSecret();
-    const { payload } = await jwtVerify(token, secret, { algorithms: ["HS256"] });
+    const { payload } = await jwtVerify(token, secret, { algorithms: ["HS256"], requiredClaims: ["exp"] });
     if (typeof payload.adminId !== "string" || typeof payload.email !== "string") {
       return null;
     }

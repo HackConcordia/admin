@@ -13,10 +13,24 @@ afterEach(() => {
 });
 
 describe("safeEqual", () => {
-  it("is true only for identical strings", () => {
+  it("returns true for identical strings", () => {
     expect(safeEqual("abc", "abc")).toBe(true);
+  });
+
+  it("returns false for same-length different strings", () => {
     expect(safeEqual("abc", "abd")).toBe(false);
+  });
+
+  it("returns false when provided is a prefix of expected", () => {
     expect(safeEqual("abc", "abcd")).toBe(false);
+  });
+
+  it("returns false when provided is longer than expected", () => {
+    expect(safeEqual("abcd", "abc")).toBe(false);
+  });
+
+  it("returns false when provided is empty", () => {
+    expect(safeEqual("", "abc")).toBe(false);
   });
 });
 
