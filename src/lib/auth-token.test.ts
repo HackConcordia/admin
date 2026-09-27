@@ -1,6 +1,7 @@
+import { decodeJwt } from "jose";
 import { describe, expect, it } from "vitest";
 
-import { signAuthToken, verifyAuthToken } from "@/lib/auth-token";
+import { COOKIE_MAX_AGE_SECONDS, SESSION_TOKEN_SECONDS, signAuthToken, verifyAuthToken } from "@/lib/auth-token";
 
 const PAYLOAD = { adminId: "64b000000000000000000001", email: "admin@test.dev", isSuperAdmin: true };
 
@@ -19,5 +20,20 @@ describe("auth-token", () => {
 
   it("rejects garbage", async () => {
     await expect(verifyAuthToken("not-a-jwt")).resolves.toBeNull();
+  });
+});
+
+describe("auth-token expiry", () => {
+  it("expires a non-remembered token after 12 hours", async () => {
+    const token = await signAuthToken(PAYLOAD, false);
+    const { iat, exp } = decodeJwt(token);
+    expect(exp! - iat!).toBe(SESSION_TOKEN_SECONDS);
+    expect(SESSION_TOKEN_SECONDS).toBe(60 * 60 * 12);
+  });
+
+  it("expires a remembered token after 30 days", async () => {
+    const token = await signAuthToken(PAYLOAD, true);
+    const { iat, exp } = decodeJwt(token);
+    expect(exp! - iat!).toBe(COOKIE_MAX_AGE_SECONDS);
   });
 });
