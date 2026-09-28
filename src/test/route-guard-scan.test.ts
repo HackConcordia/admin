@@ -216,6 +216,57 @@ describe("findUnguardedHandlers", () => {
       expect(findUnguardedHandlers(source)).toEqual(["GET"]);
     });
   });
+
+  describe("AST-based parsing edge cases (fix round 3)", () => {
+    it("does not let a generic type parameter's default value's `=` be mistaken for the assignment (reviewer repro)", () => {
+      const source = `
+        export const GET: <T = {}>(req: T) => Promise<Response> = async (req) => {
+          return Response.json({})
+        }
+        export const POST = async (req) => { const auth = await requireAdmin(req); if (!auth.ok) return auth.response; return Response.json({}); };
+      `;
+      expect(findUnguardedHandlers(source)).toEqual(["GET"]);
+    });
+
+    it("does not let a stray `}` inside a regex literal confuse a guarded handler", () => {
+      const source = `
+        export const GET = async (req) => {
+          const pattern = /\\{[^}]*\\}/g;
+          const auth = await requireAdmin(req);
+          if (!auth.ok) return auth.response;
+          return Response.json({ matched: pattern.test(req.url) });
+        };
+      `;
+      expect(findUnguardedHandlers(source)).toEqual([]);
+    });
+
+    it("fails closed on an initializer this scanner can't follow, e.g. export const GET = withAuth(h)", () => {
+      const source = `
+        export const GET = withAuth(h);
+      `;
+      expect(findUnguardedHandlers(source)).toEqual(["GET"]);
+    });
+
+    it("unwraps a parenthesized arrow function initializer", () => {
+      const source = `
+        export const GET = (async (req) => {
+          await requireAdmin(req);
+          return Response.json({});
+        });
+      `;
+      expect(findUnguardedHandlers(source)).toEqual([]);
+    });
+
+    it("does not let a type-level mention (typeof requireAdmin) with no call count as guarded", () => {
+      const source = `
+        export const GET = async (req) => {
+          type X = typeof requireAdmin;
+          return Response.json({});
+        };
+      `;
+      expect(findUnguardedHandlers(source)).toEqual(["GET"]);
+    });
+  });
 });
 
 describe("findHandlerExports", () => {
