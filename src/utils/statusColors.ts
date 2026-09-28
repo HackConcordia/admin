@@ -11,6 +11,8 @@ export const STATUS_COLORS: Record<string, string> = {
   "Not confirmed": "#590059",
   Confirmed: "darkgreen",
   Declined: "red",
+  "Checked-in": "darkslategrey",
+  CheckedIn: "darkslategrey",
   "Checked-In": "darkslategrey",
 };
 

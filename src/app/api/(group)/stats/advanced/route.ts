@@ -6,6 +6,7 @@ import Application from "@/repository/models/application";
 import Admin from "@/repository/models/admin";
 import { Countries as CountryList } from "@/constants/Countries";
 import { requireAdmin } from "@/lib/require-admin";
+import { isCheckedInStatus } from "@/lib/status";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -376,8 +377,8 @@ export const GET = async (req: NextRequest) => {
     // Age distribution (only for Confirmed and Checked-in applications)
     const ageDistribution = applications.reduce(
       (acc, app) => {
-        // Only include Confirmed and Checked-in applications
-        if (app.status !== "Confirmed" && app.status !== "Checked-in") {
+        // Only include Confirmed and checked-in applications (either C4 spelling)
+        if (app.status !== "Confirmed" && !isCheckedInStatus(app.status)) {
           return acc;
         }
 

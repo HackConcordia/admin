@@ -59,7 +59,7 @@ export const statuses: IStatus[] = [
     backgroundColor: "red",
   },
   {
-    name: "Checked-In",
+    name: "Checked-in",
     title: "Checked-In for Hackathon",
     description: "You have successfully checked in for the hackathon. Get ready for an exciting event!",
     backgroundColor: "darkslategrey",

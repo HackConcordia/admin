@@ -9,7 +9,7 @@ import { requireAdmin } from "@/lib/require-admin";
 export const dynamic = "force-dynamic";
 
 // Statuses that allow a user to join a team
-const ALLOWED_STATUSES = ["Submitted", "Admitted", "Waitlisted", "Confirmed", "Checked-in"];
+const ALLOWED_STATUSES = ["Submitted", "Admitted", "Waitlisted", "Confirmed", "Checked-in", "CheckedIn"];
 
 interface UserResult {
   _id: string;

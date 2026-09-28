@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { requireAdmin } from "@/lib/require-admin";
+import { CHECKED_IN_STATUSES, isCheckedInStatus } from "@/lib/status";
 import Admin from "@/repository/models/admin";
 import Application from "@/repository/models/application";
 import connectMongoDB from "@/repository/mongoose";
@@ -47,9 +48,9 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    // Filter by status
+    // Filter by status (C4: a checked-in filter matches both stored spellings)
     if (status) {
-      query.status = status;
+      query.status = isCheckedInStatus(status) ? { $in: [...CHECKED_IN_STATUSES] } : status;
     }
 
     // For non-super admins, filter by assigned applications

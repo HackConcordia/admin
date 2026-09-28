@@ -10,6 +10,7 @@ import Team from "@/repository/models/team";
 
 import { statuses } from "@/constants/statuses";
 import { requireAdmin } from "@/lib/require-admin";
+import { mergeCheckedInCounts } from "@/lib/status";
 
 // Utility function to format dietary restriction names
 const formatDisplayName = (restriction: string) => {
@@ -196,7 +197,7 @@ export const GET = async (req: NextRequest) => {
     // Response
     const responseData = {
       totalApplicants,
-      statusCounts,
+      statusCounts: mergeCheckedInCounts(statusCounts),
       newApplicantsLast24Hours,
       newApplicants24To48Hours,
       applicantsChange,

@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Copy, Star, Users, UserPlus, Loader2, Check, AlertCircle, Trash2, X, ExternalLink } from "lucide-react";
+import { isCheckedInStatus } from "@/lib/status";
 import Link from "next/link";
 import { toast } from "sonner";
 
@@ -349,7 +350,7 @@ export function TeamCard({ _id, teamName, teamCode, members, teamOwner, isSuperA
                               member.status === "Confirmed" && "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400",
                               member.status === "Admitted" && "bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400",
                               member.status === "Submitted" && "bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400",
-                              member.status === "Checked-In" && "bg-teal-100 text-teal-700 dark:bg-teal-950/50 dark:text-teal-400",
+                              isCheckedInStatus(member.status) && "bg-teal-100 text-teal-700 dark:bg-teal-950/50 dark:text-teal-400",
                               member.status === "Waitlisted" && "bg-slate-100 text-slate-600 dark:bg-slate-800/50 dark:text-slate-400",
                               member.status === "Declined" && "bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-400",
                               member.status === "Refused" && "bg-orange-100 text-orange-700 dark:bg-orange-950/50 dark:text-orange-400",

@@ -5,6 +5,7 @@ import { sendErrorResponse, sendSuccessResponse } from "@/repository/response";
 import Application from "@/repository/models/application";
 import CheckIn from "@/repository/models/checkin";
 import { requireAdmin } from "@/lib/require-admin";
+import { isCheckedInStatus } from "@/lib/status";
 import { sendDiscordLink } from "@/utils/admissionEmailConfig";
 
 // Fields that require validation
@@ -287,12 +288,12 @@ export const PUT = async (
       updateFields.status === "Confirmed" &&
       existingApplication.status !== "Confirmed";
 
-    // Check if status is being changed FROM "Confirmed" to something other than "CheckedIn"
+    // Check if status is being changed FROM "Confirmed" to something other than checked in (C4)
     const isChangingFromConfirmed =
       existingApplication.status === "Confirmed" &&
       updateFields.status !== undefined &&
       updateFields.status !== "Confirmed" &&
-      updateFields.status !== "CheckedIn";
+      !isCheckedInStatus(updateFields.status);
 
     // Update application
     const updatedApplication = await Application.findByIdAndUpdate(
@@ -343,7 +344,7 @@ export const PUT = async (
       }
     }
 
-    // If status changed FROM "Confirmed" to something other than "CheckedIn", delete the CheckIn document
+    // If status changed FROM "Confirmed" to something other than checked in (C4), delete the CheckIn document
     if (isChangingFromConfirmed) {
       try {
         const deletedCheckIn = await CheckIn.findOneAndDelete({

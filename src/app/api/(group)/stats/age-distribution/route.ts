@@ -2,6 +2,7 @@ import connectMongoDB from "@/repository/mongoose";
 import { sendSuccessResponse, sendErrorResponse } from "@/repository/response";
 import Application from "@/repository/models/application";
 import { requireAdmin } from "@/lib/require-admin";
+import { CHECKED_IN_STATUSES } from "@/lib/status";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -19,7 +20,7 @@ export const GET = async (request: Request) => {
 
     // Base query: only Confirmed and Checked-in applications
     const baseQuery: Record<string, unknown> = {
-      status: { $in: ["Confirmed", "Checked-in"] },
+      status: { $in: ["Confirmed", ...CHECKED_IN_STATUSES] },
     };
 
     // Add age filter

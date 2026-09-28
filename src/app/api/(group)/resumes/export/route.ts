@@ -30,7 +30,7 @@ export const GET = async (req: NextRequest) => {
     // Build query based on status filter
     let statusQuery: any = {};
     if (statusFilter === "all") {
-      statusQuery = { status: { $in: ["Submitted", "Admitted", "Waitlisted", "Confirmed", "CheckedIn"] } };
+      statusQuery = { status: { $in: ["Submitted", "Admitted", "Waitlisted", "Confirmed", "Checked-in", "CheckedIn"] } };
     } else if (statusFilter === "admitted") {
       statusQuery = { status: "Admitted" };
     } else if (statusFilter === "confirmed") {
