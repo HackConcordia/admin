@@ -5,6 +5,7 @@ import type { IVolunteer } from "@/interfaces/IVolunteer";
 import { COOKIE_NAME, verifyAuthToken } from "@/lib/auth-token";
 import { fetchIsSuperAdmin } from "@/lib/require-admin";
 
+import { CreateVolunteerDialog } from "./_components/create-volunteer-dialog";
 import { VolunteerTable } from "./_components/volunteer-table";
 
 export const dynamic = "force-dynamic";
@@ -74,6 +75,9 @@ export default async function VolunteersPage() {
             Manage the accounts volunteers use to sign in to the event check-in app
           </p>
         </div>
+
+        {/* Create button that opens the modal */}
+        <CreateVolunteerDialog />
       </div>
 
       <VolunteerTable initialData={volunteers} />
