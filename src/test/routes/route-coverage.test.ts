@@ -35,8 +35,8 @@ const routeFiles = listRouteFiles(API_ROOT).map((full) => {
 const PUBLIC_ROUTES = new Set(routeFiles.filter(({ urlPath }) => PUBLIC_API_PATHS.has(urlPath)).map(({ rel }) => rel));
 
 describe("API route guard coverage", () => {
-  it("scans all 40 route files", () => {
-    expect(routeFiles).toHaveLength(40);
+  it("scans all 43 route files", () => {
+    expect(routeFiles).toHaveLength(43);
   });
 
   it("finds the public allowlist among the scanned routes", () => {

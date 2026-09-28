@@ -19,6 +19,7 @@ import {
   type LucideIcon,
   User,
   Shield,
+  HandHelping,
 } from "lucide-react";
 
 export interface NavSubItem {
@@ -76,6 +77,12 @@ export const sidebarItems: NavGroup[] = [
         title: "Admins",
         url: "/dashboard/admins",
         icon: Shield,
+        superAdminOnly: true,
+      },
+      {
+        title: "Volunteers",
+        url: "/dashboard/volunteers",
+        icon: HandHelping,
         superAdminOnly: true,
       },
       {
