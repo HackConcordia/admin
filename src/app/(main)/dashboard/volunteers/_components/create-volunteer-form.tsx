@@ -62,10 +62,10 @@ export function CreateVolunteerForm({ onCreated }: CreateVolunteerFormProps) {
         }),
       });
 
-      const result = await response.json();
+      const result = await response.json().catch(() => null);
 
-      if (!response.ok || result.status !== "success") {
-        throw new Error(result.message || "Failed to create volunteer");
+      if (!response.ok || result?.status !== "success" || typeof result?.data?.generatedPassword !== "string") {
+        throw new Error(result?.message || "Failed to create volunteer");
       }
 
       toast.success("Volunteer created successfully");
@@ -95,6 +95,7 @@ export function CreateVolunteerForm({ onCreated }: CreateVolunteerFormProps) {
             id="volunteerFirstName"
             placeholder="First Name"
             value={firstName}
+            maxLength={100}
             onChange={(e) => {
               setFirstName(e.target.value);
               if (errors.firstName)
@@ -115,6 +116,7 @@ export function CreateVolunteerForm({ onCreated }: CreateVolunteerFormProps) {
             id="volunteerLastName"
             placeholder="Last Name"
             value={lastName}
+            maxLength={100}
             onChange={(e) => {
               setLastName(e.target.value);
               if (errors.lastName)
@@ -137,6 +139,7 @@ export function CreateVolunteerForm({ onCreated }: CreateVolunteerFormProps) {
           type="email"
           placeholder="volunteer@example.com"
           value={email}
+          maxLength={254}
           onChange={(e) => {
             setEmail(e.target.value);
             if (errors.email) setErrors({ ...errors, email: undefined });

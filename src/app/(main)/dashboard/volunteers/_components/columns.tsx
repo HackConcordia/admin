@@ -16,12 +16,19 @@ import { ResetPasswordDialog } from "./reset-password-dialog";
 export type VolunteerRowActions = {
   onResetPassword: (volunteerId: string) => Promise<void>;
   onDelete: (volunteerId: string) => Promise<void>;
+  pendingId: string | null;
 };
 
-function ActionsCell({ volunteer, onResetPassword, onDelete }: { volunteer: IVolunteer } & VolunteerRowActions) {
+function ActionsCell({
+  volunteer,
+  onResetPassword,
+  onDelete,
+  pendingId,
+}: { volunteer: IVolunteer } & VolunteerRowActions) {
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const fullName = `${volunteer.firstName} ${volunteer.lastName}`;
+  const isPending = pendingId === volunteer._id;
 
   const handleResetConfirm = async () => {
     await onResetPassword(volunteer._id);
@@ -40,6 +47,7 @@ function ActionsCell({ volunteer, onResetPassword, onDelete }: { volunteer: IVol
         size="icon"
         className="h-8 w-8"
         onClick={() => setResetDialogOpen(true)}
+        disabled={isPending}
         title="Reset password"
         aria-label={`Reset password for ${fullName}`}
       >
@@ -50,6 +58,7 @@ function ActionsCell({ volunteer, onResetPassword, onDelete }: { volunteer: IVol
         size="icon"
         className="text-destructive hover:text-destructive h-8 w-8"
         onClick={() => setDeleteDialogOpen(true)}
+        disabled={isPending}
         title="Delete volunteer"
         aria-label={`Delete ${fullName}`}
       >
@@ -110,7 +119,12 @@ export function getVolunteerColumns(actions: VolunteerRowActions): ColumnDef<IVo
       id: "actions",
       header: "Actions",
       cell: ({ row }) => (
-        <ActionsCell volunteer={row.original} onResetPassword={actions.onResetPassword} onDelete={actions.onDelete} />
+        <ActionsCell
+          volunteer={row.original}
+          onResetPassword={actions.onResetPassword}
+          onDelete={actions.onDelete}
+          pendingId={actions.pendingId}
+        />
       ),
       enableSorting: false,
       enableHiding: false,

@@ -36,6 +36,7 @@ export function VolunteerTable({ initialData }: VolunteerTableProps) {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [credentials, setCredentials] = useState<IVolunteerCredentials | null>(null);
+  const [pendingId, setPendingId] = useState<string | null>(null);
 
   useEffect(() => {
     setData(initialData ?? []);
@@ -63,18 +64,25 @@ export function VolunteerTable({ initialData }: VolunteerTableProps) {
 
   const handleResetPassword = useCallback(
     async (volunteerId: string) => {
+      setPendingId(volunteerId);
       try {
         const response = await fetch(`/api/volunteers/${volunteerId}/reset-password`, { method: "POST" });
         if (!response.ok) {
           throw new Error(await readMessage(response, "Failed to reset password"));
         }
 
-        const result = await response.json();
+        const result = await response.json().catch(() => null);
+        if (typeof result?.data?.generatedPassword !== "string") {
+          throw new Error("Failed to reset password");
+        }
+
         // Held in memory only until the one-time dialog closes.
         setCredentials(result.data as IVolunteerCredentials);
         fetchData();
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Failed to reset password");
+      } finally {
+        setPendingId(null);
       }
     },
     [fetchData],
@@ -82,6 +90,7 @@ export function VolunteerTable({ initialData }: VolunteerTableProps) {
 
   const handleDelete = useCallback(
     async (volunteerId: string) => {
+      setPendingId(volunteerId);
       try {
         const response = await fetch(`/api/volunteers/${volunteerId}`, { method: "DELETE" });
         if (!response.ok) {
@@ -92,14 +101,16 @@ export function VolunteerTable({ initialData }: VolunteerTableProps) {
         fetchData();
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Failed to delete volunteer");
+      } finally {
+        setPendingId(null);
       }
     },
     [fetchData],
   );
 
   const columns = useMemo(
-    () => getVolunteerColumns({ onResetPassword: handleResetPassword, onDelete: handleDelete }),
-    [handleResetPassword, handleDelete],
+    () => getVolunteerColumns({ onResetPassword: handleResetPassword, onDelete: handleDelete, pendingId }),
+    [handleResetPassword, handleDelete, pendingId],
   );
 
   const filteredData = useMemo(() => data.filter((volunteer) => matchesSearch(volunteer, search)), [data, search]);

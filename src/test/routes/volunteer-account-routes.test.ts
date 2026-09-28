@@ -71,12 +71,17 @@ async function resetAsSuperAdmin(): Promise<Response> {
   );
 }
 
-const ROUTES: { name: string; handler: RouteHandler; method: string }[] = [
-  { name: "DELETE /api/volunteers/[volunteerId]", handler: volunteerById.DELETE, method: "DELETE" },
-  { name: "POST /api/volunteers/[volunteerId]/reset-password", handler: resetPassword.POST, method: "POST" },
+const ROUTES: { name: string; handler: RouteHandler; method: string; url: string }[] = [
+  { name: "DELETE /api/volunteers/[volunteerId]", handler: volunteerById.DELETE, method: "DELETE", url: DELETE_URL },
+  {
+    name: "POST /api/volunteers/[volunteerId]/reset-password",
+    handler: resetPassword.POST,
+    method: "POST",
+    url: RESET_URL,
+  },
 ];
 
-describe.each(ROUTES)("$name", ({ handler, method }) => {
+describe.each(ROUTES)("$name", ({ handler, method, url }) => {
   it("rejects a malformed volunteer id with 400 before touching the database", async () => {
     const res = await handler(
       buildRequest("/api/volunteers/not-an-id", { method, cookie: await superCookie() }),
@@ -91,9 +96,17 @@ describe.each(ROUTES)("$name", ({ handler, method }) => {
 
   it("never touches volunteers for a non-super admin", async () => {
     const cookie = await adminCookie({ adminId: NON_SUPER_ADMIN_ID, isSuperAdmin: true });
-    const res = await handler(buildRequest(DELETE_URL, { method, cookie }), routeContext({ volunteerId: VOLUNTEER_ID }));
+    const res = await handler(buildRequest(url, { method, cookie }), routeContext({ volunteerId: VOLUNTEER_ID }));
 
     expect(res.status).toBe(403);
+    expect(volunteerModel.findByIdAndUpdate).not.toHaveBeenCalled();
+    expect(volunteerModel.findByIdAndDelete).not.toHaveBeenCalled();
+  });
+
+  it("401 without cookie never touches volunteers", async () => {
+    const res = await handler(buildRequest(url, { method }), routeContext({ volunteerId: VOLUNTEER_ID }));
+
+    expect(res.status).toBe(401);
     expect(volunteerModel.findByIdAndUpdate).not.toHaveBeenCalled();
     expect(volunteerModel.findByIdAndDelete).not.toHaveBeenCalled();
   });
@@ -149,6 +162,25 @@ describe("POST /api/volunteers/[volunteerId]/reset-password", () => {
 
     expect(res.status).toBe(404);
     expect((await res.json()).message).toBe("Volunteer not found");
+  });
+
+  it("logs safely and returns 500 on a database error", async () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    volunteerModel.findByIdAndUpdate.mockRejectedValue(
+      Object.assign(new Error("fail grace@test.dev"), { name: "MongoServerError", code: 91 }),
+    );
+
+    const res = await resetAsSuperAdmin();
+
+    expect(res.status).toBe(500);
+    expect((await res.json()).message).toBe("Failed to reset volunteer password");
+
+    expect(consoleSpy).toHaveBeenCalledWith("Failed to reset volunteer password:", "MongoServerError (code 91)");
+    const serializedCalls = JSON.stringify(consoleSpy.mock.calls);
+    expect(serializedCalls).not.toContain("grace@test.dev");
+    expect(serializedCalls).not.toContain("$2");
+
+    consoleSpy.mockRestore();
   });
 });
 

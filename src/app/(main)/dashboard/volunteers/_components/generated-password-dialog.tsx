@@ -53,7 +53,7 @@ export function GeneratedPasswordDialog({ title, credentials, onClose }: Generat
 
   return (
     <AlertDialog open={credentials !== null} onOpenChange={handleOpenChange}>
-      <AlertDialogContent>
+      <AlertDialogContent onEscapeKeyDown={(event) => event.preventDefault()}>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>

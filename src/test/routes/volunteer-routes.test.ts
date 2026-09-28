@@ -97,6 +97,15 @@ describe("GET /api/volunteers", () => {
     expect(res.status).toBe(403);
     expect(volunteerModel.find).not.toHaveBeenCalled();
   });
+
+  it("401 without cookie never touches volunteers", async () => {
+    const res = await volunteers.GET(buildRequest("/api/volunteers"));
+
+    expect(res.status).toBe(401);
+    expect(volunteerModel.find).not.toHaveBeenCalled();
+    expect(volunteerModel.findOne).not.toHaveBeenCalled();
+    expect(volunteerModel.create).not.toHaveBeenCalled();
+  });
 });
 
 describe("POST /api/volunteers", () => {
@@ -202,5 +211,36 @@ describe("POST /api/volunteers", () => {
     expect(res.status).toBe(403);
     expect(volunteerModel.findOne).not.toHaveBeenCalled();
     expect(volunteerModel.create).not.toHaveBeenCalled();
+  });
+
+  it("401 without cookie never touches volunteers", async () => {
+    const res = await volunteers.POST(buildRequest("/api/volunteers", { method: "POST", body: NEW_VOLUNTEER }));
+
+    expect(res.status).toBe(401);
+    expect(volunteerModel.find).not.toHaveBeenCalled();
+    expect(volunteerModel.findOne).not.toHaveBeenCalled();
+    expect(volunteerModel.create).not.toHaveBeenCalled();
+  });
+
+  it("logs safely and returns 500 on a database error", async () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockExistingVolunteer(null);
+    volunteerModel.create.mockRejectedValue(
+      Object.assign(new Error("fail grace@test.dev"), { name: "MongoServerError", code: 91 }),
+    );
+
+    const res = await volunteers.POST(
+      buildRequest("/api/volunteers", { method: "POST", cookie: await superCookie(), body: NEW_VOLUNTEER }),
+    );
+
+    expect(res.status).toBe(500);
+    expect((await res.json()).message).toBe("Failed to create volunteer");
+
+    expect(consoleSpy).toHaveBeenCalledWith("Failed to create volunteer:", "MongoServerError (code 91)");
+    const serializedCalls = JSON.stringify(consoleSpy.mock.calls);
+    expect(serializedCalls).not.toContain("grace@test.dev");
+    expect(serializedCalls).not.toContain("$2");
+
+    consoleSpy.mockRestore();
   });
 });
