@@ -5,23 +5,12 @@ import { sendErrorResponse, sendSuccessResponse } from "@/repository/response";
 import Admin from "@/repository/models/admin";
 import Application from "@/repository/models/application";
 import Team from "@/repository/models/team";
-import { COOKIE_NAME, verifyAuthToken } from "@/lib/auth-token";
+import { requireAdmin } from "@/lib/require-admin";
 
 export const POST = async (req: NextRequest) => {
   try {
-    const token = req.cookies.get(COOKIE_NAME)?.value;
-    if (!token) {
-      return sendErrorResponse("Unauthorized", null, 401);
-    }
-
-    const payload = await verifyAuthToken(token);
-    if (!payload) {
-      return sendErrorResponse("Unauthorized", null, 401);
-    }
-
-    if (!payload.isSuperAdmin) {
-      return sendErrorResponse("Forbidden", null, 403);
-    }
+    const auth = await requireAdmin(req, { superAdmin: true });
+    if (!auth.ok) return auth.response;
 
     const { selectedAdminEmail, selectedApplicants } = await req.json();
 
