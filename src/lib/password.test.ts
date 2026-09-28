@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   BCRYPT_COST,
+  DUMMY_BCRYPT_HASH,
   hashPassword,
   isBcryptHash,
   validateNewPassword,
@@ -14,6 +15,13 @@ describe("isBcryptHash", () => {
     expect(isBcryptHash("$2a$10$abcdefghijklmnopqrstuv")).toBe(true);
     expect(isBcryptHash("hunter22")).toBe(false);
     expect(isBcryptHash(undefined)).toBe(false);
+  });
+});
+
+describe("DUMMY_BCRYPT_HASH", () => {
+  it("is a valid cost-12 bcrypt hash", () => {
+    expect(isBcryptHash(DUMMY_BCRYPT_HASH)).toBe(true);
+    expect(DUMMY_BCRYPT_HASH.split("$")[2]).toBe("12");
   });
 });
 

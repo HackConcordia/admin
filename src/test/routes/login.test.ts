@@ -37,6 +37,24 @@ describe("POST /api/auth-token/login", () => {
     expect(res.status).toBe(401);
   });
 
+  it("spends one bcrypt compare on an unknown email (timing oracle)", async () => {
+    const compareSpy = vi.spyOn(bcrypt, "compare");
+    adminModel.findOne.mockResolvedValueOnce(null);
+    const res = await post({ email: "nobody@test.dev", password: "whatever1" });
+    expect(res.status).toBe(401);
+    expect(compareSpy).toHaveBeenCalledTimes(1);
+    compareSpy.mockRestore();
+  });
+
+  it("spends one bcrypt compare on an unmigrated plaintext password", async () => {
+    const compareSpy = vi.spyOn(bcrypt, "compare");
+    adminModel.findOne.mockResolvedValueOnce({ _id: TEST_ADMIN_ID, email: "a@test.dev", password: "hunter22" });
+    const res = await post({ email: "a@test.dev", password: "hunter22" });
+    expect(res.status).toBe(401);
+    expect(compareSpy).toHaveBeenCalledTimes(1);
+    compareSpy.mockRestore();
+  });
+
   it("logs in with the right password and sets the session cookie", async () => {
     adminModel.findOne.mockResolvedValue({ _id: TEST_ADMIN_ID, email: "a@test.dev", isSuperAdmin: true, password: await bcrypt.hash("right pass", 4) });
     const res = await post({ email: "a@test.dev", password: "right pass", remember: false });

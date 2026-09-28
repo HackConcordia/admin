@@ -4,7 +4,7 @@ import connectMongoDB from "@/repository/mongoose";
 import Admin from "@/repository/models/admin";
 import { sendErrorResponse, sendSuccessResponse } from "@/repository/response";
 import { COOKIE_MAX_AGE_SECONDS, COOKIE_NAME, signAuthToken } from "@/lib/auth-token";
-import { verifyPassword } from "@/lib/password";
+import { DUMMY_BCRYPT_HASH, isBcryptHash, verifyPassword } from "@/lib/password";
 
 export const POST = async (req: NextRequest) => {
   try {
@@ -17,7 +17,8 @@ export const POST = async (req: NextRequest) => {
     await connectMongoDB();
 
     const admin = await Admin.findOne({ email });
-    const passwordMatches = admin ? await verifyPassword(password, admin.password) : false;
+    const stored = admin && isBcryptHash(admin.password) ? admin.password : DUMMY_BCRYPT_HASH;
+    const passwordMatches = await verifyPassword(password, stored);
 
     if (!admin || !passwordMatches) {
       return sendErrorResponse("Invalid credentials", null, 401);

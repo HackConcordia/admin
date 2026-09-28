@@ -9,6 +9,16 @@ export function isBcryptHash(value: unknown): value is string {
   return typeof value === "string" && value.startsWith("$2");
 }
 
+/**
+ * A precomputed cost-12 bcrypt hash of a random value nobody knows or ever
+ * will. Login always runs bcrypt.compare against either the real stored
+ * hash or this one, so an unknown email and a wrong password cost the same
+ * amount of time — this closes a single-request timing oracle that would
+ * otherwise let an attacker enumerate valid admin emails. It can never
+ * successfully authenticate anything.
+ */
+export const DUMMY_BCRYPT_HASH = "$2b$12$uGncqfiMOMg5OJUZUdujcOskahV4I57d3P.rdMbNFDQFuvRGG5vsC";
+
 export async function hashPassword(plain: string, cost: number = BCRYPT_COST): Promise<string> {
   if (typeof plain !== "string" || plain.length === 0) {
     throw new Error("Cannot hash an empty password");
