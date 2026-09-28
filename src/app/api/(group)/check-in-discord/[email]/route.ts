@@ -4,8 +4,12 @@ import connectMongoDB from "@/repository/mongoose";
 import { sendErrorResponse, sendSuccessResponse } from "@/repository/response";
 import CheckIn from "@/repository/models/checkin";
 import type { ICheckIn } from "@/interfaces/ICheckIn";
+import { requireDiscordApiKey } from "@/lib/api-key";
 
 export const PATCH = async (req: NextRequest, { params }: { params: Promise<{ email: string }> }) => {
+  const keyCheck = requireDiscordApiKey(req);
+  if (!keyCheck.ok) return keyCheck.response;
+
   try {
     const { email } = await params;
 
@@ -50,6 +54,9 @@ export const PATCH = async (req: NextRequest, { params }: { params: Promise<{ em
 
 // just to check if the email exists
 export const GET = async (req: NextRequest, { params }: { params: Promise<{ email: string }> }) => {
+  const keyCheck = requireDiscordApiKey(req);
+  if (!keyCheck.ok) return keyCheck.response;
+
   try {
     const { email } = await params;
 
