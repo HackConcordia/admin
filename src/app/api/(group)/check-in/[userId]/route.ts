@@ -1,15 +1,18 @@
 import type { NextRequest } from "next/server";
-import { cookies } from "next/headers";
+import mongoose from "mongoose";
 
 import connectMongoDB from "@/repository/mongoose";
 import { sendErrorResponse, sendSuccessResponse } from "@/repository/response";
 import Application from "@/repository/models/application";
 import Meal from "@/repository/models/meal";
 import QrCodeMapping from "@/repository/models/qrcodemapping";
-import { COOKIE_NAME, verifyAuthToken } from "@/lib/auth-token";
-import mongoose from "mongoose";
+import { requireAdmin } from "@/lib/require-admin";
+import { CHECKED_IN_STATUS, isCheckedInStatus } from "@/lib/status";
 
 export const PATCH = async (req: NextRequest, { params }: { params: Promise<{ userId: string }> }) => {
+  const auth = await requireAdmin(req);
+  if (!auth.ok) return auth.response;
+
   try {
     const { userId } = await params;
     const { status, qrCodeNumber, eventId } = await req.json();
@@ -29,10 +32,12 @@ export const PATCH = async (req: NextRequest, { params }: { params: Promise<{ us
       return sendErrorResponse("Application not found", null, 404);
     }
 
-    if (application.status === "Checked-in") {
-      return sendErrorResponse("User is already checked-in", null, 500);
-    } else if (application.status !== "Confirmed") {
-      return sendErrorResponse("User is not confirmed", null, 500);
+    if (isCheckedInStatus(application.status)) {
+      return sendErrorResponse("User is already checked-in", null, 409);
+    }
+
+    if (application.status !== "Confirmed") {
+      return sendErrorResponse("User is not confirmed", null, 409);
     }
 
     // Validate QR code number if provided
@@ -60,25 +65,7 @@ export const PATCH = async (req: NextRequest, { params }: { params: Promise<{ us
         );
       }
 
-      // Get admin email from auth token for checkedInBy
-      let checkedInBy = "system";
-      try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get(COOKIE_NAME)?.value;
-        if (token) {
-          const payload = await verifyAuthToken(token);
-          if (payload?.email) {
-            checkedInBy = payload.email;
-          } else {
-            console.warn("Auth token payload does not contain email");
-          }
-        } else {
-          console.warn("No auth token found in cookies");
-        }
-      } catch (error) {
-        // If we can't get the admin email, use "system" as fallback
-        console.error("Could not get admin email from auth token:", error);
-      }
+      const checkedInBy = auth.admin.email;
 
       // Create QR code mapping
       const qrCodeMapping = new QrCodeMapping({
@@ -92,7 +79,7 @@ export const PATCH = async (req: NextRequest, { params }: { params: Promise<{ us
     }
 
     // Update user's status to 'Checked-in'
-    await Application.findByIdAndUpdate(userId, { $set: { status: "Checked-in" } });
+    await Application.findByIdAndUpdate(userId, { $set: { status: CHECKED_IN_STATUS } });
 
     // Add user to meals collection if not already present
     const existingMeal = await Meal.findOne({ _id: userId }); // Now searching by userId as _id
@@ -114,7 +101,7 @@ export const PATCH = async (req: NextRequest, { params }: { params: Promise<{ us
       await newMealRecord.save();
     }
 
-    return sendSuccessResponse("Attendance confirmed and meals record created", { status: "Checked-in" }, 200);
+    return sendSuccessResponse("Attendance confirmed and meals record created", { status: CHECKED_IN_STATUS }, 200);
   } catch (error) {
     console.error("Error confirming attendance:", error);
     return sendErrorResponse("Something went wrong while confirming attendance", null, 500);
