@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { API_KEY_PATH_PREFIXES, PUBLIC_API_PATHS } from "@/middleware/api-auth";
+import { findUnguardedHandlers } from "@/test/route-guard-scan";
 
 const API_ROOT = fileURLToPath(new URL("../../app/api", import.meta.url));
 
@@ -59,7 +60,6 @@ describe("API route guard coverage", () => {
 
     if (PUBLIC_ROUTES.has(rel)) return;
 
-    const guard = API_KEY_ROUTES.has(rel) ? /requireDiscordApiKey\(/g : /requireAdmin\(/g;
-    expect([...source.matchAll(guard)].length).toBeGreaterThanOrEqual(handlerCount);
+    expect(findUnguardedHandlers(source)).toEqual([]);
   });
 });
