@@ -143,7 +143,7 @@ describe("findUnguardedHandlers", () => {
     expect(findUnguardedHandlers(source)).toEqual([]);
   });
 
-  it("accepts requireDiscordApiKey as a valid guard", () => {
+  it("no longer accepts requireDiscordApiKey as a valid guard (UNGUARDED)", () => {
     const source = `
       ${IMPORT_REQUIRE_DISCORD_API_KEY}
 
@@ -153,7 +153,7 @@ describe("findUnguardedHandlers", () => {
         return Response.json({});
       };
     `;
-    expect(findUnguardedHandlers(source)).toEqual([]);
+    expect(findUnguardedHandlers(source)).toEqual(["GET"]);
   });
 
   describe("cross-segment leakage (fix round 2, NEW 1)", () => {
@@ -348,20 +348,7 @@ describe("findUnguardedHandlers", () => {
       expect(findUnguardedHandlers(source)).toEqual(["GET"]);
     });
 
-    it("still guards correctly when requireDiscordApiKey is imported from its real module", () => {
-      const source = `
-        ${IMPORT_REQUIRE_DISCORD_API_KEY}
-
-        export const GET = async (req) => {
-          const keyCheck = requireDiscordApiKey(req);
-          if (!keyCheck.ok) return keyCheck.response;
-          return Response.json({});
-        };
-      `;
-      expect(findUnguardedHandlers(source)).toEqual([]);
-    });
-
-    it("fails closed when requireDiscordApiKey is imported from a different module", () => {
+    it("fails closed on requireDiscordApiKey even when imported from @/lib/require-admin", () => {
       const source = `
         import { requireDiscordApiKey } from "@/lib/require-admin";
 

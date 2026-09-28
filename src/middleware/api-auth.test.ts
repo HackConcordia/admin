@@ -1,7 +1,6 @@
 import { NextRequest } from "next/server";
 import { describe, expect, it } from "vitest";
 
-import { DISCORD_API_KEY_HEADER } from "@/lib/api-key";
 import { COOKIE_NAME, signAuthToken } from "@/lib/auth-token";
 import { apiAuthMiddleware } from "@/middleware/api-auth";
 
@@ -36,13 +35,5 @@ describe("apiAuthMiddleware", () => {
   it("leaves login and logout public", async () => {
     expect(isPassThrough(await apiAuthMiddleware(request("/api/auth-token/login", {}, "POST")))).toBe(true);
     expect(isPassThrough(await apiAuthMiddleware(request("/api/auth-token/logout", {}, "POST")))).toBe(true);
-  });
-
-  it("requires the API key (not a session) for check-in-discord", async () => {
-    const path = "/api/check-in-discord/someone@example.com";
-    expect((await apiAuthMiddleware(request(path, { cookie: await sessionCookie() }))).status).toBe(401);
-    expect((await apiAuthMiddleware(request(path, { [DISCORD_API_KEY_HEADER]: "wrong" }))).status).toBe(401);
-    const ok = await apiAuthMiddleware(request(path, { [DISCORD_API_KEY_HEADER]: process.env.DISCORD_BOT_API_KEY! }));
-    expect(isPassThrough(ok)).toBe(true);
   });
 });

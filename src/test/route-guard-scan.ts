@@ -3,10 +3,7 @@ import ts from "typescript";
 const HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"] as const;
 const HTTP_METHOD_SET: ReadonlySet<string> = new Set(HTTP_METHODS);
 /** Guard name -> the module it must be imported (unaliased) from for a call to it to count. */
-const GUARD_MODULES: ReadonlyMap<string, string> = new Map([
-  ["requireAdmin", "@/lib/require-admin"],
-  ["requireDiscordApiKey", "@/lib/api-key"],
-]);
+const GUARD_MODULES: ReadonlyMap<string, string> = new Map([["requireAdmin", "@/lib/require-admin"]]);
 
 interface HandlerRecord {
   method: string;
@@ -192,9 +189,9 @@ export function findHandlerExports(source: string): string[] {
  * the parser attached to it — never a sibling handler's body, and never a helper function that
  * merely sits nearby in the file.
  *
- * The guard check itself is still textual in one sense: a call to `requireAdmin(...)` or
- * `requireDiscordApiKey(...)` anywhere in a handler's own body counts, even inside a nested
- * function that is defined but never actually invoked within that body. The per-route unit
+ * The guard check itself is still textual in one sense: a call to `requireAdmin(...)` anywhere
+ * in a handler's own body counts, even inside a nested function that is defined but never
+ * actually invoked within that body. The per-route unit
  * tests are what verify each handler's real runtime behaviour; this scan only verifies that a
  * guard call is present somewhere in the body's syntax tree.
  *
