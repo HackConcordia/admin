@@ -5,7 +5,7 @@ import { sendErrorResponse, sendSuccessResponse } from "@/repository/response";
 import connectMongoDB from "@/repository/mongoose";
 import Admin from "@/repository/models/admin";
 import { hashPassword, validateNewPassword, verifyPassword } from "@/lib/password";
-import { requireAdmin } from "@/lib/require-admin";
+import { fetchIsSuperAdmin, requireAdmin } from "@/lib/require-admin";
 
 export const PATCH = async (req: NextRequest, { params }: { params: Promise<{ adminId: string }> }) => {
   const auth = await requireAdmin(req);
@@ -21,8 +21,17 @@ export const PATCH = async (req: NextRequest, { params }: { params: Promise<{ ad
     return sendErrorResponse("Invalid admin id", null, 400);
   }
 
-  if (adminId !== auth.admin.adminId && !auth.admin.isSuperAdmin) {
-    return sendErrorResponse("Forbidden", null, 403);
+  if (adminId !== auth.admin.adminId) {
+    // Re-check super-admin status against the database rather than trusting the JWT claim: a
+    // demoted or deleted super admin's still-valid session must not keep the power to reset
+    // another admin's password.
+    const isSuperAdmin = await fetchIsSuperAdmin(auth.admin.adminId);
+    if (isSuperAdmin === null) {
+      return sendErrorResponse("Unauthorized", null, 401);
+    }
+    if (!isSuperAdmin) {
+      return sendErrorResponse("Forbidden", null, 403);
+    }
   }
 
   try {

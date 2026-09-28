@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import connectMongoDB from "@/repository/mongoose";
 import { sendErrorResponse, sendSuccessResponse } from "@/repository/response";
 import Admin from "@/repository/models/admin";
-import { requireAdmin } from "@/lib/require-admin";
+import { fetchIsSuperAdmin, requireAdmin } from "@/lib/require-admin";
 
 export const GET = async (req: NextRequest, { params }: { params: Promise<{ adminId: string }> }) => {
   const auth = await requireAdmin(req);
@@ -16,8 +16,17 @@ export const GET = async (req: NextRequest, { params }: { params: Promise<{ admi
       return sendErrorResponse("AdminId is not defined", null, 400);
     }
 
-    if (adminId !== auth.admin.adminId && !auth.admin.isSuperAdmin) {
-      return sendErrorResponse("Forbidden", null, 403);
+    if (adminId !== auth.admin.adminId) {
+      // Re-check super-admin status against the database rather than trusting the JWT claim: a
+      // demoted or deleted super admin's still-valid session must not keep the power to view
+      // another admin's record.
+      const isSuperAdmin = await fetchIsSuperAdmin(auth.admin.adminId);
+      if (isSuperAdmin === null) {
+        return sendErrorResponse("Unauthorized", null, 401);
+      }
+      if (!isSuperAdmin) {
+        return sendErrorResponse("Forbidden", null, 403);
+      }
     }
 
     await connectMongoDB();

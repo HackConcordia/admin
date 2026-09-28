@@ -34,6 +34,19 @@ function guardError(message: "Unauthorized" | "Forbidden", status: 401 | 403): N
 }
 
 /**
+ * Looks up an admin's current super-admin status directly from the database, never from a JWT
+ * claim: a session issued while the admin was a super admin must stop granting super access the
+ * moment they're demoted or deleted, without waiting for the token to expire (sessions last up
+ * to 7 days with remember-me). Returns `null` if the admin no longer exists.
+ */
+export async function fetchIsSuperAdmin(adminId: string): Promise<boolean | null> {
+  await connectMongoDB();
+  const record = await Admin.findById(adminId).select("isSuperAdmin").lean<{ isSuperAdmin?: boolean }>();
+  if (!record) return null;
+  return Boolean(record.isSuperAdmin);
+}
+
+/**
  * Verifies the admin session cookie on an API request.
  * Returns the verified token payload, or a ready-to-return 401/403 response.
  */
@@ -50,15 +63,13 @@ export async function requireAdmin(req: Request, options: RequireAdminOptions = 
 
   if (options.superAdmin) {
     // Re-check super-admin status against the database on every call, rather than trusting the
-    // JWT claim: a session issued while the admin was a super admin must stop granting super
-    // access the moment they're demoted or deleted, without waiting for the token to expire.
-    await connectMongoDB();
-    const record = await Admin.findById(admin.adminId).select("isSuperAdmin").lean<{ isSuperAdmin?: boolean }>();
+    // JWT claim (see fetchIsSuperAdmin above).
+    const isSuperAdmin = await fetchIsSuperAdmin(admin.adminId);
 
-    if (!record) {
+    if (isSuperAdmin === null) {
       return { ok: false, response: guardError("Unauthorized", 401) };
     }
-    if (!record.isSuperAdmin) {
+    if (!isSuperAdmin) {
       return { ok: false, response: guardError("Forbidden", 403) };
     }
   }

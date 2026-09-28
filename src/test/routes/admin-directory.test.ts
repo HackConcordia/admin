@@ -27,7 +27,7 @@ import * as getEmails from "@/app/api/(group)/admin/get-emails/route";
 import * as me from "@/app/api/(group)/auth-token/me/route";
 import * as adminInfo from "@/app/api/(group)/get-adminInfo/[adminId]/route";
 import { runGuardCases } from "@/test/guard-cases";
-import { OTHER_ADMIN_ID, TEST_ADMIN_ID, adminCookie, buildRequest, routeContext } from "@/test/http";
+import { NON_SUPER_ADMIN_ID, OTHER_ADMIN_ID, TEST_ADMIN_ID, adminCookie, buildRequest, routeContext } from "@/test/http";
 
 runGuardCases([
   { name: "GET /api/admin", handler: adminList.GET, method: "GET", url: "/api/admin", level: "super" },
@@ -65,8 +65,21 @@ describe("GET /api/admin", () => {
 
 describe("GET /api/get-adminInfo/[adminId]", () => {
   it("forbids a reviewer from reading another admin", async () => {
+    // NON_SUPER_ADMIN_ID resolves as not-super in both the JWT and the DB (defaultSuperAdminLookup).
+    const cookie = await adminCookie({ adminId: NON_SUPER_ADMIN_ID });
     const res = await adminInfo.GET(
-      buildRequest(`/api/get-adminInfo/${OTHER_ADMIN_ID}`, { cookie: await adminCookie() }),
+      buildRequest(`/api/get-adminInfo/${OTHER_ADMIN_ID}`, { cookie }),
+      routeContext({ adminId: OTHER_ADMIN_ID }),
+    );
+    expect(res.status).toBe(403);
+  });
+
+  it("takes super-admin status from the database, not a stale JWT claim, when viewing another admin", async () => {
+    // The JWT claims super, but NON_SUPER_ADMIN_ID resolves as not-super in the DB
+    // (src/test/admin-lookup.ts) — the DB must win, so this stays forbidden.
+    const cookie = await adminCookie({ adminId: NON_SUPER_ADMIN_ID, isSuperAdmin: true });
+    const res = await adminInfo.GET(
+      buildRequest(`/api/get-adminInfo/${OTHER_ADMIN_ID}`, { cookie }),
       routeContext({ adminId: OTHER_ADMIN_ID }),
     );
     expect(res.status).toBe(403);
@@ -74,11 +87,29 @@ describe("GET /api/get-adminInfo/[adminId]", () => {
 
   it("returns the caller's own record without the password", async () => {
     const select = vi.fn().mockResolvedValue({ _id: TEST_ADMIN_ID, email: "reviewer@test.dev" });
-    adminModel.findById.mockReturnValue({ select });
+    adminModel.findById.mockReturnValueOnce({ select });
 
     const res = await adminInfo.GET(
       buildRequest(`/api/get-adminInfo/${TEST_ADMIN_ID}`, { cookie: await adminCookie() }),
       routeContext({ adminId: TEST_ADMIN_ID }),
+    );
+
+    expect(res.status).toBe(200);
+    expect(select).toHaveBeenCalledWith("-password");
+  });
+
+  it("allows a DB-confirmed super admin to view another admin's record", async () => {
+    const select = vi.fn().mockResolvedValue({ _id: OTHER_ADMIN_ID, email: "other@test.dev" });
+    // The first findById call is the fetchIsSuperAdmin re-check for the caller (TEST_ADMIN_ID
+    // resolves as super via defaultSuperAdminLookup); queue that answer explicitly, then queue
+    // this override for the second call, the actual record fetch.
+    adminModel.findById
+      .mockImplementationOnce((id: string) => ({ select: () => ({ lean: async () => defaultSuperAdminLookup(id) }) }))
+      .mockReturnValueOnce({ select });
+
+    const res = await adminInfo.GET(
+      buildRequest(`/api/get-adminInfo/${OTHER_ADMIN_ID}`, { cookie: await adminCookie() }),
+      routeContext({ adminId: OTHER_ADMIN_ID }),
     );
 
     expect(res.status).toBe(200);

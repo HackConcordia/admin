@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { requireAdmin } from "@/lib/require-admin";
+import { fetchIsSuperAdmin, requireAdmin } from "@/lib/require-admin";
 import { CHECKED_IN_STATUSES, isCheckedInStatus } from "@/lib/status";
 import Admin from "@/repository/models/admin";
 import Application from "@/repository/models/application";
@@ -24,7 +24,15 @@ export async function GET(request: NextRequest) {
   try {
     const guard = await requireAdmin(request);
     if (!guard.ok) return guard.response;
-    const auth = { adminId: guard.admin.adminId, isSuperAdmin: guard.admin.isSuperAdmin };
+
+    // Re-check super-admin status against the database rather than trusting the JWT claim: a
+    // demoted or deleted super admin's still-valid session must not keep seeing every
+    // application instead of only their assigned ones.
+    const isSuperAdmin = await fetchIsSuperAdmin(guard.admin.adminId);
+    if (isSuperAdmin === null) {
+      return NextResponse.json({ status: "error", message: "Unauthorized", error: null }, { status: 401 });
+    }
+    const auth = { adminId: guard.admin.adminId, isSuperAdmin };
 
     await connectMongoDB();
 
