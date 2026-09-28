@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { sendErrorResponse, sendSuccessResponse } from "@/repository/response";
-import { COOKIE_NAME, verifyAuthToken } from "@/lib/auth-token";
+import { requireAdmin } from "@/lib/require-admin";
 import connectMongoDB from "@/repository/mongoose";
 import Team from "@/repository/models/team";
 import Application from "@/repository/models/application";
@@ -15,25 +15,8 @@ interface Member {
 // POST to remove a member from a team - only super admins can perform this action
 export const POST = async (req: NextRequest) => {
   try {
-    // Verify authentication and super admin status
-    const token = req.cookies.get(COOKIE_NAME)?.value;
-    if (!token) {
-      return sendErrorResponse("Unauthorized", null, 401);
-    }
-
-    const payload = await verifyAuthToken(token);
-    if (!payload) {
-      return sendErrorResponse("Unauthorized", null, 401);
-    }
-
-    // Check if user is super admin
-    if (!payload.isSuperAdmin) {
-      return sendErrorResponse(
-        "Forbidden: Only super admins can remove team members",
-        null,
-        403
-      );
-    }
+    const auth = await requireAdmin(req, { superAdmin: true });
+    if (!auth.ok) return auth.response;
 
     const body = await req.json();
     const { teamId, userId } = body;
