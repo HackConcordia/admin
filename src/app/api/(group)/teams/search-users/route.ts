@@ -4,11 +4,13 @@ import Team from "@/repository/models/team";
 import Application from "@/repository/models/application";
 import connectMongoDB from "@/repository/mongoose";
 import { sendErrorResponse, sendSuccessResponse } from "@/repository/response";
+import { requireAdmin } from "@/lib/require-admin";
+import { CHECKED_IN_STATUSES } from "@/lib/status";
 
 export const dynamic = "force-dynamic";
 
 // Statuses that allow a user to join a team
-const ALLOWED_STATUSES = ["Submitted", "Admitted", "Waitlisted", "Confirmed", "Checked-in"];
+const ALLOWED_STATUSES = ["Submitted", "Admitted", "Waitlisted", "Confirmed", ...CHECKED_IN_STATUSES];
 
 interface UserResult {
   _id: string;
@@ -22,6 +24,9 @@ interface UserResult {
 }
 
 export const GET = async (req: NextRequest): Promise<NextResponse> => {
+  const auth = await requireAdmin(req);
+  if (!auth.ok) return auth.response;
+
   try {
     await connectMongoDB();
 

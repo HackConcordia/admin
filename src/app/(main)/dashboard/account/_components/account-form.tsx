@@ -23,7 +23,6 @@ interface AdminData {
   firstName: string;
   lastName: string;
   email: string;
-  password: string;
   isSuperAdmin: boolean;
 }
 
@@ -36,12 +35,14 @@ export function AccountForm({ adminData }: AccountFormProps) {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [successDialogOpen, setSuccessDialogOpen] = useState(false);
 
   const [errors, setErrors] = useState<{
+    currentPassword?: string;
     newPassword?: string;
     confirmPassword?: string;
   }>({});
@@ -49,10 +50,14 @@ export function AccountForm({ adminData }: AccountFormProps) {
   const validateForm = () => {
     const newErrors: typeof errors = {};
 
+    if (!currentPassword) {
+      newErrors.currentPassword = "Current password is required";
+    }
+
     if (!newPassword) {
       newErrors.newPassword = "New password is required";
-    } else if (newPassword.length < 6) {
-      newErrors.newPassword = "Password must be at least 6 characters";
+    } else if (newPassword.length < 8) {
+      newErrors.newPassword = "Password must be at least 8 characters";
     }
 
     if (!confirmPassword) {
@@ -82,6 +87,7 @@ export function AccountForm({ adminData }: AccountFormProps) {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
+            currentPassword,
             newPassword,
           }),
         }
@@ -94,8 +100,10 @@ export function AccountForm({ adminData }: AccountFormProps) {
       }
 
       setSuccessDialogOpen(true);
+      setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
+      setShowCurrentPassword(false);
       setShowNewPassword(false);
       setShowConfirmPassword(false);
       setErrors({});
@@ -150,36 +158,6 @@ export function AccountForm({ adminData }: AccountFormProps) {
                 className="bg-muted"
               />
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="currentPassword">Current Password</Label>
-              <div className="relative">
-                <Input
-                  id="currentPassword"
-                  type={showCurrentPassword ? "text" : "password"}
-                  value={adminData.password}
-                  readOnly
-                  disabled
-                  className="bg-muted pr-10"
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-0 top-0 h-full px-3"
-                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                  title={
-                    showCurrentPassword ? "Hide password" : "Show password"
-                  }
-                >
-                  {showCurrentPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-            </div>
           </CardContent>
         </Card>
 
@@ -190,6 +168,51 @@ export function AccountForm({ adminData }: AccountFormProps) {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="space-y-1.5">
+                <Label htmlFor="currentPassword">
+                  Current Password <span className="text-destructive">*</span>
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="currentPassword"
+                    type={showCurrentPassword ? "text" : "password"}
+                    placeholder="Enter your current password"
+                    value={currentPassword}
+                    onChange={(e) => {
+                      setCurrentPassword(e.target.value);
+                      if (errors.currentPassword)
+                        setErrors({ ...errors, currentPassword: undefined });
+                    }}
+                    className={
+                      errors.currentPassword
+                        ? "border-destructive pr-10"
+                        : "pr-10"
+                    }
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 h-full px-3"
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                    title={
+                      showCurrentPassword ? "Hide password" : "Show password"
+                    }
+                  >
+                    {showCurrentPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+                {errors.currentPassword && (
+                  <p className="text-destructive text-sm">
+                    {errors.currentPassword}
+                  </p>
+                )}
+              </div>
+
               <div className="space-y-1.5">
                 <Label htmlFor="newPassword">
                   New Password <span className="text-destructive">*</span>
@@ -280,7 +303,9 @@ export function AccountForm({ adminData }: AccountFormProps) {
               <Button
                 type="submit"
                 className="w-full"
-                disabled={loading || !newPassword || !confirmPassword}
+                disabled={
+                  loading || !currentPassword || !newPassword || !confirmPassword
+                }
               >
                 {loading ? "Changing Password..." : "Change Password"}
               </Button>

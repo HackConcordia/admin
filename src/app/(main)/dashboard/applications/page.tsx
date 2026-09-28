@@ -5,6 +5,7 @@ import Admin from "@/repository/models/admin";
 import Application from "@/repository/models/application";
 import connectMongoDB from "@/repository/mongoose";
 import { getQuebecCities } from "@/constants/Cities";
+import { withLegacyCheckedIn } from "@/lib/status";
 
 import { ApplicationTable } from "./_components/application-table";
 import { type ApplicationTableRow } from "./_components/columns";
@@ -127,9 +128,10 @@ function buildQuery(
     ];
   }
 
-  // Filter by status (can be comma-separated for multiple statuses)
+  // Filter by status (can be comma-separated for multiple statuses).
+  // C4: selecting "Checked-in" also matches documents stored with legacy "CheckedIn".
   if (status) {
-    const statuses = status.split(",").filter(Boolean);
+    const statuses = withLegacyCheckedIn(status.split(",").filter(Boolean));
     if (statuses.length === 1) {
       query.status = statuses[0];
     } else if (statuses.length > 1) {

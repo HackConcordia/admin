@@ -1,12 +1,12 @@
 import { SignJWT, jwtVerify } from "jose";
 
-const THIRTY_DAYS_SECONDS = 60 * 60 * 24 * 30;
+const SEVEN_DAYS_SECONDS = 60 * 60 * 24 * 7;
+export const SESSION_TOKEN_SECONDS = 60 * 60 * 12;
 
 export type AuthTokenPayload = {
   adminId: string;
   email: string;
   isSuperAdmin: boolean;
-  // Optional standard JWT claims like exp will be added during signing as needed
 };
 
 function getJwtSecret(): Uint8Array {
@@ -20,28 +20,30 @@ function getJwtSecret(): Uint8Array {
   return new TextEncoder().encode(secret);
 }
 
-export async function signAuthToken(payload: AuthTokenPayload, rememberFor30Days: boolean): Promise<string> {
+export async function signAuthToken(payload: AuthTokenPayload, rememberMe: boolean): Promise<string> {
   const secret = getJwtSecret();
-  const jwt = new SignJWT({ ...payload })
+  const issuedAt = Math.floor(Date.now() / 1000);
+  const lifetimeSeconds = rememberMe ? SEVEN_DAYS_SECONDS : SESSION_TOKEN_SECONDS;
+
+  return await new SignJWT({ ...payload })
     .setProtectedHeader({ alg: "HS256", typ: "JWT" })
-    .setIssuedAt()
-    .setSubject(payload.adminId);
-
-  if (rememberFor30Days) {
-    jwt.setExpirationTime(Math.floor(Date.now() / 1000) + THIRTY_DAYS_SECONDS);
-  }
-
-  return await jwt.sign(secret);
+    .setIssuedAt(issuedAt)
+    .setSubject(payload.adminId)
+    .setExpirationTime(issuedAt + lifetimeSeconds)
+    .sign(secret);
 }
 
 export async function verifyAuthToken(token: string): Promise<AuthTokenPayload | null> {
   try {
     const secret = getJwtSecret();
-    const { payload } = await jwtVerify(token, secret);
+    const { payload } = await jwtVerify(token, secret, { algorithms: ["HS256"], requiredClaims: ["exp"] });
+    if (typeof payload.adminId !== "string" || typeof payload.email !== "string") {
+      return null;
+    }
     return {
-      adminId: String(payload.adminId),
-      email: String(payload.email),
-      isSuperAdmin: Boolean(payload.isSuperAdmin),
+      adminId: payload.adminId,
+      email: payload.email,
+      isSuperAdmin: payload.isSuperAdmin === true,
     };
   } catch (_err) {
     return null;
@@ -49,4 +51,4 @@ export async function verifyAuthToken(token: string): Promise<AuthTokenPayload |
 }
 
 export const COOKIE_NAME = "auth-token";
-export const COOKIE_MAX_AGE_SECONDS = THIRTY_DAYS_SECONDS;
+export const COOKIE_MAX_AGE_SECONDS = SEVEN_DAYS_SECONDS;

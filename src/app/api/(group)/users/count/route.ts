@@ -1,12 +1,18 @@
+import type { NextRequest } from "next/server";
+
 import { sendSuccessResponse, sendErrorResponse } from "@/repository/response";
 import User from "@/repository/models/user";
 import connectMongoDB from "@/repository/mongoose";
 import type { Count } from "@/interfaces/count";
+import { requireAdmin } from "@/lib/require-admin";
+import { CHECKED_IN_STATUSES } from "@/lib/status";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export const GET = async () => {
+export const GET = async (req: NextRequest) => {
+  const auth = await requireAdmin(req);
+  if (!auth.ok) return auth.response;
   try {
     await connectMongoDB();
 
@@ -22,7 +28,7 @@ export const GET = async () => {
         // const notConfirmed = await User.countDocuments({status: "admitted",confirmed:false})
         confirmed: await User.countDocuments({ status: "Confirmed" }),
         declined: await User.countDocuments({ status: "Declined" }),
-        checkedIn: await User.countDocuments({ status: "Checked-in" }),
+        checkedIn: await User.countDocuments({ status: { $in: [...CHECKED_IN_STATUSES] } }),
       },
       shirtSize: {
         smallShirt: await User.countDocuments({ "confirmation.shirtSize": "S" }),

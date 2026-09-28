@@ -5,6 +5,7 @@ import Team from "@/repository/models/team";
 import connectMongoDB from "@/repository/mongoose";
 import { sendErrorResponse, sendSuccessResponse } from "@/repository/response";
 import Application from "@/repository/models/application";
+import { requireAdmin } from "@/lib/require-admin";
 
 // TypeScript types for improved code safety and clarity
 interface Member {
@@ -34,7 +35,10 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 // Request handler function
-export const GET = async (): Promise<NextResponse> => {
+export const GET = async (req: NextRequest): Promise<NextResponse> => {
+  const auth = await requireAdmin(req);
+  if (!auth.ok) return auth.response;
+
   try {
     // Connect to MongoDB
     await connectMongoDB();

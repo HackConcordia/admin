@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { ColumnDef } from "@tanstack/react-table";
-import { Eye, EyeOff, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { useState } from "react";
 
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
@@ -15,33 +15,7 @@ export type AdminTableRow = {
   firstName: string;
   lastName: string;
   email: string;
-  password: string;
 };
-
-function PasswordCell({ password }: { password: string }) {
-  const [showPassword, setShowPassword] = useState(false);
-
-  return (
-    <div className="flex items-center gap-2">
-      <div className="font-mono w-[330px]">
-        {showPassword ? password : "•".repeat(40)}
-      </div>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-8 w-8"
-        onClick={() => setShowPassword(!showPassword)}
-        title={showPassword ? "Hide password" : "Show password"}
-      >
-        {showPassword ? (
-          <EyeOff className="h-4 w-4" />
-        ) : (
-          <Eye className="h-4 w-4" />
-        )}
-      </Button>
-    </div>
-  );
-}
 
 function ActionsCell({
   admin,
@@ -107,12 +81,6 @@ export function getAdminColumns(
       cell: ({ row }) => (
         <span className="tabular-nums">{row.original.email}</span>
       ),
-    },
-    {
-      accessorKey: "password",
-      header: "Password",
-      cell: ({ row }) => <PasswordCell password={row.original.password} />,
-      enableSorting: false,
     },
     {
       id: "actions",

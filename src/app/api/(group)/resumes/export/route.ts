@@ -9,24 +9,12 @@ import { Readable } from "stream";
 import { sendErrorResponse } from "@/repository/response";
 import connectMongoDB from "@/repository/mongoose";
 import Application from "@/repository/models/application";
-import { COOKIE_NAME, verifyAuthToken } from "@/lib/auth-token";
+import { requireAdmin } from "@/lib/require-admin";
+import { CHECKED_IN_STATUSES } from "@/lib/status";
 
 export const GET = async (req: NextRequest) => {
-  const token = req.cookies.get(COOKIE_NAME)?.value;
-
-  if (!token) {
-    return sendErrorResponse("Unauthorized", {}, 401);
-  }
-
-  const payload = await verifyAuthToken(token);
-  if (!payload) {
-    return sendErrorResponse("Unauthorized", {}, 401);
-  }
-
-  // Check if user is SuperAdmin
-  if (!payload.isSuperAdmin) {
-    return sendErrorResponse("Forbidden: Only SuperAdmins can export resumes", {}, 403);
-  }
+  const auth = await requireAdmin(req, { superAdmin: true });
+  if (!auth.ok) return auth.response;
 
   // Get status filter from query params
   const { searchParams } = new URL(req.url);
@@ -43,7 +31,7 @@ export const GET = async (req: NextRequest) => {
     // Build query based on status filter
     let statusQuery: any = {};
     if (statusFilter === "all") {
-      statusQuery = { status: { $in: ["Submitted", "Admitted", "Waitlisted", "Confirmed", "CheckedIn"] } };
+      statusQuery = { status: { $in: ["Submitted", "Admitted", "Waitlisted", "Confirmed", ...CHECKED_IN_STATUSES] } };
     } else if (statusFilter === "admitted") {
       statusQuery = { status: "Admitted" };
     } else if (statusFilter === "confirmed") {

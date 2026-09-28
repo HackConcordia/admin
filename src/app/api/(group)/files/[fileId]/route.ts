@@ -6,8 +6,13 @@ import { GridFSBucket } from "mongodb";
 import { Readable } from "stream";
 
 import connectMongoDB from "@/repository/mongoose";
+import { requireAdmin } from "@/lib/require-admin";
+import { safeFileHeaders } from "@/lib/safe-file-headers";
 
 export const GET = async (req: NextRequest, { params }: { params: Promise<{ fileId: string }> }) => {
+  const auth = await requireAdmin(req);
+  if (!auth.ok) return auth.response;
+
   try {
     const { fileId } = await params;
 
@@ -46,23 +51,10 @@ export const GET = async (req: NextRequest, { params }: { params: Promise<{ file
 
     // Use metadata.originalName first, then fall back to filename
     const originalName = file.metadata?.originalName || file.filename || "resume.pdf";
-    const fallbackName = "resume.pdf";
-
-    // Properly encode the filename for Content-Disposition header (RFC 5987)
-    let utf8Name: string;
-    try {
-      utf8Name = encodeURIComponent(originalName);
-    } catch (error) {
-      utf8Name = encodeURIComponent(fallbackName);
-    }
-
-    const contentDisposition =
-      `inline; filename="${fallbackName}"; filename*=UTF-8''${utf8Name}`;
 
     return new NextResponse(fileBuffer, {
       headers: {
-        "Content-Type": file.metadata?.mimetype || "application/pdf",
-        "Content-Disposition": contentDisposition,
+        ...safeFileHeaders(file.metadata?.mimetype, originalName),
         "Content-Length": fileBuffer.length.toString(),
         "Accept-Ranges": "bytes",
       },
@@ -70,15 +62,11 @@ export const GET = async (req: NextRequest, { params }: { params: Promise<{ file
   } catch (error) {
     console.error("Error retrieving file:", error);
 
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    const errorStack = error instanceof Error ? error.stack : undefined;
-
     return new NextResponse(
       JSON.stringify({
         status: "error",
         message: "Error retrieving file",
-        error: errorMessage,
-        ...(errorStack && { stack: errorStack })
+        error: "Internal server error",
       }),
       { status: 500, headers: { "Content-Type": "application/json" } }
     );

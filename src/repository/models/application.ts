@@ -1,5 +1,7 @@
 import mongoose from "mongoose";
 
+import { APPLICATION_STATUSES } from "@/lib/status";
+
 const resumeMetadataSchema = new mongoose.Schema(
   {
     id: { type: String, default: "" },
@@ -67,17 +69,7 @@ const applicationsSchema = new mongoose.Schema(
     status: {
       type: String,
       default: "Unverified",
-      enum: [
-        "Unverified",
-        "Incomplete",
-        "Submitted",
-        "Admitted",
-        "Waitlisted",
-        "Confirmed",
-        "Declined",
-        "CheckedIn",
-        "Refused",
-      ],
+      enum: [...APPLICATION_STATUSES],
     },
     teamId: { type: String, default: "" },
     processedBy: { type: String, default: "Not processed" },

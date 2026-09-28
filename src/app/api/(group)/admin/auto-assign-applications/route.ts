@@ -4,7 +4,7 @@ import connectMongoDB from "@/repository/mongoose";
 import { sendErrorResponse, sendSuccessResponse } from "@/repository/response";
 import Admin from "@/repository/models/admin";
 import Application from "@/repository/models/application";
-import { COOKIE_NAME, verifyAuthToken } from "@/lib/auth-token";
+import { requireAdmin } from "@/lib/require-admin";
 
 /**
  * GET: Fetches statistics about unassigned applications and available reviewers
@@ -26,23 +26,8 @@ import { COOKIE_NAME, verifyAuthToken } from "@/lib/auth-token";
  */
 export const GET = async (req: NextRequest) => {
   try {
-    const token = req.cookies.get(COOKIE_NAME)?.value;
-    if (!token) {
-      return sendErrorResponse("Unauthorized", null, 401);
-    }
-
-    const payload = await verifyAuthToken(token);
-    if (!payload) {
-      return sendErrorResponse("Unauthorized", null, 401);
-    }
-
-    if (!payload.isSuperAdmin) {
-      return sendErrorResponse(
-        "Forbidden: Only SuperAdmins can access auto-assign statistics",
-        null,
-        403
-      );
-    }
+    const auth = await requireAdmin(req, { superAdmin: true });
+    if (!auth.ok) return auth.response;
 
     await connectMongoDB();
 
@@ -78,23 +63,8 @@ export const GET = async (req: NextRequest) => {
  */
 export const POST = async (req: NextRequest) => {
   try {
-    const token = req.cookies.get(COOKIE_NAME)?.value;
-    if (!token) {
-      return sendErrorResponse("Unauthorized", null, 401);
-    }
-
-    const payload = await verifyAuthToken(token);
-    if (!payload) {
-      return sendErrorResponse("Unauthorized", null, 401);
-    }
-
-    if (!payload.isSuperAdmin) {
-      return sendErrorResponse(
-        "Forbidden: Only SuperAdmins can auto-assign applications",
-        null,
-        403
-      );
-    }
+    const auth = await requireAdmin(req, { superAdmin: true });
+    if (!auth.ok) return auth.response;
 
     await connectMongoDB();
 

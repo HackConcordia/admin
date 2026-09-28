@@ -5,6 +5,7 @@ import Team from "@/repository/models/team";
 import connectMongoDB from "@/repository/mongoose";
 import { sendErrorResponse, sendSuccessResponse } from "@/repository/response";
 import Application from "@/repository/models/application";
+import { requireAdmin } from "@/lib/require-admin";
 
 interface Member {
   userId: string;
@@ -50,6 +51,9 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export const GET = async (req: NextRequest): Promise<NextResponse> => {
+  const auth = await requireAdmin(req);
+  if (!auth.ok) return auth.response;
+
   try {
     await connectMongoDB();
 

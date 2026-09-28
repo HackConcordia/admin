@@ -4,6 +4,7 @@ import Team from "@/repository/models/team";
 import connectMongoDB from "@/repository/mongoose";
 import { sendErrorResponse, sendSuccessResponse } from "@/repository/response";
 import Application from "@/repository/models/application";
+import { requireAdmin } from "@/lib/require-admin";
 
 interface ITeamMember {
   userId: string;
@@ -19,6 +20,9 @@ interface ITeam {
 }
 
 export const GET = async (req: NextRequest, { params }: { params: Promise<{ applicationId: string }> }) => {
+  const auth = await requireAdmin(req);
+  if (!auth.ok) return auth.response;
+
   try {
     const { applicationId } = await params;
 

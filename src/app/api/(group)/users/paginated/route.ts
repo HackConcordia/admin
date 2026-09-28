@@ -1,29 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
 
-import { COOKIE_NAME, verifyAuthToken } from "@/lib/auth-token";
+import { fetchIsSuperAdmin, requireAdmin } from "@/lib/require-admin";
+import { CHECKED_IN_STATUSES, isCheckedInStatus } from "@/lib/status";
 import Admin from "@/repository/models/admin";
 import Application from "@/repository/models/application";
 import connectMongoDB from "@/repository/mongoose";
-
-type AuthPayload = {
-  adminId?: string;
-  isSuperAdmin?: boolean;
-};
-
-async function getAuthFromCookies(): Promise<AuthPayload | null> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(COOKIE_NAME)?.value;
-  if (!token) return null;
-
-  const payload = await verifyAuthToken(token);
-  if (!payload) return null;
-
-  return {
-    adminId: (payload as any).adminId,
-    isSuperAdmin: !!(payload as any).isSuperAdmin,
-  };
-}
 
 function formatDateDDMMMYYYY(value: unknown): string | undefined {
   if (!value) return undefined;
@@ -41,10 +22,17 @@ function formatDateDDMMMYYYY(value: unknown): string | undefined {
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = await getAuthFromCookies();
-    if (!auth) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const guard = await requireAdmin(request);
+    if (!guard.ok) return guard.response;
+
+    // Re-check super-admin status against the database rather than trusting the JWT claim: a
+    // demoted or deleted super admin's still-valid session must not keep seeing every
+    // application instead of only their assigned ones.
+    const isSuperAdmin = await fetchIsSuperAdmin(guard.admin.adminId);
+    if (isSuperAdmin === null) {
+      return NextResponse.json({ status: "error", message: "Unauthorized", error: null }, { status: 401 });
     }
+    const auth = { adminId: guard.admin.adminId, isSuperAdmin };
 
     await connectMongoDB();
 
@@ -68,9 +56,9 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    // Filter by status
+    // Filter by status (C4: a checked-in filter matches both stored spellings)
     if (status) {
-      query.status = status;
+      query.status = isCheckedInStatus(status) ? { $in: [...CHECKED_IN_STATUSES] } : status;
     }
 
     // For non-super admins, filter by assigned applications

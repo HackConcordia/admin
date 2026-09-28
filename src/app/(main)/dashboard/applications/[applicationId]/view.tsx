@@ -99,6 +99,7 @@ import {
   AlertTriangle,
   Star,
 } from "lucide-react";
+import { isCheckedInStatus } from "@/lib/status";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -428,7 +429,6 @@ export default function ApplicationView({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action,
-          adminEmail,
           travelReimbursement: travelReimbursementData,
         }),
       });
@@ -1969,8 +1969,7 @@ export default function ApplicationView({
                   const status = application.status;
                   const isSubmitted = status === "Submitted";
                   const isConfirmed = status === "Confirmed";
-                  const isCheckedIn =
-                    status === "CheckedIn" || status === "Checked-in";
+                  const isCheckedIn = isCheckedInStatus(status);
 
                   if (isSubmitted) {
                     return (

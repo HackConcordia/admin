@@ -8,7 +8,7 @@ import { Readable } from "stream";
 import connectMongoDB from "@/repository/mongoose";
 import { sendErrorResponse, sendSuccessResponse } from "@/repository/response";
 import Application from "@/repository/models/application";
-import { COOKIE_NAME, verifyAuthToken } from "@/lib/auth-token";
+import { requireAdmin } from "@/lib/require-admin";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_MIME_TYPES = [
@@ -25,17 +25,11 @@ export const POST = async (
   req: NextRequest,
   { params }: { params: Promise<{ applicationId: string }> }
 ) => {
+  const auth = await requireAdmin(req, { superAdmin: true });
+  if (!auth.ok) return auth.response;
+
   try {
     const { applicationId } = await params;
-    const token = req.cookies.get(COOKIE_NAME)?.value;
-    if (!token) {
-      return sendErrorResponse("Unauthorized", null, 401);
-    }
-
-    const payload = await verifyAuthToken(token);
-    if (!payload) {
-      return sendErrorResponse("Unauthorized", null, 401);
-    }
 
     await connectMongoDB();
 
@@ -167,17 +161,11 @@ export const DELETE = async (
   req: NextRequest,
   { params }: { params: Promise<{ applicationId: string }> }
 ) => {
+  const auth = await requireAdmin(req, { superAdmin: true });
+  if (!auth.ok) return auth.response;
+
   try {
     const { applicationId } = await params;
-    const token = req.cookies.get(COOKIE_NAME)?.value;
-    if (!token) {
-      return sendErrorResponse("Unauthorized", null, 401);
-    }
-
-    const payload = await verifyAuthToken(token);
-    if (!payload) {
-      return sendErrorResponse("Unauthorized", null, 401);
-    }
 
     await connectMongoDB();
 
