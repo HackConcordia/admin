@@ -9,14 +9,18 @@ import {
   sendRefusedEmail,
 } from "@/utils/admissionEmailConfig";
 import Application from "@/repository/models/application";
+import { requireAdmin } from "@/lib/require-admin";
 
 export const PATCH = async (
   req: NextRequest,
   { params }: { params: Promise<{ applicationId: string }> }
 ) => {
+  const auth = await requireAdmin(req);
+  if (!auth.ok) return auth.response;
+
   try {
     const { applicationId } = await params;
-    const { action, adminEmail, travelReimbursement } = await req.json();
+    const { action, travelReimbursement } = await req.json();
 
     await connectMongoDB();
 
@@ -29,7 +33,7 @@ export const PATCH = async (
     let emailToSend: (() => Promise<boolean>) | null = null;
     let newStatus = "";
     const updateFields: Record<string, any> = {
-      processedBy: adminEmail,
+      processedBy: auth.admin.email,
       processedAt: new Date(),
     };
 
