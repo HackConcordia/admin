@@ -2,7 +2,11 @@ import ts from "typescript";
 
 const HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"] as const;
 const HTTP_METHOD_SET: ReadonlySet<string> = new Set(HTTP_METHODS);
-const GUARD_NAMES: ReadonlySet<string> = new Set(["requireAdmin", "requireDiscordApiKey"]);
+/** Guard name -> the module it must be imported (unaliased) from for a call to it to count. */
+const GUARD_MODULES: ReadonlyMap<string, string> = new Map([
+  ["requireAdmin", "@/lib/require-admin"],
+  ["requireDiscordApiKey", "@/lib/api-key"],
+]);
 
 interface HandlerRecord {
   method: string;
@@ -15,6 +19,48 @@ function hasExportModifier(node: ts.Node): boolean {
   if (!ts.canHaveModifiers(node)) return false;
   const modifiers = ts.getModifiers(node);
   return modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword) ?? false;
+}
+
+function hasDefaultModifier(node: ts.Node): boolean {
+  if (!ts.canHaveModifiers(node)) return false;
+  const modifiers = ts.getModifiers(node);
+  return modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.DefaultKeyword) ?? false;
+}
+
+/**
+ * Returns the set of guard names (from GUARD_MODULES) that this file actually imports, by their
+ * real name, from the exact module the guard is defined in. A guard imported under an alias
+ * (`import { requireAdmin as x }`) does not count — the alias fails closed, since the local
+ * identifier `x` no longer matches the guard name a call site would need to use for
+ * `bodyContainsGuardCall` to recognize it anyway, and this function never adds the alias itself
+ * to the returned set. A same-named local function that merely shadows a guard (no such import
+ * present at all) is never counted, since nothing here is added for it.
+ */
+function collectImportedGuardNames(sourceFile: ts.SourceFile): ReadonlySet<string> {
+  const imported = new Set<string>();
+
+  for (const statement of sourceFile.statements) {
+    if (!ts.isImportDeclaration(statement)) continue;
+    if (!ts.isStringLiteral(statement.moduleSpecifier)) continue;
+
+    const namedBindings = statement.importClause?.namedBindings;
+    if (!namedBindings || !ts.isNamedImports(namedBindings)) continue;
+
+    for (const element of namedBindings.elements) {
+      // `element.propertyName` is set only for an aliased specifier (`{ requireAdmin as x }`);
+      // an unaliased specifier (`{ requireAdmin }`) leaves it undefined and `element.name` is
+      // the real imported name. Aliased imports are skipped entirely: fail closed.
+      if (element.propertyName) continue;
+
+      const importedName = element.name.text;
+      const expectedModule = GUARD_MODULES.get(importedName);
+      if (expectedModule && expectedModule === statement.moduleSpecifier.text) {
+        imported.add(importedName);
+      }
+    }
+  }
+
+  return imported;
 }
 
 /** Unwraps `(expr)`, `expr as T`, `expr satisfies T`, and `<T>expr` down to the real expression. */
@@ -34,16 +80,18 @@ function unwrapExpression(expression: ts.Expression): ts.Expression {
 }
 
 /**
- * True iff a `requireAdmin(...)` or `requireDiscordApiKey(...)` call expression exists anywhere
- * in this subtree (an `await` wrapping it doesn't matter — the CallExpression node itself is
- * still found by the recursive walk regardless of its parent).
+ * True iff a call expression to one of `importedGuardNames` exists anywhere in this subtree (an
+ * `await` wrapping it doesn't matter — the CallExpression node itself is still found by the
+ * recursive walk regardless of its parent). `importedGuardNames` is the file-level set from
+ * `collectImportedGuardNames`, so a same-named local shadow (no matching import present) or a
+ * call through an alias never counts.
  */
-function bodyContainsGuardCall(node: ts.Node): boolean {
+function bodyContainsGuardCall(node: ts.Node, importedGuardNames: ReadonlySet<string>): boolean {
   let found = false;
 
   const visit = (current: ts.Node): void => {
     if (found) return;
-    if (ts.isCallExpression(current) && ts.isIdentifier(current.expression) && GUARD_NAMES.has(current.expression.text)) {
+    if (ts.isCallExpression(current) && ts.isIdentifier(current.expression) && importedGuardNames.has(current.expression.text)) {
       found = true;
       return;
     }
@@ -67,17 +115,24 @@ function bodyContainsGuardCall(node: ts.Node): boolean {
  *       to look inside whatever that initializer actually resolves to.
  *   (c) `export { METHOD }` / `export { x as METHOD }` named re-exports — always fail closed
  *       (form "list"), since there is no body here to inspect at all.
- * `export default ...` is ignored: it can never be a Next.js route method handler.
+ * `export default ...` is ignored (checked via the DefaultKeyword modifier, not just the absence
+ * of a matching name): it can never be a Next.js route method handler, and a default-exported
+ * function that happens to be named e.g. `GET` must not be mistaken for one.
  */
 function collectHandlers(source: string): HandlerRecord[] {
   const sourceFile = ts.createSourceFile("route.ts", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
   const handlers: HandlerRecord[] = [];
+  const importedGuardNames = collectImportedGuardNames(sourceFile);
 
   for (const statement of sourceFile.statements) {
-    if (ts.isFunctionDeclaration(statement) && hasExportModifier(statement)) {
+    if (ts.isFunctionDeclaration(statement) && hasExportModifier(statement) && !hasDefaultModifier(statement)) {
       const name = statement.name?.text;
       if (name && HTTP_METHOD_SET.has(name)) {
-        handlers.push({ method: name, form: "function", guarded: statement.body ? bodyContainsGuardCall(statement.body) : false });
+        handlers.push({
+          method: name,
+          form: "function",
+          guarded: statement.body ? bodyContainsGuardCall(statement.body, importedGuardNames) : false,
+        });
       }
       continue;
     }
@@ -92,7 +147,7 @@ function collectHandlers(source: string): HandlerRecord[] {
         if (declaration.initializer) {
           const unwrapped = unwrapExpression(declaration.initializer);
           if (ts.isArrowFunction(unwrapped) || ts.isFunctionExpression(unwrapped)) {
-            guarded = bodyContainsGuardCall(unwrapped.body);
+            guarded = bodyContainsGuardCall(unwrapped.body, importedGuardNames);
           }
           // Any other initializer form (a call like `withAuth(h)`, a bare identifier, etc.)
           // can't be followed by this scanner, so `guarded` stays false — fail closed.
