@@ -1,8 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
 
+import { defaultSuperAdminLookup } from "@/test/admin-lookup";
+
+// `findById`'s default implementation is a nested closure so the reference to
+// `defaultSuperAdminLookup` only resolves at call time, after this file's imports have loaded.
+// It's used two ways here: requireAdmin's super-admin re-check calls it as
+// `findById(id).select(...).lean()`, while the get-adminInfo route below overrides it per-test
+// with `.mockReturnValue({ select })` for its own `findById(id).select(...)` (no `.lean()`) shape.
 const adminModel = vi.hoisted(() => ({
   find: vi.fn(),
-  findById: vi.fn(),
+  findById: vi.fn((id: string) => ({ select: () => ({ lean: async () => defaultSuperAdminLookup(id) }) })),
   findOne: vi.fn(),
   countDocuments: vi.fn(),
   updateOne: vi.fn(),

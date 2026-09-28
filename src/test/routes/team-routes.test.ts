@@ -1,6 +1,9 @@
 import { vi } from "vitest";
 
+import { createFindByIdMock } from "@/test/admin-lookup";
+
 vi.mock("@/repository/mongoose", () => ({ default: vi.fn() }));
+vi.mock("@/repository/models/admin", () => ({ default: { findById: createFindByIdMock() } }));
 vi.mock("@/repository/models/application", () => ({ default: {} }));
 vi.mock("@/repository/models/team", () => ({ default: {} }));
 

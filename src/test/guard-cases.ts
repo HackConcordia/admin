@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { adminCookie, buildRequest, routeContext, type RouteHandler } from "./http";
+import { NON_SUPER_ADMIN_ID, adminCookie, buildRequest, routeContext, type RouteHandler } from "./http";
 
 export type GuardLevel = "any" | "super";
 
@@ -28,7 +28,10 @@ export function runGuardCases(cases: readonly GuardCase[]): void {
 
     if (level === "super") {
       it("returns 403 for a non-super admin", async () => {
-        const cookie = await adminCookie({ isSuperAdmin: false });
+        // The super-admin check is re-verified against the DB (require-admin.ts), not trusted
+        // from the JWT claim, so this signs in as NON_SUPER_ADMIN_ID — the id every route test's
+        // mocked Admin model resolves as "not a super admin" (see src/test/admin-lookup.ts).
+        const cookie = await adminCookie({ adminId: NON_SUPER_ADMIN_ID, isSuperAdmin: true });
         const res = await handler(buildRequest(url, { method, cookie }), routeContext(params));
         expect(res.status).toBe(403);
       });

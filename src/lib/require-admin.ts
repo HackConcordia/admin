@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 
 import { COOKIE_NAME, verifyAuthToken, type AuthTokenPayload } from "@/lib/auth-token";
+import connectMongoDB from "@/repository/mongoose";
+import Admin from "@/repository/models/admin";
 
 export type RequireAdminOptions = { superAdmin?: boolean };
 
@@ -46,8 +48,19 @@ export async function requireAdmin(req: Request, options: RequireAdminOptions = 
     return { ok: false, response: guardError("Unauthorized", 401) };
   }
 
-  if (options.superAdmin && !admin.isSuperAdmin) {
-    return { ok: false, response: guardError("Forbidden", 403) };
+  if (options.superAdmin) {
+    // Re-check super-admin status against the database on every call, rather than trusting the
+    // JWT claim: a session issued while the admin was a super admin must stop granting super
+    // access the moment they're demoted or deleted, without waiting for the token to expire.
+    await connectMongoDB();
+    const record = await Admin.findById(admin.adminId).select("isSuperAdmin").lean<{ isSuperAdmin?: boolean }>();
+
+    if (!record) {
+      return { ok: false, response: guardError("Unauthorized", 401) };
+    }
+    if (!record.isSuperAdmin) {
+      return { ok: false, response: guardError("Forbidden", 403) };
+    }
   }
 
   return { ok: true, admin };

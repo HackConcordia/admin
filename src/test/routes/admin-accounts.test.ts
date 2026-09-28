@@ -1,6 +1,16 @@
 import { describe, expect, it, vi } from "vitest";
 
-const adminModel = vi.hoisted(() => ({ findOne: vi.fn(), create: vi.fn(), findByIdAndDelete: vi.fn() }));
+import { defaultSuperAdminLookup } from "@/test/admin-lookup";
+
+// `findById`'s implementation is a nested closure so the reference to `defaultSuperAdminLookup`
+// (imported from another module) is only resolved when a test actually calls it, after this
+// file's imports have fully loaded — vi.hoisted's own factory runs before that.
+const adminModel = vi.hoisted(() => ({
+  findOne: vi.fn(),
+  create: vi.fn(),
+  findByIdAndDelete: vi.fn(),
+  findById: vi.fn((id: string) => ({ select: () => ({ lean: async () => defaultSuperAdminLookup(id) }) })),
+}));
 
 vi.mock("@/repository/mongoose", () => ({ default: vi.fn() }));
 vi.mock("@/repository/models/admin", () => ({ default: adminModel }));

@@ -4,6 +4,7 @@ import { COOKIE_NAME, signAuthToken } from "@/lib/auth-token";
 
 export const TEST_ADMIN_ID = "64b000000000000000000001";
 export const OTHER_ADMIN_ID = "64b000000000000000000002";
+export const NON_SUPER_ADMIN_ID = "64b000000000000000000003";
 export const TEST_ADMIN_EMAIL = "reviewer@test.dev";
 
 // Route handlers have heterogeneous signatures; tests call them uniformly.

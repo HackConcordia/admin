@@ -1,10 +1,19 @@
 import { NextRequest } from "next/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+const adminModel = vi.hoisted(() => ({ findById: vi.fn() }));
+
+vi.mock("@/repository/mongoose", () => ({ default: vi.fn() }));
+vi.mock("@/repository/models/admin", () => ({ default: adminModel }));
 
 import { COOKIE_NAME, signAuthToken } from "@/lib/auth-token";
 import { readCookie, requireAdmin } from "@/lib/require-admin";
 
 const ADMIN = { adminId: "64b000000000000000000001", email: "admin@test.dev" };
+
+function mockAdminLookup(result: { isSuperAdmin: boolean } | null): void {
+  adminModel.findById.mockReturnValueOnce({ select: () => ({ lean: async () => result }) });
+}
 
 async function cookieFor(isSuperAdmin: boolean): Promise<string> {
   const token = await signAuthToken({ ...ADMIN, isSuperAdmin }, false);
@@ -54,12 +63,27 @@ describe("requireAdmin", () => {
     expect(result.ok).toBe(true);
   });
 
-  it("returns 403 when a super admin is required", async () => {
-    const result = await requireAdmin(nextRequest(await cookieFor(false)), { superAdmin: true });
+  it("does not query the database for a non-super-admin check", async () => {
+    adminModel.findById.mockClear();
+    const result = await requireAdmin(nextRequest(await cookieFor(false)));
+    expect(result.ok).toBe(true);
+    expect(adminModel.findById).not.toHaveBeenCalled();
+  });
+
+  it("returns 403 when the DB says the admin is not a super admin, even though the token claims super", async () => {
+    mockAdminLookup({ isSuperAdmin: false });
+    const result = await requireAdmin(nextRequest(await cookieFor(true)), { superAdmin: true });
     expect(result.ok ? 200 : result.response.status).toBe(403);
   });
 
-  it("lets a super admin through a super-admin check", async () => {
+  it("returns 401 when the DB has no record for the admin (deleted)", async () => {
+    mockAdminLookup(null);
+    const result = await requireAdmin(nextRequest(await cookieFor(true)), { superAdmin: true });
+    expect(result.ok ? 200 : result.response.status).toBe(401);
+  });
+
+  it("lets a super admin through a super-admin check when the DB confirms it", async () => {
+    mockAdminLookup({ isSuperAdmin: true });
     const result = await requireAdmin(nextRequest(await cookieFor(true)), { superAdmin: true });
     expect(result).toEqual({ ok: true, admin: { ...ADMIN, isSuperAdmin: true } });
   });

@@ -41,9 +41,10 @@ describe("auth-token expiry", () => {
     expect(SESSION_TOKEN_SECONDS).toBe(60 * 60 * 12);
   });
 
-  it("expires a remembered token after 30 days", async () => {
+  it("expires a remembered token after 7 days", async () => {
     const token = await signAuthToken(PAYLOAD, true);
     const { iat, exp } = decodeJwt(token);
     expect(exp! - iat!).toBe(COOKIE_MAX_AGE_SECONDS);
+    expect(COOKIE_MAX_AGE_SECONDS).toBe(60 * 60 * 24 * 7);
   });
 });

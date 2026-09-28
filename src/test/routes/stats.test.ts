@@ -1,9 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 
+import { createFindByIdMock } from "@/test/admin-lookup";
+
 const applicationModel = vi.hoisted(() => ({ find: vi.fn() }));
 const teamModel = vi.hoisted(() => ({ find: vi.fn() }));
 
 vi.mock("@/repository/mongoose", () => ({ default: vi.fn() }));
+vi.mock("@/repository/models/admin", () => ({ default: { findById: createFindByIdMock() } }));
 vi.mock("@/repository/models/application", () => ({ default: applicationModel }));
 vi.mock("@/repository/models/team", () => ({ default: teamModel }));
 
