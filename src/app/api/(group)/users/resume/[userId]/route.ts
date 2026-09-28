@@ -9,6 +9,7 @@ import { sendErrorResponse } from "@/repository/response";
 import connectMongoDB from "@/repository/mongoose";
 import Application from "@/repository/models/application";
 import { requireAdmin } from "@/lib/require-admin";
+import { safeFileHeaders } from "@/lib/safe-file-headers";
 
 export const GET = async (req: NextRequest, ctx: { params: Promise<{ userId: string }> }) => {
   const auth = await requireAdmin(req);
@@ -63,28 +64,13 @@ export const GET = async (req: NextRequest, ctx: { params: Promise<{ userId: str
     // Combine all chunks into a single buffer
     const fileBuffer = Buffer.concat(chunks);
 
-    // Get content type from metadata or use default
-    const contentType = file.metadata?.mimetype || file.contentType || "application/pdf";
-
     // Use metadata.originalName first, then fall back to filename
     const originalName = file.metadata?.originalName || file.filename || "resume.pdf";
-    const fallbackName = "resume.pdf";
-
-    // Properly encode the filename for Content-Disposition header (RFC 5987)
-    let utf8Name: string;
-    try {
-      utf8Name = encodeURIComponent(originalName);
-    } catch (error) {
-      utf8Name = encodeURIComponent(fallbackName);
-    }
-
-    const contentDisposition =
-      `inline; filename="${fallbackName}"; filename*=UTF-8''${utf8Name}`;
+    const mimetype = file.metadata?.mimetype || file.contentType;
 
     return new NextResponse(fileBuffer, {
       headers: {
-        "Content-Type": contentType,
-        "Content-Disposition": contentDisposition,
+        ...safeFileHeaders(mimetype, originalName),
         "Content-Length": fileBuffer.length.toString(),
         "Accept-Ranges": "bytes",
       },
@@ -92,13 +78,6 @@ export const GET = async (req: NextRequest, ctx: { params: Promise<{ userId: str
   } catch (error) {
     console.error("Error retrieving file:", error);
 
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    const errorStack = error instanceof Error ? error.stack : undefined;
-
-    return sendErrorResponse(
-      "Error retrieving file",
-      { message: errorMessage, ...(errorStack && { stack: errorStack }) },
-      500
-    );
+    return sendErrorResponse("Error retrieving file", null, 500);
   }
 };
