@@ -10,6 +10,7 @@ import { sendErrorResponse } from "@/repository/response";
 import connectMongoDB from "@/repository/mongoose";
 import Application from "@/repository/models/application";
 import { requireAdmin } from "@/lib/require-admin";
+import { CHECKED_IN_STATUSES } from "@/lib/status";
 
 export const GET = async (req: NextRequest) => {
   const auth = await requireAdmin(req, { superAdmin: true });
@@ -30,7 +31,7 @@ export const GET = async (req: NextRequest) => {
     // Build query based on status filter
     let statusQuery: any = {};
     if (statusFilter === "all") {
-      statusQuery = { status: { $in: ["Submitted", "Admitted", "Waitlisted", "Confirmed", "Checked-in", "CheckedIn"] } };
+      statusQuery = { status: { $in: ["Submitted", "Admitted", "Waitlisted", "Confirmed", ...CHECKED_IN_STATUSES] } };
     } else if (statusFilter === "admitted") {
       statusQuery = { status: "Admitted" };
     } else if (statusFilter === "confirmed") {

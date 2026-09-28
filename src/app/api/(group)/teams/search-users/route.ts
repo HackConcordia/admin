@@ -5,11 +5,12 @@ import Application from "@/repository/models/application";
 import connectMongoDB from "@/repository/mongoose";
 import { sendErrorResponse, sendSuccessResponse } from "@/repository/response";
 import { requireAdmin } from "@/lib/require-admin";
+import { CHECKED_IN_STATUSES } from "@/lib/status";
 
 export const dynamic = "force-dynamic";
 
 // Statuses that allow a user to join a team
-const ALLOWED_STATUSES = ["Submitted", "Admitted", "Waitlisted", "Confirmed", "Checked-in", "CheckedIn"];
+const ALLOWED_STATUSES = ["Submitted", "Admitted", "Waitlisted", "Confirmed", ...CHECKED_IN_STATUSES];
 
 interface UserResult {
   _id: string;
