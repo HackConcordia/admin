@@ -1,29 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
 
-import { COOKIE_NAME, verifyAuthToken } from "@/lib/auth-token";
+import { requireAdmin } from "@/lib/require-admin";
 import Admin from "@/repository/models/admin";
 import Application from "@/repository/models/application";
 import connectMongoDB from "@/repository/mongoose";
-
-type AuthPayload = {
-  adminId?: string;
-  isSuperAdmin?: boolean;
-};
-
-async function getAuthFromCookies(): Promise<AuthPayload | null> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(COOKIE_NAME)?.value;
-  if (!token) return null;
-
-  const payload = await verifyAuthToken(token);
-  if (!payload) return null;
-
-  return {
-    adminId: (payload as any).adminId,
-    isSuperAdmin: !!(payload as any).isSuperAdmin,
-  };
-}
 
 function formatDateDDMMMYYYY(value: unknown): string | undefined {
   if (!value) return undefined;
@@ -41,10 +21,9 @@ function formatDateDDMMMYYYY(value: unknown): string | undefined {
 
 export async function GET(request: NextRequest) {
   try {
-    const auth = await getAuthFromCookies();
-    if (!auth) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const guard = await requireAdmin(request);
+    if (!guard.ok) return guard.response;
+    const auth = { adminId: guard.admin.adminId, isSuperAdmin: guard.admin.isSuperAdmin };
 
     await connectMongoDB();
 

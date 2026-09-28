@@ -1,12 +1,17 @@
+import type { NextRequest } from "next/server";
+
 import { sendSuccessResponse, sendErrorResponse } from "@/repository/response";
 import User from "@/repository/models/user";
 import connectMongoDB from "@/repository/mongoose";
 import type { Count } from "@/interfaces/count";
+import { requireAdmin } from "@/lib/require-admin";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export const GET = async () => {
+export const GET = async (req: NextRequest) => {
+  const auth = await requireAdmin(req);
+  if (!auth.ok) return auth.response;
   try {
     await connectMongoDB();
 

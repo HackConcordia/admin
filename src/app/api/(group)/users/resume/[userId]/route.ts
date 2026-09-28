@@ -8,8 +8,12 @@ import { Readable } from "stream";
 import { sendErrorResponse } from "@/repository/response";
 import connectMongoDB from "@/repository/mongoose";
 import Application from "@/repository/models/application";
+import { requireAdmin } from "@/lib/require-admin";
 
 export const GET = async (req: NextRequest, ctx: { params: Promise<{ userId: string }> }) => {
+  const auth = await requireAdmin(req);
+  if (!auth.ok) return auth.response;
+
   const { userId } = await ctx.params;
 
   if (!userId) {

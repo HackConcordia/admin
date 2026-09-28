@@ -5,27 +5,19 @@ import { sendSuccessResponse, sendErrorResponse } from "@/repository/response";
 import Application from "@/repository/models/application";
 import type { IApplication } from "@/interfaces/IApplication";
 import Admin from "@/repository/models/admin";
-import { COOKIE_NAME, verifyAuthToken } from "@/lib/auth-token";
+import { requireAdmin } from "@/lib/require-admin";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export const GET = async (req: NextRequest) => {
-  const token = req.cookies.get(COOKIE_NAME)?.value;
-
-  if (!token) {
-    return sendErrorResponse("Unauthorized", {}, 401);
-  }
-
-  const payload = await verifyAuthToken(token);
-  if (!payload) {
-    return sendErrorResponse("Unauthorized", {}, 401);
-  }
+  const auth = await requireAdmin(req);
+  if (!auth.ok) return auth.response;
 
   try {
     await connectMongoDB();
 
-    const admin = await Admin.findById(payload.adminId);
+    const admin = await Admin.findById(auth.admin.adminId);
 
     if (!admin) {
       return sendErrorResponse("Admin not found", {}, 404);

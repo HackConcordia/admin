@@ -6,9 +6,13 @@ import Team from "@/repository/models/team"; // Import the Team model
 import { sendErrorResponse, sendSuccessResponse } from "@/repository/response";
 import connectMongoDB from "@/repository/mongoose";
 import Application from "@/repository/models/application";
+import { requireAdmin } from "@/lib/require-admin";
 
 // Handler function
 export const DELETE = async (req: NextRequest, { params }: { params: Promise<{ userId: string }> }) => {
+  const auth = await requireAdmin(req, { superAdmin: true });
+  if (!auth.ok) return auth.response;
+
   const { userId } = await params;
 
   if (!userId) {

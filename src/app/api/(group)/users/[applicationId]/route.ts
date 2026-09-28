@@ -6,8 +6,12 @@ import mongoose from "mongoose";
 import connectMongoDB from "@/repository/mongoose";
 import { sendSuccessResponse, sendErrorResponse } from "@/repository/response";
 import Application from "@/repository/models/application";
+import { requireAdmin } from "@/lib/require-admin";
 
 export const GET = async (req: NextRequest, { params }: { params: Promise<{ applicationId: string }> }) => {
+  const auth = await requireAdmin(req);
+  if (!auth.ok) return auth.response;
+
   try {
     const { applicationId: userId } = await params;
 

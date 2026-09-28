@@ -5,11 +5,15 @@ import mongoose from "mongoose";
 import Meal from "@/repository/models/meal";
 import connectMongoDB from "@/repository/mongoose";
 import { sendErrorResponse, sendSuccessResponse } from "@/repository/response";
+import { requireAdmin } from "@/lib/require-admin";
 
 export const PATCH = async (
   req: NextRequest,
   { params }: { params: Promise<{ userId: string }> }
 ) => {
+  const auth = await requireAdmin(req);
+  if (!auth.ok) return auth.response;
+
   try {
     const { userId } = await params;
 
