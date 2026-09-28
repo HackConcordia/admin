@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import mongoose from "mongoose";
 
 import { sendErrorResponse, sendSuccessResponse } from "@/repository/response";
 import connectMongoDB from "@/repository/mongoose";
@@ -16,16 +17,27 @@ export const PATCH = async (req: NextRequest, { params }: { params: Promise<{ ad
     return sendErrorResponse("Admin ID is required", null, 400);
   }
 
+  if (!mongoose.Types.ObjectId.isValid(adminId)) {
+    return sendErrorResponse("Invalid admin id", null, 400);
+  }
+
   if (adminId !== auth.admin.adminId && !auth.admin.isSuperAdmin) {
     return sendErrorResponse("Forbidden", null, 403);
   }
 
   try {
-    const { newPassword } = await req.json();
+    const { newPassword, currentPassword } = await req.json();
 
     const passwordError = validateNewPassword(newPassword);
     if (passwordError) {
       return sendErrorResponse(passwordError, null, 400);
+    }
+
+    // If changing own password, require current password verification
+    if (adminId === auth.admin.adminId) {
+      if (!currentPassword) {
+        return sendErrorResponse("Current password is required", null, 400);
+      }
     }
 
     await connectMongoDB();
@@ -33,6 +45,14 @@ export const PATCH = async (req: NextRequest, { params }: { params: Promise<{ ad
     const admin = await Admin.findById(adminId);
     if (!admin) {
       return sendErrorResponse("Admin not found", null, 404);
+    }
+
+    // If changing own password, verify the current password
+    if (adminId === auth.admin.adminId) {
+      const isCurrentPasswordValid = await verifyPassword(currentPassword, admin.password);
+      if (!isCurrentPasswordValid) {
+        return sendErrorResponse("Current password is incorrect", null, 403);
+      }
     }
 
     if (await verifyPassword(newPassword, admin.password)) {

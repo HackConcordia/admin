@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import mongoose from "mongoose";
 
 import Admin from "@/repository/models/admin";
 import connectMongoDB from "@/repository/mongoose";
@@ -13,6 +14,10 @@ export const DELETE = async (req: NextRequest, { params }: { params: Promise<{ a
 
   if (!adminId) {
     return sendErrorResponse("AdminId is not defined", null, 400);
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(adminId)) {
+    return sendErrorResponse("Invalid admin id", null, 400);
   }
 
   if (adminId === auth.admin.adminId) {

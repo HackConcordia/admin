@@ -55,6 +55,16 @@ describe("POST /api/admin/create-admin", () => {
 });
 
 describe("DELETE /api/admin/delete-admin/[adminId]", () => {
+  it("rejects a malformed admin id with 400", async () => {
+    const res = await deleteAdmin.DELETE(
+      buildRequest("/api/admin/delete-admin/not-an-id", { method: "DELETE", cookie: await adminCookie({ isSuperAdmin: true }) }),
+      routeContext({ adminId: "not-an-id" }),
+    );
+    expect(res.status).toBe(400);
+    expect((await res.json()).message).toContain("Invalid admin id");
+    expect(adminModel.findByIdAndDelete).not.toHaveBeenCalled();
+  });
+
   it("refuses to delete the caller's own account", async () => {
     const res = await deleteAdmin.DELETE(
       buildRequest(`/api/admin/delete-admin/${TEST_ADMIN_ID}`, { method: "DELETE", cookie: await adminCookie({ isSuperAdmin: true }) }),
