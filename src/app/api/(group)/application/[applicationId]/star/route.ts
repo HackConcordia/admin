@@ -1,45 +1,33 @@
-import { COOKIE_NAME, verifyAuthToken } from "@/lib/auth-token";
-import { cookies } from "next/headers";
+import type { NextRequest } from "next/server";
+
 import connectMongoDB from "@/repository/mongoose";
 import Application from "@/repository/models/application";
 import { sendErrorResponse, sendSuccessResponse } from "@/repository/response";
+import { requireAdmin } from "@/lib/require-admin";
 
-export async function PATCH(
-  request: Request,
-  { params }: { params: Promise<{ applicationId: string }> }
-) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ applicationId: string }> }) {
+  const auth = await requireAdmin(request);
+  if (!auth.ok) return auth.response;
+
   try {
     const { applicationId } = await params;
-    const cookieStore = await cookies();
-    const token = cookieStore.get(COOKIE_NAME)?.value;
+    const { isStarred } = await request.json();
 
-    if (!token) {
-      return sendErrorResponse("Unauthorized", null, 401);
-    }
-
-    const payload = await verifyAuthToken(token);
-    if (!payload) {
-      return sendErrorResponse("Unauthorized", null, 401);
+    if (typeof isStarred !== "boolean") {
+      return sendErrorResponse("isStarred must be a boolean", null, 400);
     }
 
     await connectMongoDB();
-
-    const { isStarred } = await request.json();
 
     const application = await Application.findById(applicationId);
     if (!application) {
       return sendErrorResponse("Application not found", null, 404);
     }
 
-    // Update single application
-    const updatedApp = await Application.findByIdAndUpdate(
-      applicationId,
-      { isStarred },
-      { new: true }
-    );
+    const updatedApp = await Application.findByIdAndUpdate(applicationId, { isStarred }, { new: true });
     return sendSuccessResponse("Application updated successfully", updatedApp, 200);
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error updating star status:", error);
-    return sendErrorResponse(error.message || "Internal Server Error", null, 500);
+    return sendErrorResponse("Internal Server Error", null, 500);
   }
 }

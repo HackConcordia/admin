@@ -4,7 +4,7 @@ import connectMongoDB from "@/repository/mongoose";
 import { sendErrorResponse, sendSuccessResponse } from "@/repository/response";
 import Application from "@/repository/models/application";
 import CheckIn from "@/repository/models/checkin";
-import { COOKIE_NAME, verifyAuthToken } from "@/lib/auth-token";
+import { requireAdmin } from "@/lib/require-admin";
 import { sendDiscordLink } from "@/utils/admissionEmailConfig";
 
 // Fields that require validation
@@ -118,17 +118,11 @@ export const GET = async (
   req: NextRequest,
   { params }: { params: Promise<{ applicationId: string }> }
 ) => {
+  const auth = await requireAdmin(req);
+  if (!auth.ok) return auth.response;
+
   try {
     const { applicationId } = await params;
-    const token = req.cookies.get(COOKIE_NAME)?.value;
-    if (!token) {
-      return sendErrorResponse("Unauthorized", null, 401);
-    }
-
-    const payload = await verifyAuthToken(token);
-    if (!payload) {
-      return sendErrorResponse("Unauthorized", null, 401);
-    }
 
     await connectMongoDB();
 
@@ -156,17 +150,11 @@ export const PUT = async (
   req: NextRequest,
   { params }: { params: Promise<{ applicationId: string }> }
 ) => {
+  const auth = await requireAdmin(req, { superAdmin: true });
+  if (!auth.ok) return auth.response;
+
   try {
     const { applicationId } = await params;
-    const token = req.cookies.get(COOKIE_NAME)?.value;
-    if (!token) {
-      return sendErrorResponse("Unauthorized", null, 401);
-    }
-
-    const payload = await verifyAuthToken(token);
-    if (!payload) {
-      return sendErrorResponse("Unauthorized", null, 401);
-    }
 
     const body = await req.json();
 
@@ -400,17 +388,11 @@ export const DELETE = async (
   req: NextRequest,
   { params }: { params: Promise<{ applicationId: string }> }
 ) => {
+  const auth = await requireAdmin(req, { superAdmin: true });
+  if (!auth.ok) return auth.response;
+
   try {
     const { applicationId } = await params;
-    const token = req.cookies.get(COOKIE_NAME)?.value;
-    if (!token) {
-      return sendErrorResponse("Unauthorized", null, 401);
-    }
-
-    const payload = await verifyAuthToken(token);
-    if (!payload) {
-      return sendErrorResponse("Unauthorized", null, 401);
-    }
 
     await connectMongoDB();
 

@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import connectMongoDB from "@/repository/mongoose";
 import { sendErrorResponse, sendSuccessResponse } from "@/repository/response";
 import Application from "@/repository/models/application";
-import { COOKIE_NAME, verifyAuthToken } from "@/lib/auth-token";
+import { requireAdmin } from "@/lib/require-admin";
 
 /**
  * PATCH: Updates application metadata (comments and/or skillTags)
@@ -13,17 +13,11 @@ export const PATCH = async (
   req: NextRequest,
   { params }: { params: Promise<{ applicationId: string }> }
 ) => {
+  const auth = await requireAdmin(req);
+  if (!auth.ok) return auth.response;
+
   try {
     const { applicationId } = await params;
-    const token = req.cookies.get(COOKIE_NAME)?.value;
-    if (!token) {
-      return sendErrorResponse("Unauthorized", null, 401);
-    }
-
-    const payload = await verifyAuthToken(token);
-    if (!payload) {
-      return sendErrorResponse("Unauthorized", null, 401);
-    }
 
     const { comments, skillTags } = await req.json();
 
