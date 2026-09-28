@@ -6,8 +6,12 @@ import { GridFSBucket } from "mongodb";
 import { Readable } from "stream";
 
 import connectMongoDB from "@/repository/mongoose";
+import { requireAdmin } from "@/lib/require-admin";
 
 export const GET = async (req: NextRequest, { params }: { params: Promise<{ fileId: string }> }) => {
+  const auth = await requireAdmin(req);
+  if (!auth.ok) return auth.response;
+
   try {
     const { fileId } = await params;
 

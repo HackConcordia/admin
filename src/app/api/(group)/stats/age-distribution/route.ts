@@ -1,11 +1,15 @@
 import connectMongoDB from "@/repository/mongoose";
 import { sendSuccessResponse, sendErrorResponse } from "@/repository/response";
 import Application from "@/repository/models/application";
+import { requireAdmin } from "@/lib/require-admin";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export const GET = async (request: Request) => {
+  const auth = await requireAdmin(request);
+  if (!auth.ok) return auth.response;
+
   try {
     await connectMongoDB();
 

@@ -5,6 +5,7 @@ import mongoose from "mongoose";
 
 import Meal from "@/repository/models/meal";
 import connectMongoDB from "@/repository/mongoose";
+import { requireAdmin } from "@/lib/require-admin";
 
 // Connect to the database
 const connect = async () => {
@@ -108,21 +109,22 @@ const getMeals = async (req: NextRequest) => {
 };
 
 export async function GET(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if (!auth.ok) return auth.response;
   await connect();
   return getMeals(req);
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if (!auth.ok) return auth.response;
   await connect();
   return createMeal(req);
 }
 
 export async function PUT(req: NextRequest) {
+  const auth = await requireAdmin(req);
+  if (!auth.ok) return auth.response;
   await connect();
   return updateMeal(req);
-}
-
-// Optional: Handle unsupported HTTP methods
-export async function OPTIONS(req: NextRequest) {
-  return NextResponse.json({ message: "Allowed methods: POST, PUT, GET" }, { status: 200 });
 }

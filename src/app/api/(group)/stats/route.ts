@@ -1,3 +1,5 @@
+import type { NextRequest } from "next/server";
+
 import connectMongoDB from "@/repository/mongoose";
 
 import { sendSuccessResponse, sendErrorResponse } from "@/repository/response";
@@ -7,6 +9,7 @@ import Application from "@/repository/models/application";
 import Team from "@/repository/models/team";
 
 import { statuses } from "@/constants/statuses";
+import { requireAdmin } from "@/lib/require-admin";
 
 // Utility function to format dietary restriction names
 const formatDisplayName = (restriction: string) => {
@@ -18,7 +21,10 @@ const formatDisplayName = (restriction: string) => {
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export const GET = async () => {
+export const GET = async (req: NextRequest) => {
+  const auth = await requireAdmin(req);
+  if (!auth.ok) return auth.response;
+
   try {
     await connectMongoDB();
 

@@ -1,8 +1,11 @@
+import type { NextRequest } from "next/server";
+
 import connectMongoDB from "@/repository/mongoose";
 import { sendSuccessResponse, sendErrorResponse } from "@/repository/response";
 import Application from "@/repository/models/application";
 import Admin from "@/repository/models/admin";
 import { Countries as CountryList } from "@/constants/Countries";
+import { requireAdmin } from "@/lib/require-admin";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -88,7 +91,10 @@ const extractArrayValues = (value: unknown): string[] => {
   return result;
 };
 
-export const GET = async () => {
+export const GET = async (req: NextRequest) => {
+  const auth = await requireAdmin(req);
+  if (!auth.ok) return auth.response;
+
   try {
     await connectMongoDB();
 

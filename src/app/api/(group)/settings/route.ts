@@ -3,8 +3,12 @@ import type { NextRequest } from "next/server";
 import { sendSuccessResponse, sendErrorResponse } from "@/repository/response";
 import Settings from "@/repository/models/settings";
 import connectMongoDB from "@/repository/mongoose";
+import { requireAdmin } from "@/lib/require-admin";
 
 export const PATCH = async (req: NextRequest) => {
+  const auth = await requireAdmin(req, { superAdmin: true });
+  if (!auth.ok) return auth.response;
+
   try {
     const body = await req.json();
 
