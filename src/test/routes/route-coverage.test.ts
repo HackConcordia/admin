@@ -5,11 +5,9 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { API_KEY_PATH_PREFIXES, PUBLIC_API_PATHS } from "@/middleware/api-auth";
-import { findUnguardedHandlers } from "@/test/route-guard-scan";
+import { findHandlerExports, findUnguardedHandlers } from "@/test/route-guard-scan";
 
 const API_ROOT = fileURLToPath(new URL("../../app/api", import.meta.url));
-
-const HANDLER_EXPORT = /export\s+(?:const|async\s+function|function)\s+(?:GET|POST|PUT|PATCH|DELETE|OPTIONS|HEAD)\b/g;
 
 function listRouteFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((entry) => {
@@ -55,8 +53,7 @@ describe("API route guard coverage", () => {
 
   it.each(routeFiles)("$rel guards every exported handler", ({ full, rel }) => {
     const source = readFileSync(full, "utf8");
-    const handlerCount = [...source.matchAll(HANDLER_EXPORT)].length;
-    expect(handlerCount).toBeGreaterThan(0);
+    expect(findHandlerExports(source).length).toBeGreaterThan(0);
 
     if (PUBLIC_ROUTES.has(rel)) return;
 

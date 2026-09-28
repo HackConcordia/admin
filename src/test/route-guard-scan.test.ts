@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { findUnguardedHandlers } from "@/test/route-guard-scan";
+import { findHandlerExports, findUnguardedHandlers } from "@/test/route-guard-scan";
 
 describe("findUnguardedHandlers", () => {
   it("returns [] when every handler is guarded", () => {
@@ -88,6 +88,16 @@ describe("findUnguardedHandlers", () => {
     expect(findUnguardedHandlers(source)).toEqual(["POST"]);
   });
 
+  it("handles the plain export function METHOD(...) { } form (no async keyword)", () => {
+    const source = `
+      export function GET(req) {
+        const auth = requireAdmin(req);
+        return Response.json({});
+      }
+    `;
+    expect(findUnguardedHandlers(source)).toEqual([]);
+  });
+
   it("handles the export const METHOD = async (...) => form", () => {
     const source = `
       export const GET = async (req) => {
@@ -123,5 +133,117 @@ describe("findUnguardedHandlers", () => {
       };
     `;
     expect(findUnguardedHandlers(source)).toEqual([]);
+  });
+
+  describe("cross-segment leakage (fix round 2, NEW 1)", () => {
+    it("does not let a guard call in an unexported helper AFTER the last handler count", () => {
+      const source = `
+        export async function POST(req) {
+          return Response.json({});
+        }
+
+        function unused(req) {
+          return requireAdmin(req);
+        }
+      `;
+      expect(findUnguardedHandlers(source)).toEqual(["POST"]);
+    });
+
+    it("does not let a guard call in an unexported helper BETWEEN two handlers count", () => {
+      const source = `
+        export async function GET(req) {
+          return Response.json({});
+        }
+
+        function unused(req) {
+          return requireAdmin(req);
+        }
+
+        export async function POST(req) {
+          const auth = await requireAdmin(req);
+          if (!auth.ok) return auth.response;
+          return Response.json({});
+        }
+      `;
+      expect(findUnguardedHandlers(source)).toEqual(["GET"]);
+    });
+  });
+
+  describe("unrecognized exports (fix round 2, NEW 2)", () => {
+    it("handles a typed export const METHOD: (...) => ... = form when guarded", () => {
+      const source = `
+        export const GET: (req: NextRequest) => Promise<Response> = async (req) => {
+          const auth = await requireAdmin(req);
+          if (!auth.ok) return auth.response;
+          return Response.json({});
+        };
+      `;
+      expect(findUnguardedHandlers(source)).toEqual([]);
+    });
+
+    it("handles a typed export const METHOD: (...) => ... = form when unguarded", () => {
+      const source = `
+        export const GET: (req: NextRequest) => Promise<Response> = async (req) => {
+          return Response.json({});
+        };
+      `;
+      expect(findUnguardedHandlers(source)).toEqual(["GET"]);
+    });
+
+    it("fails closed on an export { x as METHOD } re-export it cannot follow to a body", () => {
+      const source = `
+        async function localGet(req) {
+          const auth = await requireAdmin(req);
+          if (!auth.ok) return auth.response;
+          return Response.json({});
+        }
+
+        export { localGet as GET };
+      `;
+      expect(findUnguardedHandlers(source)).toEqual(["GET"]);
+    });
+
+    it("fails closed on a plain export { METHOD } re-export list", () => {
+      const source = `
+        const GET = async (req) => {
+          const auth = await requireAdmin(req);
+          if (!auth.ok) return auth.response;
+          return Response.json({});
+        };
+
+        export { GET };
+      `;
+      expect(findUnguardedHandlers(source)).toEqual(["GET"]);
+    });
+  });
+});
+
+describe("findHandlerExports", () => {
+  it("finds every direct handler export in a file", () => {
+    const source = `
+      export const GET = async (req) => Response.json({});
+      export async function POST(req) { return Response.json({}); }
+    `;
+    expect(findHandlerExports(source)).toEqual(["GET", "POST"]);
+  });
+
+  it("finds a typed export const declaration", () => {
+    const source = `
+      export const GET: (req: NextRequest) => Promise<Response> = async (req) => {
+        return Response.json({});
+      };
+    `;
+    expect(findHandlerExports(source)).toEqual(["GET"]);
+  });
+
+  it("finds a method named only in an export { ... } list", () => {
+    const source = `
+      async function localGet(req) {
+        return Response.json({});
+      }
+
+      export { localGet as GET };
+    `;
+    expect(findHandlerExports(source)).toEqual(["GET"]);
   });
 });
