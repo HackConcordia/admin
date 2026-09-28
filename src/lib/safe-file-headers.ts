@@ -3,9 +3,14 @@
  * to an admin. The `mimetype` and `filename` both come from applicant-controlled metadata, so
  * neither is trusted as-is: the content type is allowlisted (anything else degrades to
  * `application/octet-stream`), `X-Content-Type-Options: nosniff` stops the browser from
- * second-guessing that content type, a sandboxing CSP disables script execution regardless of
- * the file's actual content, and the filename is sanitized before it goes anywhere near a
+ * second-guessing that content type, and the filename is sanitized before it goes anywhere near a
  * `Content-Disposition` header.
+ *
+ * PDFs are exempt from the sandbox CSP because it blocks the browser's native PDF viewer; the
+ * stored-XSS risk is already closed by the strict Content-Type allowlist (only PDF, Word docs
+ * allowed) plus nosniff (a malicious upload claiming PDF will fail the mimetype check and degrade
+ * to octet-stream; an HTML file uploaded as PDF cannot be rendered as HTML). Non-PDF files
+ * receive a sandboxing CSP and are forced to download as attachments.
  */
 
 const ALLOWED_MIME_TYPES: ReadonlySet<string> = new Set([
@@ -28,10 +33,16 @@ export function safeFileHeaders(mimetype: string | undefined, filename: string):
   const safeName = sanitizeFilename(filename);
   const utf8Name = encodeURIComponent(safeName);
 
-  return {
+  const headers: Record<string, string> = {
     "Content-Type": contentType,
     "Content-Disposition": `${disposition}; filename="${safeName}"; filename*=UTF-8''${utf8Name}`,
     "X-Content-Type-Options": "nosniff",
-    "Content-Security-Policy": "sandbox; default-src 'none'",
   };
+
+  // Non-PDF files receive a sandboxing CSP and are forced to download
+  if (contentType !== "application/pdf") {
+    headers["Content-Security-Policy"] = "sandbox; default-src 'none'";
+  }
+
+  return headers;
 }

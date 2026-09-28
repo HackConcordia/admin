@@ -34,12 +34,32 @@ describe("safeFileHeaders", () => {
     expect(doc["Content-Disposition"]).toContain("attachment");
   });
 
-  it("always sets nosniff and a sandboxing CSP", () => {
+  it("always sets nosniff", () => {
     for (const mimetype of ["application/pdf", "text/html", undefined, "application/json"]) {
       const headers = safeFileHeaders(mimetype, "resume.pdf");
       expect(headers["X-Content-Type-Options"]).toBe("nosniff");
-      expect(headers["Content-Security-Policy"]).toBe("sandbox; default-src 'none'");
     }
+  });
+
+  it("omits Content-Security-Policy for PDFs so the browser PDF viewer works", () => {
+    const headers = safeFileHeaders("application/pdf", "resume.pdf");
+    expect(headers["Content-Security-Policy"]).toBeUndefined();
+  });
+
+  it("includes Content-Security-Policy sandbox for non-PDF files", () => {
+    const csp = "sandbox; default-src 'none'";
+
+    const htmlHeaders = safeFileHeaders("text/html", "file.html");
+    expect(htmlHeaders["Content-Security-Policy"]).toBe(csp);
+
+    const octetHeaders = safeFileHeaders(undefined, "unknown.bin");
+    expect(octetHeaders["Content-Security-Policy"]).toBe(csp);
+
+    const docxHeaders = safeFileHeaders(
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "resume.docx",
+    );
+    expect(docxHeaders["Content-Security-Policy"]).toBe(csp);
   });
 
   it("sanitizes a filename that attempts header/path injection", () => {
