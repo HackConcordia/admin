@@ -1,6 +1,8 @@
 import { cookies } from "next/headers";
 
+import { getEventConfig } from "@/config/event";
 import { COOKIE_NAME, verifyAuthToken } from "@/lib/auth-token";
+import { groupMealDays, type MealDay } from "@/lib/conuhacks/meals";
 import connectMongoDB from "@/repository/mongoose";
 import Meal from "@/repository/models/meal";
 
@@ -79,10 +81,30 @@ async function getMealsSSR(): Promise<{
   }
 }
 
+function readMealSettings(): { eventName: string; mealDays: MealDay[]; configError: string | null } {
+  try {
+    const config = getEventConfig();
+    return { eventName: config.eventName, mealDays: groupMealDays(config.meals), configError: null };
+  } catch (error) {
+    return {
+      eventName: "ConUHacks XI",
+      mealDays: [],
+      configError: error instanceof Error ? error.message : "Event settings are not configured",
+    };
+  }
+}
+
 export default async function Page() {
   const initialData = await getMealsSSR();
+  const { eventName, mealDays, configError } = readMealSettings();
 
   return (
-    <MealTable initialData={initialData.data} initialPagination={initialData.pagination} />
+    <MealTable
+      initialData={initialData.data}
+      initialPagination={initialData.pagination}
+      eventName={eventName}
+      mealDays={mealDays}
+      configError={configError}
+    />
   );
 }

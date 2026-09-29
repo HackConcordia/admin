@@ -4,6 +4,8 @@ import { toast } from "sonner";
 
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { Checkbox } from "@/components/ui/checkbox";
+import type { MealType } from "@/config/event";
+import type { MealDay } from "@/lib/conuhacks/meals";
 
 export type MealTableRow = {
   _id: string;
@@ -107,13 +109,19 @@ function MealCheckbox({ mealRow, date, mealType, onUpdate }: MealCheckboxProps) 
   );
 }
 
-// January 24, 2026 columns
-export function getJan24Columns(
+const MEAL_TITLES: Record<MealType, string> = {
+  breakfast: "Breakfast",
+  lunch: "Lunch",
+  snacks: "Snacks",
+  dinner: "Dinner",
+};
+
+/** Name, email and one checkbox column per meal of the given event day (from EVENT_MEALS). */
+export function getMealDayColumns(
+  day: MealDay | undefined,
   onUpdate: (mealId: string, updatedMeals: MealTableRow["meals"]) => void,
 ): ColumnDef<MealTableRow>[] {
-  const jan24Date = "2026-01-24";
-
-  return [
+  const identity: ColumnDef<MealTableRow>[] = [
     {
       accessorKey: "name",
       header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
@@ -124,67 +132,19 @@ export function getJan24Columns(
       accessorKey: "email",
       header: ({ column }) => <DataTableColumnHeader column={column} title="Email" />,
       cell: ({ row }) => <span className="tabular-nums">{row.original.email}</span>,
-    },
-    {
-      id: "breakfast",
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Breakfast" />,
-      cell: ({ row }) => (
-        <MealCheckbox mealRow={row.original} date={jan24Date} mealType="breakfast" onUpdate={onUpdate} />
-      ),
-      enableSorting: false,
-    },
-    {
-      id: "lunch",
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Lunch" />,
-      cell: ({ row }) => <MealCheckbox mealRow={row.original} date={jan24Date} mealType="lunch" onUpdate={onUpdate} />,
-      enableSorting: false,
-    },
-    {
-      id: "snacks",
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Snacks" />,
-      cell: ({ row }) => <MealCheckbox mealRow={row.original} date={jan24Date} mealType="snacks" onUpdate={onUpdate} />,
-      enableSorting: false,
-    },
-    {
-      id: "dinner",
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Dinner" />,
-      cell: ({ row }) => <MealCheckbox mealRow={row.original} date={jan24Date} mealType="dinner" onUpdate={onUpdate} />,
-      enableSorting: false,
     },
   ];
-}
-
-// January 25, 2026 columns
-export function getJan25Columns(
-  onUpdate: (mealId: string, updatedMeals: MealTableRow["meals"]) => void,
-): ColumnDef<MealTableRow>[] {
-  const jan25Date = "2026-01-25";
+  if (!day) return identity;
 
   return [
-    {
-      accessorKey: "name",
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
-      cell: ({ row }) => <span>{row.original.name}</span>,
-      enableHiding: false,
-    },
-    {
-      accessorKey: "email",
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Email" />,
-      cell: ({ row }) => <span className="tabular-nums">{row.original.email}</span>,
-    },
-    {
-      id: "breakfast",
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Breakfast" />,
-      cell: ({ row }) => (
-        <MealCheckbox mealRow={row.original} date={jan25Date} mealType="breakfast" onUpdate={onUpdate} />
-      ),
-      enableSorting: false,
-    },
-    {
-      id: "lunch",
-      header: ({ column }) => <DataTableColumnHeader column={column} title="Lunch" />,
-      cell: ({ row }) => <MealCheckbox mealRow={row.original} date={jan25Date} mealType="lunch" onUpdate={onUpdate} />,
-      enableSorting: false,
-    },
+    ...identity,
+    ...day.types.map(
+      (mealType): ColumnDef<MealTableRow> => ({
+        id: mealType,
+        header: ({ column }) => <DataTableColumnHeader column={column} title={MEAL_TITLES[mealType]} />,
+        cell: ({ row }) => <MealCheckbox mealRow={row.original} date={day.date} mealType={mealType} onUpdate={onUpdate} />,
+        enableSorting: false,
+      }),
+    ),
   ];
 }
