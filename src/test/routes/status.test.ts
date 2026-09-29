@@ -10,6 +10,8 @@ const emails = vi.hoisted(() => ({
   sendDiscordLink: vi.fn(async () => true),
 }));
 
+const eventConfig = vi.hoisted(() => ({ getEventConfig: vi.fn(() => ({})) }));
+vi.mock("@/config/event", () => eventConfig);
 vi.mock("@/repository/mongoose", () => ({ default: vi.fn() }));
 vi.mock("@/repository/models/admin", () => ({ default: { findById: createFindByIdMock() } }));
 vi.mock("@/repository/models/application", () => ({ default: applicationModel }));
@@ -41,6 +43,18 @@ beforeEach(() => {
 const TRAVEL_DECISION_UNSET = { isTravelReimbursementApproved: "", travelReimbursementAmount: "", travelReimbursementCurrency: "" };
 
 describe("PATCH /api/status/[applicationId]", () => {
+  it("refuses before writing anything while the event settings are missing", async () => {
+    eventConfig.getEventConfig.mockImplementationOnce(() => {
+      throw new Error("Missing required environment variable EVENT_NAME");
+    });
+
+    const res = await patch({ action: "admit" });
+
+    expect(res.status).toBe(500);
+    expect(applicationModel.findById).not.toHaveBeenCalled();
+    expect(applicationModel.findOneAndUpdate).not.toHaveBeenCalled();
+  });
+
   it("records the logged-in admin as processedBy, conditional on the status it read", async () => {
     const res = await patch({ action: "waitlist", adminEmail: "attacker@evil.dev" });
 
