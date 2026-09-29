@@ -4,7 +4,7 @@ import { COOKIE_NAME, verifyAuthToken } from "@/lib/auth-token";
 import Admin from "@/repository/models/admin";
 import Application from "@/repository/models/application";
 import connectMongoDB from "@/repository/mongoose";
-import { getQuebecCities } from "@/constants/Cities";
+import { QUEBEC_CITIES } from "@/lib/conuhacks/quebec";
 import { withLegacyCheckedIn } from "@/lib/status";
 
 import { ApplicationTable } from "./_components/application-table";
@@ -146,13 +146,13 @@ function buildQuery(
     query.travelReimbursement = false;
   } else if (travelReimbursement === "quebec") {
     // Travel reimbursement required AND located in Quebec
-    const quebecCities = getQuebecCities();
+    const quebecCities = [...QUEBEC_CITIES];
     query.travelReimbursement = true;
     query.country = "CA";
     query.city = { $in: quebecCities };
   } else if (travelReimbursement === "outside-quebec") {
     // Travel reimbursement required AND NOT located in Quebec
-    const quebecCities = getQuebecCities();
+    const quebecCities = [...QUEBEC_CITIES];
     query.travelReimbursement = true;
     query.$or = [
       { country: { $ne: "CA" } },

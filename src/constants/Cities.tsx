@@ -10,6 +10,8 @@ export const Cities = (lang: Language = "en") => [
   { value: "Barrie", label: "Barrie, Ontario" },
   { value: "Belleville", label: "Belleville, Ontario" },
   { value: "Beloeil", label: "Beloeil, Quebec" },
+  { value: "Blainville", label: "Blainville, Quebec" },
+  { value: "Boucherville", label: "Boucherville, Quebec" },
   { value: "Brampton", label: "Brampton, Ontario" },
   { value: "Brantford", label: "Brantford, Ontario" },
   { value: "Brockville", label: "Brockville, Ontario" },
@@ -39,6 +41,7 @@ export const Cities = (lang: Language = "en") => [
   { value: "Fort McMurray", label: "Fort McMurray, Alberta" },
   { value: "Fredericton", label: "Fredericton, New Brunswick" },
   { value: "Gander", label: "Gander, Newfoundland and Labrador" },
+  { value: "Gatineau", label: "Gatineau, Quebec" },
   { value: "Glace Bay", label: "Glace Bay, Nova Scotia" },
   { value: "Granby", label: "Granby, Quebec" },
   { value: "Grande Prairie", label: "Grande Prairie, Alberta" },
@@ -57,14 +60,17 @@ export const Cities = (lang: Language = "en") => [
   { value: "Laval", label: "Laval, Quebec" },
   { value: "Leamington", label: "Leamington, Ontario" },
   { value: "Lethbridge", label: "Lethbridge, Alberta" },
+  { value: "Lévis", label: "Lévis, Quebec" },
   { value: "London", label: "London, Ontario" },
   { value: "Longueuil", label: "Longueuil, Quebec" },
   { value: "Magog", label: "Magog, Quebec" },
   { value: "Maple Ridge", label: "Maple Ridge, British Columbia" },
   { value: "Markham", label: "Markham, Ontario" },
+  { value: "Mascouche", label: "Mascouche, Quebec" },
   { value: "Medicine Hat", label: "Medicine Hat, Alberta" },
   { value: "Midland", label: "Midland, Ontario" },
   { value: "Milton", label: "Milton, Ontario" },
+  { value: "Mirabel", label: "Mirabel, Quebec" },
   { value: "Mississauga", label: "Mississauga, Ontario" },
   { value: "Moncton", label: "Moncton, New Brunswick" },
   { value: "Montreal", label: "Montreal, Quebec" },
@@ -85,23 +91,30 @@ export const Cities = (lang: Language = "en") => [
   { value: "Port Alberni", label: "Port Alberni, British Columbia" },
   { value: "Prince Albert", label: "Prince Albert, Saskatchewan" },
   { value: "Prince George", label: "Prince George, British Columbia" },
+  { value: "Québec City", label: "Québec City, Quebec" },
   { value: "Quinte West", label: "Quinte West, Ontario" },
   { value: "Red Deer", label: "Red Deer, Alberta" },
   { value: "Regina", label: "Regina, Saskatchewan" },
+  { value: "Repentigny", label: "Repentigny, Quebec" },
   { value: "Richmond", label: "Richmond, British Columbia" },
   { value: "Richmond Hill", label: "Richmond Hill, Ontario" },
+  { value: "Rimouski", label: "Rimouski, Quebec" },
   { value: "Rouyn-Noranda", label: "Rouyn-Noranda, Quebec" },
   { value: "Saguenay", label: "Saguenay, Quebec" },
   { value: "Saint John", label: "Saint John, New Brunswick" },
+  { value: "Saint-Eustache", label: "Saint-Eustache, Quebec" },
+  { value: "Saint-Hyacinthe", label: "Saint-Hyacinthe, Quebec" },
   { value: "Saint-Laurent", label: "Saint-Laurent, Quebec" },
   {
     value: "Saint-Jean-sur-Richelieu",
     label: "Saint-Jean-sur-Richelieu, Quebec",
   },
   { value: "Saint-Jérôme", label: "Saint-Jérôme, Quebec" },
+  { value: "Salaberry-de-Valleyfield", label: "Salaberry-de-Valleyfield, Quebec" },
   { value: "Sarnia", label: "Sarnia, Ontario" },
   { value: "Saskatoon", label: "Saskatoon, Saskatchewan" },
   { value: "Sault Ste. Marie", label: "Sault Ste. Marie, Ontario" },
+  { value: "Shawinigan", label: "Shawinigan, Quebec" },
   { value: "Sherbrooke", label: "Sherbrooke, Quebec" },
   { value: "Spruce Grove", label: "Spruce Grove, Alberta" },
   { value: "St. Albert", label: "St. Albert, Alberta" },
@@ -116,9 +129,11 @@ export const Cities = (lang: Language = "en") => [
   { value: "Toronto", label: "Toronto, Ontario" },
   { value: "Trois-Rivières", label: "Trois-Rivières, Quebec" },
   { value: "Vancouver", label: "Vancouver, British Columbia" },
+  { value: "Vaudreuil-Dorion", label: "Vaudreuil-Dorion, Quebec" },
   { value: "Vaughan", label: "Vaughan, Ontario" },
   { value: "Vernon", label: "Vernon, British Columbia" },
   { value: "Victoria", label: "Victoria, British Columbia" },
+  { value: "Victoriaville", label: "Victoriaville, Quebec" },
   { value: "Waterloo", label: "Waterloo, Ontario" },
   { value: "Welland", label: "Welland, Ontario" },
   { value: "West Kelowna", label: "West Kelowna, British Columbia" },
@@ -129,14 +144,7 @@ export const Cities = (lang: Language = "en") => [
   { value: "Winnipeg", label: "Winnipeg, Manitoba" },
   { value: "Woodstock", label: "Woodstock, Ontario" },
   { value: "Yellowknife", label: "Yellowknife, Northwest Territories" },
+  // Catch-alls for unlisted towns. The first ends in ", Quebec", so it counts as Quebec (config/travelReimbursement.ts).
+  { value: "other-quebec", label: "Other city, Quebec" },
+  { value: "other-canada", label: "Other city (outside Quebec)" },
 ];
-
-/**
- * Returns an array of city values that are located in Quebec.
- * Used for filtering applications by Quebec location.
- */
-export const getQuebecCities = (): string[] => {
-  return Cities()
-    .filter((city) => city.label.endsWith(", Quebec"))
-    .map((city) => city.value);
-};
