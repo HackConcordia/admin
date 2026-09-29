@@ -1,10 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { escapeRegex } from "@/lib/conuhacks/application-query";
 import { fetchIsSuperAdmin, requireAdmin } from "@/lib/require-admin";
 import { CHECKED_IN_STATUSES, isCheckedInStatus } from "@/lib/status";
 import Admin from "@/repository/models/admin";
 import Application from "@/repository/models/application";
 import connectMongoDB from "@/repository/mongoose";
+
+/** Only fields every reviewer already sees in the response: sorting by any other field would leak its order. */
+const SORTABLE_FIELDS = ["firstName", "lastName", "email", "status", "createdAt", "processedAt"] as const;
+const MAX_PAGE_SIZE = 100;
+const DEFAULT_PAGE_SIZE = 10;
+
+function positiveInt(raw: string | null, fallback: number): number {
+  const n = parseInt(raw ?? "", 10);
+  return Number.isFinite(n) && n >= 1 ? n : fallback;
+}
 
 function formatDateDDMMMYYYY(value: unknown): string | undefined {
   if (!value) return undefined;
@@ -37,11 +48,12 @@ export async function GET(request: NextRequest) {
     await connectMongoDB();
 
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = parseInt(searchParams.get("limit") || "10", 10);
+    const page = positiveInt(searchParams.get("page"), 1);
+    const limit = Math.min(positiveInt(searchParams.get("limit"), DEFAULT_PAGE_SIZE), MAX_PAGE_SIZE);
     const search = searchParams.get("search") || "";
     const status = searchParams.get("status") || "";
-    const sortField = searchParams.get("sortField") || "createdAt";
+    const requestedSortField = searchParams.get("sortField") || "createdAt";
+    const sortField = (SORTABLE_FIELDS as readonly string[]).includes(requestedSortField) ? requestedSortField : "createdAt";
     const sortOrder = searchParams.get("sortOrder") || "desc";
 
     // Build the query
@@ -49,10 +61,11 @@ export async function GET(request: NextRequest) {
 
     // Search by email (case-insensitive)
     if (search) {
+      const pattern = escapeRegex(search);
       query.$or = [
-        { email: { $regex: search, $options: "i" } },
-        { firstName: { $regex: search, $options: "i" } },
-        { lastName: { $regex: search, $options: "i" } },
+        { email: { $regex: pattern, $options: "i" } },
+        { firstName: { $regex: pattern, $options: "i" } },
+        { lastName: { $regex: pattern, $options: "i" } },
       ];
     }
 

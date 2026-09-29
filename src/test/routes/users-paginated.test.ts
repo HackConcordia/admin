@@ -80,3 +80,47 @@ describe("GET /api/users/paginated", () => {
     expect(applicationModel.find).not.toHaveBeenCalled();
   });
 });
+
+describe("GET /api/users/paginated input hardening", () => {
+  async function run(qs: string) {
+    const exec = vi.fn().mockResolvedValue([]);
+    const lean = vi.fn(() => ({ exec }));
+    const limit = vi.fn(() => ({ lean }));
+    const skip = vi.fn(() => ({ limit }));
+    const sort = vi.fn(() => ({ skip }));
+    applicationModel.find.mockReturnValue({ sort });
+    applicationModel.countDocuments.mockResolvedValue(0);
+    const res = await paginated.GET(buildRequest(`/api/users/paginated?${qs}`, { cookie: await adminCookie({ adminId: NON_SUPER_ADMIN_ID }) }));
+    return { res, sort, limit };
+  }
+
+  it("falls back to createdAt when the sort field is not allowlisted (no sorting by hidden fields)", async () => {
+    assignedApplicationsByAdminId.set(NON_SUPER_ADMIN_ID, ["64c000000000000000000009"]);
+    for (const field of ["isTravelReimbursementApproved", "phoneNumber", "gender", "age", "$where"]) {
+      const { res, sort } = await run(`sortField=${encodeURIComponent(field)}&sortOrder=asc`);
+      expect(res.status).toBe(200);
+      expect(sort).toHaveBeenCalledWith({ createdAt: 1 });
+    }
+  });
+
+  it("keeps an allowlisted sort field", async () => {
+    assignedApplicationsByAdminId.set(NON_SUPER_ADMIN_ID, ["64c000000000000000000009"]);
+    const { sort } = await run("sortField=lastName&sortOrder=desc");
+    expect(sort).toHaveBeenCalledWith({ lastName: -1 });
+  });
+
+  it("escapes regex characters in the search", async () => {
+    assignedApplicationsByAdminId.set(NON_SUPER_ADMIN_ID, ["64c000000000000000000009"]);
+    await run("search=" + encodeURIComponent("a.*(b"));
+    const [query] = applicationModel.find.mock.calls[0] as [{ $or: { email: { $regex: string } }[] }];
+    expect(query.$or[0].email.$regex).toBe(String.raw`a\.\*\(b`);
+  });
+
+  it("caps the page size at 100 and survives non-numeric paging", async () => {
+    assignedApplicationsByAdminId.set(NON_SUPER_ADMIN_ID, ["64c000000000000000000009"]);
+    const big = await run("limit=100000");
+    expect(big.limit).toHaveBeenCalledWith(100);
+    const junk = await run("limit=abc&page=-4");
+    expect(junk.limit).toHaveBeenCalledWith(10);
+  });
+});
