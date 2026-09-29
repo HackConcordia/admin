@@ -32,11 +32,12 @@ import {
   DEGREE_LENGTHS,
   DISCIPLINES,
   LANGUAGES_SPOKEN,
+  MAX_FREE_YEAR_LENGTH,
   MAX_HACKATHON_COUNT,
   SCHOOLING_LEVELS,
   currentYearValues,
   degreeTypeValues,
-  requiresDegreeDetails,
+  isOtherLevel,
 } from "@/lib/conuhacks/field-options";
 import { parseListField } from "@/lib/conuhacks/list-field";
 import { safeExternalUrl } from "@/lib/safe-external-url";
@@ -54,8 +55,9 @@ type FieldResult = { ok: true; value: unknown } | { ok: false; error: string };
 type PartResult = { ok: true; set: Record<string, unknown> } | { ok: false; error: string };
 
 const NAME_MAX = 100;
-const SHORT_TEXT_MAX = 200;
+/** Same cap as the registration (applicantView.ts): 5000 for every answer except the names. */
 const LONG_TEXT_MAX = 5000;
+const TAG_MAX = 200;
 const LINK_MAX = 500;
 const LIST_MAX = 50;
 const REQUIRED_NAME_FIELDS = ["firstName", "lastName"] as const;
@@ -91,7 +93,8 @@ const includesKey = (list: readonly string[], key: string): boolean => list.incl
 
 function maxLengthFor(key: ApplicantFieldKey): number {
   if (includesKey(LINK_FIELD_KEYS, key)) return LINK_MAX;
-  return includesKey(LONG_TEXT_FIELD_KEYS, key) ? LONG_TEXT_MAX : SHORT_TEXT_MAX;
+  if (key === "currentYear") return MAX_FREE_YEAR_LENGTH;
+  return LONG_TEXT_MAX;
 }
 
 /** Absolute http(s) only, like the registration app's own rule (applicantView.ts). */
@@ -99,9 +102,10 @@ const isAbsoluteHttpUrl = (link: string): boolean => /^https?:\/\//i.test(link) 
 
 function normalizeString(key: ApplicantFieldKey, value: unknown, storedValue: unknown): FieldResult {
   if (typeof value !== "string") return fail(`${key} must be a string`);
+  // An unchanged value is always accepted, before any length or option rule.
+  if (value === storedValue) return accept(value);
   const max = maxLengthFor(key);
   if (value.length > max) return fail(`${key} must be ${max} characters or fewer`);
-  if (value === storedValue) return accept(value);
   if (includesKey(LINK_FIELD_KEYS, key)) {
     const link = value.trim();
     return link === "" || isAbsoluteHttpUrl(link) ? accept(link) : fail(`${key} must be an http(s) link`);
@@ -123,11 +127,12 @@ function normalizeList(key: ApplicantFieldKey, value: unknown, storedValue: unkn
   const isStringArray = Array.isArray(value) && value.every((item) => typeof item === "string");
   if (typeof value !== "string" && !isStringArray) return fail(`${key} must be a list of strings`);
   const list = parseListField(value);
-  if (list.length > LIST_MAX) return fail(`${key} has too many entries`);
   const unchanged = JSON.stringify(list) === JSON.stringify(parseListField(storedValue));
+  if (list.length > LIST_MAX && !unchanged) return fail(`${key} has too many entries`);
   const allowed = MULTI_OPTIONS[key];
   if (!unchanged && allowed && list.some((item) => !allowed.includes(item))) return fail(`Invalid value for ${key}`);
-  return accept([JSON.stringify(list)]);
+  // Like the registration: an empty list is [], not ['[]'].
+  return accept(list.length === 0 ? [] : [JSON.stringify(list)]);
 }
 
 function normalizeField(key: ApplicantFieldKey, value: unknown, storedValue: unknown): FieldResult {
@@ -141,7 +146,9 @@ function normalizeField(key: ApplicantFieldKey, value: unknown, storedValue: unk
     case "jsonInArray":
       return normalizeList(key, value, storedValue);
     case "nullableString":
-      return value === null ? accept(null) : normalizeString(key, value, storedValue);
+      // A stored null stays null when the form sends the blank it displays for it.
+      if (value === null || (value === "" && storedValue === null)) return accept(null);
+      return normalizeString(key, value, storedValue);
     default:
       return normalizeString(key, value, storedValue);
   }
@@ -165,24 +172,37 @@ function parseStatus(value: unknown): PartResult {
   return { ok: true, set: { status: isCheckedInStatus(value) ? CHECKED_IN_STATUS : value } };
 }
 
-/** Year and degree type depend on the level: the one in the update, else the stored one. */
+const ANY_YEAR: ReadonlySet<string> = new Set(SCHOOLING_LEVELS.flatMap((level) => currentYearValues(level) ?? []));
+const ANY_DEGREE_TYPE: readonly string[] = SCHOOLING_LEVELS.flatMap((level) => degreeTypeValues(level));
+
+/** Mirrors the registration: the level's list, else (level unknown) any level's list; level "Other" types the year freely. */
+function isValidYear(year: string, level: unknown): boolean {
+  const forLevel = currentYearValues(level);
+  if (forLevel) return forLevel.includes(year);
+  return isOtherLevel(level) ? year.length <= MAX_FREE_YEAR_LENGTH : ANY_YEAR.has(year);
+}
+
+function isValidDegreeType(type: string, level: unknown): boolean {
+  const forLevel = degreeTypeValues(level);
+  return (forLevel.length > 0 ? forLevel : ANY_DEGREE_TYPE).includes(type);
+}
+
+/**
+ * Year and degree type depend on the level: the one in the update, else the stored one. An unchanged
+ * value is exempt only while the level is unchanged; after a level change the stored year and type
+ * (when the body omits them) are re-validated against the new level too.
+ */
 function levelDependentError(set: Record<string, unknown>, stored: Body): string | null {
+  const levelChanged = "currentLevelOfSchooling" in set && set.currentLevelOfSchooling !== stored.currentLevelOfSchooling;
   const level = "currentLevelOfSchooling" in set ? set.currentLevelOfSchooling : stored.currentLevelOfSchooling;
-  const year = set.currentYear;
-  const years = currentYearValues(level);
-  if (typeof year === "string" && year !== "" && year !== stored.currentYear && years && !years.includes(year)) {
-    return "Invalid value for currentYear";
-  }
-  const degreeType = set.degreeType;
-  if (
-    requiresDegreeDetails(level) &&
-    typeof degreeType === "string" &&
-    degreeType !== "" &&
-    degreeType !== stored.degreeType &&
-    !degreeTypeValues(level).includes(degreeType)
-  ) {
-    return "Invalid value for degreeType";
-  }
+  const pick = (key: "currentYear" | "degreeType"): unknown => (key in set ? set[key] : levelChanged ? stored[key] : undefined);
+  const needsCheck = (key: "currentYear" | "degreeType", value: unknown): value is string =>
+    typeof value === "string" && value !== "" && (levelChanged || value !== stored[key]);
+
+  const year = pick("currentYear");
+  if (needsCheck("currentYear", year) && !isValidYear(year, level)) return "Invalid value for currentYear";
+  const degreeType = pick("degreeType");
+  if (needsCheck("degreeType", degreeType) && !isValidDegreeType(degreeType, level)) return "Invalid value for degreeType";
   return null;
 }
 
@@ -198,7 +218,7 @@ function parseReviewerFields(body: Body): PartResult {
     const tags = body.skillTags;
     if (!Array.isArray(tags) || !tags.every((tag) => typeof tag === "string")) return fail("skillTags must be a list of strings");
     const trimmed = tags.map((tag: string) => tag.trim()).filter(Boolean);
-    if (trimmed.some((tag) => tag.length > SHORT_TEXT_MAX)) return fail(`skillTags must be ${SHORT_TEXT_MAX} characters or fewer`);
+    if (trimmed.some((tag) => tag.length > TAG_MAX)) return fail(`skillTags must be ${TAG_MAX} characters or fewer`);
     set.skillTags = trimmed;
   }
   return { ok: true, set };
@@ -222,9 +242,7 @@ export function buildApplicationUpdate(body: unknown, context: ApplicationUpdate
   }
 
   const cleared = clearHiddenFields(fields, stored);
-  // clearHiddenFields resets an unticked co-op's job types to an empty array; store the empty list the registration way.
-  const emptied = Array.isArray(cleared.jobTypesInterested) && cleared.jobTypesInterested.length === 0;
-  const visible = emptied ? { ...cleared, jobTypesInterested: ["[]"] } : cleared;
+  const visible = cleared;
   const levelError = levelDependentError(visible, stored);
   if (levelError) return fail(levelError);
 
