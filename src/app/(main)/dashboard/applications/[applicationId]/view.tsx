@@ -672,21 +672,13 @@ export default function ApplicationView({
   function handleResumeSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file type
-      const allowedTypes = [
-        "application/pdf",
-        "application/msword",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      ];
-      if (!allowedTypes.includes(file.type)) {
-        toast.error(
-          "Invalid file type. Only PDF and Word documents are allowed."
-        );
+      // Same limits as the registration app: PDF only, 4 MB.
+      if (file.type !== "application/pdf") {
+        toast.error("Invalid file type. Only PDF files are allowed.");
         return;
       }
-      // Validate file size (5MB max)
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error("File too large. Maximum size is 5MB.");
+      if (file.size > 4 * 1024 * 1024) {
+        toast.error("File too large. Maximum size is 4MB.");
         return;
       }
       setResumeFile(file);
@@ -1368,7 +1360,7 @@ export default function ApplicationView({
                             <input
                               ref={fileInputRef}
                               type="file"
-                              accept=".pdf,.doc,.docx"
+                              accept=".pdf,application/pdf"
                               onChange={handleResumeSelect}
                               className="hidden"
                             />
@@ -1398,7 +1390,7 @@ export default function ApplicationView({
                             )}
                           </div>
                           <p className="text-xs text-muted-foreground">
-                            Accepted formats: PDF, DOC, DOCX (max 5MB)
+                            Accepted format: PDF (max 4MB)
                           </p>
                         </div>
                       ) : (

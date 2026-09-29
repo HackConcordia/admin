@@ -1,227 +1,112 @@
 import type { NextRequest } from "next/server";
-import { NextResponse } from "next/server";
 
 import mongoose from "mongoose";
-import { GridFSBucket } from "mongodb";
-import { Readable } from "stream";
 
+import { getGridFSBucket } from "@/lib/gridfs";
+import {
+  EMPTY_FILE_FIELD,
+  deleteApplicationFile,
+  replaceApplicationFile,
+  validateResumeUpload,
+  type ApplicationFileField,
+} from "@/lib/conuhacks/resume-storage";
+import { requireAdmin } from "@/lib/require-admin";
+import Application from "@/repository/models/application";
 import connectMongoDB from "@/repository/mongoose";
 import { sendErrorResponse, sendSuccessResponse } from "@/repository/response";
-import Application from "@/repository/models/application";
-import { requireAdmin } from "@/lib/require-admin";
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-const ALLOWED_MIME_TYPES = [
-  "application/pdf",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-];
+type RouteContext = { params: Promise<{ applicationId: string }> };
+
+function describeError(error: unknown): string {
+  return error instanceof Error ? `${error.name}: ${error.message}` : "unknown error";
+}
 
 /**
- * POST: Upload a new resume for an application
- * Replaces any existing resume
+ * POST: Super admins upload a replacement resume. Stored like the registration app does
+ * (GridFS _id = application _id, PDF only, verified by magic bytes), so the applicant's
+ * dashboard serves the new file.
  */
-export const POST = async (
-  req: NextRequest,
-  { params }: { params: Promise<{ applicationId: string }> }
-) => {
+export const POST = async (req: NextRequest, { params }: RouteContext) => {
   const auth = await requireAdmin(req, { superAdmin: true });
   if (!auth.ok) return auth.response;
 
   try {
     const { applicationId } = await params;
+    if (!mongoose.Types.ObjectId.isValid(applicationId)) {
+      return sendErrorResponse("Invalid application id", null, 400);
+    }
 
     await connectMongoDB();
 
-    // Check if application exists
     const application = await Application.findById(applicationId);
     if (!application) {
       return sendErrorResponse("Application not found", null, 404);
     }
 
-    // Parse the multipart form data
     const formData = await req.formData();
-    const file = formData.get("resume") as File | null;
-
-    if (!file) {
-      return sendErrorResponse("No file provided", null, 400);
+    const validated = await validateResumeUpload(formData.get("resume"));
+    if (!validated.ok) {
+      return sendErrorResponse(validated.message, null, validated.status);
     }
 
-    // Validate file type
-    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
-      return sendErrorResponse(
-        "Invalid file type. Only PDF and Word documents are allowed.",
-        null,
-        400
-      );
-    }
-
-    // Validate file size
-    if (file.size > MAX_FILE_SIZE) {
-      return sendErrorResponse(
-        "File too large. Maximum size is 5MB.",
-        null,
-        400
-      );
-    }
-
-    if (!mongoose.connection.db) {
-      throw new Error("Database connection is not established");
-    }
-
-    const gridFSBucket = new GridFSBucket(mongoose.connection.db);
-
-    // Delete existing resume if it exists
-    if (application.resume?.id) {
+    let resume: ApplicationFileField;
+    try {
+      resume = await replaceApplicationFile(getGridFSBucket(), applicationId, validated);
+    } catch (error) {
+      // The GridFS write failed (replaceApplicationFile already cleaned up any partial file
+      // left under this id). Clear the stored metadata too, so a stale `size > 0` never claims
+      // a file that isn't actually there, and report failure without leaking internals.
+      console.error("Error writing resume to GridFS:", describeError(error));
       try {
-        const existingResumeId = new mongoose.Types.ObjectId(
-          application.resume.id
-        );
-        await gridFSBucket.delete(existingResumeId);
-      } catch (deleteError) {
-        // Log but don't fail if old file deletion fails
-        console.warn("Failed to delete existing resume:", deleteError);
+        await Application.findByIdAndUpdate(applicationId, { $set: { resume: EMPTY_FILE_FIELD } });
+      } catch (cleanupError) {
+        console.error("Error clearing resume field after a failed write:", describeError(cleanupError));
       }
+      return sendErrorResponse("Failed to upload resume", null, 500);
     }
 
-    // Convert File to Buffer
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
-    // Create a readable stream from the buffer
-    const readableStream = new Readable();
-    readableStream.push(buffer);
-    readableStream.push(null);
-
-    // Generate a unique filename
-    const filename = `${applicationId}_${Date.now()}_${file.name}`;
-
-    // Upload to GridFS
-    const uploadStream = gridFSBucket.openUploadStream(filename, {
-      metadata: {
-        originalName: file.name,
-        mimetype: file.type,
-        applicationId: applicationId,
-        uploadedAt: new Date(),
-      },
-    });
-
-    // Pipe the readable stream to GridFS
-    await new Promise<void>((resolve, reject) => {
-      readableStream
-        .pipe(uploadStream)
-        .on("finish", () => resolve())
-        .on("error", (error) => reject(error));
-    });
-
-    // Update the application with new resume metadata
-    const resumeMetadata = {
-      id: uploadStream.id.toString(),
-      originalName: file.name,
-      encoding: "binary",
-      size: file.size,
-      mimetype: file.type,
-      url: `/api/files/${uploadStream.id.toString()}`,
-    };
-
-    const updatedApplication = await Application.findByIdAndUpdate(
-      applicationId,
-      { $set: { resume: resumeMetadata } },
-      { new: true }
-    );
-
+    const updatedApplication = await Application.findByIdAndUpdate(applicationId, { $set: { resume } }, { new: true });
     if (!updatedApplication) {
-      return sendErrorResponse(
-        "Failed to update application with resume",
-        null,
-        500
-      );
+      return sendErrorResponse("Failed to update application with resume", null, 500);
     }
 
-    return sendSuccessResponse(
-      "Resume uploaded successfully",
-      {
-        resume: resumeMetadata,
-      },
-      200
-    );
+    return sendSuccessResponse("Resume uploaded successfully", { resume }, 200);
   } catch (error) {
-    console.error(
-      "Error in POST /api/application/[applicationId]/resume:",
-      error
-    );
-    return sendErrorResponse("Failed to upload resume", error, 500);
+    console.error("Error in POST /api/application/[applicationId]/resume:", describeError(error));
+    return sendErrorResponse("Failed to upload resume", null, 500);
   }
 };
 
 /**
- * DELETE: Remove resume from an application
+ * DELETE: Super admins remove the resume. The field goes back to the registration defaults.
  */
-export const DELETE = async (
-  req: NextRequest,
-  { params }: { params: Promise<{ applicationId: string }> }
-) => {
+export const DELETE = async (req: NextRequest, { params }: RouteContext) => {
   const auth = await requireAdmin(req, { superAdmin: true });
   if (!auth.ok) return auth.response;
 
   try {
     const { applicationId } = await params;
+    if (!mongoose.Types.ObjectId.isValid(applicationId)) {
+      return sendErrorResponse("Invalid application id", null, 400);
+    }
 
     await connectMongoDB();
 
-    // Check if application exists
     const application = await Application.findById(applicationId);
     if (!application) {
       return sendErrorResponse("Application not found", null, 404);
     }
 
-    // Check if there's a resume to delete
-    if (!application.resume?.id) {
+    const removed = await deleteApplicationFile(getGridFSBucket(), applicationId);
+    if (!removed && !(Number(application.resume?.size) > 0)) {
       return sendErrorResponse("No resume to delete", null, 400);
     }
 
-    if (!mongoose.connection.db) {
-      throw new Error("Database connection is not established");
-    }
-
-    const gridFSBucket = new GridFSBucket(mongoose.connection.db);
-
-    // Delete the file from GridFS
-    try {
-      const resumeId = new mongoose.Types.ObjectId(application.resume.id);
-      await gridFSBucket.delete(resumeId);
-    } catch (deleteError) {
-      console.warn("Failed to delete resume from GridFS:", deleteError);
-    }
-
-    // Clear the resume field in the application
-    const updatedApplication = await Application.findByIdAndUpdate(
-      applicationId,
-      {
-        $set: {
-          resume: {
-            id: "",
-            originalName: "",
-            encoding: "utf-8",
-            size: 0,
-            mimetype: "",
-            url: "",
-          },
-        },
-      },
-      { new: true }
-    );
-
-    if (!updatedApplication) {
-      return sendErrorResponse("Failed to update application", null, 500);
-    }
+    await Application.findByIdAndUpdate(applicationId, { $set: { resume: EMPTY_FILE_FIELD } }, { new: true });
 
     return sendSuccessResponse("Resume deleted successfully", null, 200);
   } catch (error) {
-    console.error(
-      "Error in DELETE /api/application/[applicationId]/resume:",
-      error
-    );
-    return sendErrorResponse("Failed to delete resume", error, 500);
+    console.error("Error in DELETE /api/application/[applicationId]/resume:", describeError(error));
+    return sendErrorResponse("Failed to delete resume", null, 500);
   }
 };
