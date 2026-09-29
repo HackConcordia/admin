@@ -6,7 +6,8 @@ import mongoose from "mongoose";
 import connectMongoDB from "@/repository/mongoose";
 import { sendSuccessResponse, sendErrorResponse } from "@/repository/response";
 import Application from "@/repository/models/application";
-import { requireAdmin } from "@/lib/require-admin";
+import { redactSensitiveApplicantFields } from "@/lib/conuhacks/redact-applicant-fields";
+import { fetchIsSuperAdmin, requireAdmin } from "@/lib/require-admin";
 
 export const GET = async (req: NextRequest, { params }: { params: Promise<{ applicationId: string }> }) => {
   const auth = await requireAdmin(req);
@@ -14,8 +15,6 @@ export const GET = async (req: NextRequest, { params }: { params: Promise<{ appl
 
   try {
     const { applicationId: userId } = await params;
-
-    console.log("userId:", userId);
 
     if (!userId) {
       return sendErrorResponse("userId is not defined", {}, 400);
@@ -49,10 +48,11 @@ export const GET = async (req: NextRequest, { params }: { params: Promise<{ appl
       }
     }
 
-    return sendSuccessResponse("User information retrieved successfully", {
-      ...application.toObject(),
-      resumeMetadata,
-    });
+    const isSuperAdmin = (await fetchIsSuperAdmin(auth.admin.adminId)) === true;
+    return sendSuccessResponse(
+      "User information retrieved successfully",
+      redactSensitiveApplicantFields({ ...application.toObject(), resumeMetadata }, isSuperAdmin),
+    );
   } catch (error) {
     console.error("Error during GET request:", error);
 
