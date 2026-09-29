@@ -1,9 +1,37 @@
 import type { NextRequest } from "next/server";
 
+import mongoose from "mongoose";
+
 import connectMongoDB from "@/repository/mongoose";
 import { sendErrorResponse, sendSuccessResponse } from "@/repository/response";
 import Application from "@/repository/models/application";
 import { requireAdmin } from "@/lib/require-admin";
+
+const COMMENTS_MAX = 5000;
+const TAG_MAX = 200;
+
+type Metadata = { ok: true; comments?: string; skillTags?: string[] } | { ok: false; error: string };
+
+/** Validates and trims the two reviewer fields (same limits as the super-admin edit). */
+function parseMetadata(body: unknown): Metadata {
+  const input = typeof body === "object" && body !== null && !Array.isArray(body) ? (body as Record<string, unknown>) : {};
+  const result: { comments?: string; skillTags?: string[] } = {};
+  if (input.comments !== undefined) {
+    if (input.comments !== null && typeof input.comments !== "string") return { ok: false, error: "comments must be a string" };
+    const comments = (input.comments ?? "").trim();
+    if (comments.length > COMMENTS_MAX) return { ok: false, error: `comments must be ${COMMENTS_MAX} characters or fewer` };
+    result.comments = comments;
+  }
+  if (input.skillTags !== undefined && input.skillTags !== null) {
+    const tags = input.skillTags;
+    if (!Array.isArray(tags) || !tags.every((tag) => typeof tag === "string")) return { ok: false, error: "skillTags must be a list of strings" };
+    const trimmed = (tags as string[]).map((tag) => tag.trim()).filter(Boolean);
+    if (trimmed.some((tag) => tag.length > TAG_MAX)) return { ok: false, error: `skillTags must be ${TAG_MAX} characters or fewer` };
+    result.skillTags = trimmed;
+  }
+  if (input.skillTags === null) result.skillTags = [];
+  return { ok: true, ...result };
+}
 
 /**
  * PATCH: Updates application metadata (comments and/or skillTags)
@@ -18,8 +46,11 @@ export const PATCH = async (
 
   try {
     const { applicationId } = await params;
+    if (!mongoose.Types.ObjectId.isValid(applicationId)) return sendErrorResponse("Invalid application id", null, 400);
 
-    const { comments, skillTags } = await req.json();
+    const parsed = parseMetadata(await req.json().catch(() => undefined));
+    if (!parsed.ok) return sendErrorResponse(parsed.error, null, 400);
+    const { comments, skillTags } = parsed;
 
     // Validate that at least one field is provided
     if (comments === undefined && skillTags === undefined) {
@@ -88,12 +119,8 @@ export const PATCH = async (
       200
     );
   } catch (error) {
-    console.error("Error in PATCH /api/application/[applicationId]/metadata:", error);
-    return sendErrorResponse(
-      "Failed to update application metadata",
-      error,
-      500
-    );
+    console.error("Error in PATCH /api/application/[applicationId]/metadata:", error instanceof Error ? error.name : "unknown error");
+    return sendErrorResponse("Failed to update application metadata", null, 500);
   }
 };
 

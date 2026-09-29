@@ -16,8 +16,8 @@ export const GET = async (req: NextRequest, { params }: { params: Promise<{ appl
   try {
     const { applicationId: userId } = await params;
 
-    if (!userId) {
-      return sendErrorResponse("userId is not defined", {}, 400);
+    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+      return sendErrorResponse("Invalid application id", null, 400);
     }
 
     await connectMongoDB();
@@ -25,7 +25,7 @@ export const GET = async (req: NextRequest, { params }: { params: Promise<{ appl
     const application = await Application.findById(userId);
 
     if (!application) {
-      return sendErrorResponse("No matching application found for the provided user ID", {}, 404);
+      return sendErrorResponse("No matching application found for the provided user ID", null, 404);
     }
 
     // console.log(user.profile.professionalInfo.resume);
@@ -54,8 +54,11 @@ export const GET = async (req: NextRequest, { params }: { params: Promise<{ appl
       redactSensitiveApplicantFields({ ...application.toObject(), resumeMetadata }, isSuperAdmin),
     );
   } catch (error) {
-    console.error("Error during GET request:", error);
+    // Name and Mongo code only: messages can carry applicant data.
+    const code = error instanceof Error ? (error as { code?: unknown }).code : undefined;
+    const description = !(error instanceof Error) ? "unknown error" : code === undefined ? error.name : `${error.name} (code ${String(code)})`;
+    console.error("Error in GET /api/users/[applicationId]:", description);
 
-    return sendErrorResponse("Failed to retrieve user information", error, 500);
+    return sendErrorResponse("Failed to retrieve user information", null, 500);
   }
 };
