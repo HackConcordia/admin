@@ -5,7 +5,7 @@ import mongoose from "mongoose";
 import { buildApplicationUpdate } from "@/lib/conuhacks/application-update";
 import { redactSensitiveApplicantFields } from "@/lib/conuhacks/redact-applicant-fields";
 import { fetchIsSuperAdmin, requireAdmin } from "@/lib/require-admin";
-import { isCheckedInStatus } from "@/lib/status";
+import { DECISION_STATUSES, isCheckedInStatus, isSameStatus } from "@/lib/status";
 import Application from "@/repository/models/application";
 import CheckIn from "@/repository/models/checkin";
 import connectMongoDB from "@/repository/mongoose";
@@ -80,22 +80,35 @@ export const PUT = async (req: NextRequest, { params }: RouteContext) => {
     if (!mongoose.Types.ObjectId.isValid(applicationId)) return sendErrorResponse("Invalid application id", null, 400);
 
     const body: unknown = await req.json().catch(() => undefined);
-    // First pass before touching the database: rejects anything invalid on its own.
-    const precheck = buildApplicationUpdate(body);
-    if (!precheck.ok) return sendErrorResponse(precheck.error, null, 400);
 
     await connectMongoDB();
     const existingApplication = await Application.findById(applicationId);
     if (!existingApplication) return sendErrorResponse("Application not found", null, 404);
 
-    // Second pass with the stored document: level-dependent answers and unchanged off-list values.
+    // One validation pass, against the stored document: level-dependent answers and unchanged off-list values.
     const stored = (typeof existingApplication.toObject === "function" ? existingApplication.toObject() : existingApplication) as Record<string, unknown>;
-    const update = buildApplicationUpdate(body, { stored });
-    if (!update.ok) return sendErrorResponse(update.error, null, 400);
+    const built = buildApplicationUpdate(body, { stored });
+    if (!built.ok) return sendErrorResponse(built.error, null, 400);
 
     const previousStatus = String(stored.status ?? "");
-    const nextStatus = typeof update.set.status === "string" ? update.set.status : undefined;
-    const isStatusChanging = nextStatus !== undefined && nextStatus !== previousStatus;
+    const requestedStatus = typeof built.set.status === "string" ? built.set.status : undefined;
+    // The form sends the status only when it was changed; a resent, unchanged one (or the legacy
+    // CheckedIn spelling of the same status) is not a change and never touches processedBy.
+    const nextStatus = requestedStatus !== undefined && !isSameStatus(requestedStatus, previousStatus) ? requestedStatus : undefined;
+    const { status: _ignored, ...setWithoutStatus } = built.set;
+    const set = nextStatus === undefined ? setWithoutStatus : built.set;
+
+    if (nextStatus !== undefined) {
+      if (DECISION_STATUSES.includes(nextStatus)) {
+        return sendErrorResponse("Use the Admit, Waitlist or Refuse decision buttons to set this status", null, 400);
+      }
+      const expected = (body as Record<string, unknown>).expectedStatus;
+      if (typeof expected !== "string") return sendErrorResponse("expectedStatus is required to change the status", null, 400);
+      if (!isSameStatus(expected, previousStatus)) {
+        return sendErrorResponse("Application status changed since it was loaded; reload and try again", null, 409);
+      }
+    }
+
     const isChangingToConfirmed = nextStatus === "Confirmed" && previousStatus !== "Confirmed";
     // Leaving Confirmed for anything but checked in (C4) removes the CheckIn record.
     const isLeavingConfirmed =
@@ -103,16 +116,17 @@ export const PUT = async (req: NextRequest, { params }: RouteContext) => {
 
     // A status change records the session admin and is conditional on the status just read, so it
     // loses with 409 to a concurrent decision instead of silently overwriting it.
-    const updatedApplication = isStatusChanging
-      ? await Application.findOneAndUpdate(
-          { _id: applicationId, status: previousStatus },
-          { $set: { ...update.set, processedBy: auth.admin.email, processedAt: new Date() } },
-          { new: true, runValidators: true },
-        )
-      : await Application.findByIdAndUpdate(applicationId, { $set: update.set }, { new: true, runValidators: true });
+    const updatedApplication =
+      nextStatus !== undefined
+        ? await Application.findOneAndUpdate(
+            { _id: applicationId, status: previousStatus },
+            { $set: { ...set, processedBy: auth.admin.email, processedAt: new Date() } },
+            { new: true, runValidators: true },
+          )
+        : await Application.findByIdAndUpdate(applicationId, { $set: set }, { new: true, runValidators: true });
 
     if (!updatedApplication) {
-      return isStatusChanging
+      return nextStatus !== undefined
         ? sendErrorResponse("Application status changed since it was loaded; reload and try again", null, 409)
         : sendErrorResponse("Failed to update application", null, 500);
     }

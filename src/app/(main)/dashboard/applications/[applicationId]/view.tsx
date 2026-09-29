@@ -99,7 +99,7 @@ import {
   AlertTriangle,
   Star,
 } from "lucide-react";
-import { isCheckedInStatus } from "@/lib/status";
+import { DECISION_STATUSES, isCheckedInStatus, isSameStatus } from "@/lib/status";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -594,6 +594,19 @@ export default function ApplicationView({
     }
   }
 
+  // The status goes in the body only when the super admin changed it, with the status the form
+  // loaded, so the server can refuse (409) a save that would revert a decision made meanwhile.
+  function buildSaveBody() {
+    const { status, ...rest } = editedApplication;
+    const statusChanged = status !== undefined && !isSameStatus(status, application.status);
+    return {
+      ...rest,
+      comments,
+      skillTags,
+      ...(statusChanged ? { status, expectedStatus: application.status } : {}),
+    };
+  }
+
   // Save all changes
   async function saveChanges() {
     try {
@@ -604,11 +617,7 @@ export default function ApplicationView({
       const res = await fetch(`/api/application/${application._id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...editedApplication,
-          comments,
-          skillTags,
-        }),
+        body: JSON.stringify(buildSaveBody()),
       });
 
       if (!res.ok) {
@@ -1216,7 +1225,10 @@ export default function ApplicationView({
                               {editedApplication.status} (current)
                             </SelectItem>
                           )}
-                        {APPLICATION_STATUSES.map((status) => (
+                        {/* Admit, Waitlist and Refuse are decisions: they go through the decision buttons. */}
+                        {APPLICATION_STATUSES.filter(
+                          (status) => !DECISION_STATUSES.includes(status.value) || isSameStatus(status.value, application.status),
+                        ).map((status) => (
                           <SelectItem key={status.value} value={status.value}>
                             {status.label}
                           </SelectItem>
