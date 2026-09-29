@@ -13,7 +13,7 @@ import { Actions } from "./actions";
 import { AutoAssignDialog } from "./auto-assign-dialog";
 import { BulkAssignDialog } from "./bulk-assign-dialog";
 import { ApplicationTableRow, getApplicationsColumns } from "./columns";
-import { ExportDialog } from "./export-dialog";
+import { ExportDialog, type ExportKind } from "./export-dialog";
 import { ServerPagination } from "./server-pagination";
 
 const VISIBILITY_STORAGE_KEY = "applicationsTableColumnVisibility";
@@ -113,6 +113,7 @@ export function ApplicationTable({
 
   const [exportOpen, setExportOpen] = useState(false);
   const [exportFilter, setExportFilter] = useState<string>("all");
+  const [exportKind, setExportKind] = useState<ExportKind>("csv");
   const [exporting, setExporting] = useState(false);
 
   const [autoAssignOpen, setAutoAssignOpen] = useState(false);
@@ -332,51 +333,44 @@ export function ApplicationTable({
       return;
     }
 
+    const isCsv = exportKind === "csv";
+    const endpoint = isCsv
+      ? `/api/applications/export-csv?status=${encodeURIComponent(exportFilter)}`
+      : `/api/resumes/export?statusFilter=${encodeURIComponent(exportFilter)}`;
+    const extension = isCsv ? ".csv" : ".zip";
+    const what = isCsv ? "applications" : "resumes";
+
     setExporting(true);
     try {
-      const promise = fetch(
-        `/api/resumes/export?statusFilter=${exportFilter}`
-      ).then(async (response) => {
+      const promise = fetch(endpoint).then(async (response) => {
         if (!response.ok) {
           const err = await response.json().catch(() => ({}));
-          throw new Error(err?.message && "Failed to export resumes");
+          throw new Error(err?.message || `Failed to export ${what}`);
         }
 
         const blob = await response.blob();
-
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
 
         const contentDisposition = response.headers.get("Content-Disposition");
-        let filename = `resumes_${exportFilter}_${new Date()
-          .toISOString()
-          .slice(0, 10)}.zip`;
-        if (contentDisposition) {
-          const filenameMatch = contentDisposition.match(
-            /filename[^;=\n]*=\s*(['"]?)([^'"\n]*)\1/i
-          );
-          if (filenameMatch && filenameMatch[2]) {
-            filename = filenameMatch[2];
-          }
-        }
-
-        if (!filename.toLowerCase().endsWith(".zip")) {
-          filename += ".zip";
+        const filenameMatch = contentDisposition?.match(/filename[^;=\n]*=\s*(['"]?)([^'"\n]*)\1/i);
+        let filename = filenameMatch?.[2] || `${what}_${exportFilter}_${new Date().toISOString().slice(0, 10)}${extension}`;
+        if (!filename.toLowerCase().endsWith(extension)) {
+          filename += extension;
         }
 
         a.download = filename;
         document.body.appendChild(a);
         a.click();
-
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
       });
 
       await toast.promise(promise, {
-        loading: "Exporting resumes...",
-        success: "Resumes exported successfully",
-        error: (e) => e.message && "Failed to export resumes",
+        loading: `Exporting ${what}...`,
+        success: `Exported ${what}`,
+        error: (e) => e?.message || `Failed to export ${what}`,
       });
 
       setExportOpen(false);
@@ -494,6 +488,8 @@ export function ApplicationTable({
           <ExportDialog
             open={exportOpen}
             onOpenChange={setExportOpen}
+            exportKind={exportKind}
+            onExportKindChange={setExportKind}
             exportFilter={exportFilter}
             onExportFilterChange={setExportFilter}
             onExport={handleExport}
