@@ -38,6 +38,8 @@ beforeEach(() => {
   applicationModel.findOneAndUpdate.mockResolvedValue({ _id: APP_ID });
 });
 
+const TRAVEL_DECISION_UNSET = { isTravelReimbursementApproved: "", travelReimbursementAmount: "", travelReimbursementCurrency: "" };
+
 describe("PATCH /api/status/[applicationId]", () => {
   it("records the logged-in admin as processedBy, conditional on the status it read", async () => {
     const res = await patch({ action: "waitlist", adminEmail: "attacker@evil.dev" });
@@ -45,7 +47,7 @@ describe("PATCH /api/status/[applicationId]", () => {
     expect(res.status).toBe(200);
     expect(applicationModel.findOneAndUpdate).toHaveBeenCalledWith(
       { _id: APP_ID, status: { $in: ["Submitted", "Admitted", "Waitlisted", "Refused"], $eq: "Submitted" } },
-      { $set: expect.objectContaining({ processedBy: TEST_ADMIN_EMAIL, status: "Waitlisted" }) },
+      { $set: expect.objectContaining({ processedBy: TEST_ADMIN_EMAIL, status: "Waitlisted" }), $unset: TRAVEL_DECISION_UNSET },
       { new: true },
     );
     expect(emails.sendWaitlistedEmail).toHaveBeenCalledWith("hacker@test.dev", "H", "K");
@@ -112,6 +114,16 @@ describe("PATCH /api/status/[applicationId]", () => {
     it("lets a regular admin waitlist and refuse", async () => {
       expect((await patch({ action: "waitlist" }, { regular: true })).status).toBe(200);
       expect((await patch({ action: "reject" }, { regular: true })).status).toBe(200);
+    });
+
+    it("clears a stored travel approval when a regular admin waitlists or refuses (L1)", async () => {
+      for (const action of ["waitlist", "reject"]) {
+        applicationModel.findOneAndUpdate.mockClear();
+        expect((await patch({ action }, { regular: true })).status).toBe(200);
+        const update = applicationModel.findOneAndUpdate.mock.calls[0][1];
+        expect(update.$unset).toEqual(TRAVEL_DECISION_UNSET);
+        expect(update.$set).not.toHaveProperty("isTravelReimbursementApproved");
+      }
     });
 
     it("treats a null travelReimbursement as no decision for a regular admin", async () => {

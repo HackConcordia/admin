@@ -31,7 +31,11 @@ const carriesTravelDecision = (input: Record<string, unknown>): boolean =>
   TRAVEL_DECISION_KEYS.some((key) => input[key] !== undefined && input[key] !== null);
 
 /** The admin-only travel fields a decision writes. Never read or accepted by the registration app. */
-function travelUpdate(decision: TravelDecision | null): { set: Record<string, unknown>; unset?: Record<string, ""> } {
+function travelUpdate(action: Action, decision: TravelDecision | null): { set: Record<string, unknown>; unset?: Record<string, ""> } {
+  // Waitlisting or refusing withdraws any stored approval (L1). Automatic, so any admin may trigger it.
+  if (action !== "admit") {
+    return { set: {}, unset: { isTravelReimbursementApproved: "", travelReimbursementAmount: "", travelReimbursementCurrency: "" } };
+  }
   if (!decision) return { set: {} };
   if (!decision.approved) {
     return { set: { isTravelReimbursementApproved: false }, unset: { travelReimbursementAmount: "", travelReimbursementCurrency: "" } };
@@ -86,7 +90,7 @@ export const PATCH = async (req: NextRequest, { params }: { params: Promise<{ ap
       return sendErrorResponse("This applicant didn't ask for travel reimbursement", null, 409);
     }
 
-    const { set, unset } = travelUpdate(travel.decision);
+    const { set, unset } = travelUpdate(action as Action, travel.decision);
     const update = {
       $set: { ...set, processedBy: auth.admin.email, processedAt: new Date(), status: ACTIONS[action as Action] },
       ...(unset ? { $unset: unset } : {}),
