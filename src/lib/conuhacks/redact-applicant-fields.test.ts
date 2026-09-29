@@ -15,6 +15,10 @@ const DOC = {
   gender: "female",
   pronouns: "she/her",
   underrepresented: "Yes",
+  travelReimbursement: true,
+  isTravelReimbursementApproved: true,
+  travelReimbursementAmount: 149,
+  travelReimbursementCurrency: "USD",
 };
 
 describe("redactSensitiveApplicantFields", () => {
@@ -32,6 +36,15 @@ describe("redactSensitiveApplicantFields", () => {
       expect(JSON.stringify(redacted)).not.toContain(value);
     }
     expect(DOC.gender).toBe("female");
+  });
+
+  it("hides the admin travel decision from a regular reviewer but keeps the applicant's own request", () => {
+    const redacted = redactSensitiveApplicantFields(DOC, false);
+    expect(redacted).toMatchObject({ travelReimbursement: true });
+    for (const key of ["isTravelReimbursementApproved", "travelReimbursementAmount", "travelReimbursementCurrency"]) {
+      expect(redacted).not.toHaveProperty(key);
+    }
+    expect(DOC.travelReimbursementAmount).toBe(149);
   });
 
   it("returns the document untouched for a super admin", () => {

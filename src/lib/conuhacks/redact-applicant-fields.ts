@@ -10,6 +10,12 @@
  */
 import { SUPER_ADMIN_ONLY_FIELD_KEYS } from "@/lib/conuhacks/application-fields";
 
+/**
+ * The admin-only travel decision. Only super admins decide travel (A2), so regular reviewers never
+ * receive it. The applicant's own request (`travelReimbursement`) is not listed: reviewers see it.
+ */
+export const TRAVEL_DECISION_FIELD_KEYS = ["isTravelReimbursementApproved", "travelReimbursementAmount", "travelReimbursementCurrency"] as const;
+
 export function redactSensitiveApplicantFields<T extends Record<string, unknown>>(details: T, isSuperAdmin: boolean): T {
   if (isSuperAdmin) return details;
 
@@ -21,5 +27,6 @@ export function redactSensitiveApplicantFields<T extends Record<string, unknown>
     // types intact instead of deleting the key outright.
     redacted[key] = Array.isArray(redacted[key]) ? [] : "";
   }
+  for (const key of TRAVEL_DECISION_FIELD_KEYS) delete redacted[key];
   return redacted as T;
 }

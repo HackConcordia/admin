@@ -36,9 +36,13 @@ const DOC = {
   gender: "female",
   pronouns: "she/her",
   underrepresented: "Unsure",
+  travelReimbursement: true,
+  isTravelReimbursementApproved: true,
+  travelReimbursementAmount: 149,
+  travelReimbursementCurrency: "USD",
   resume: { size: 0 },
 };
-const SECRETS = ["under-18", "5145550000", "XL", "vegan", "No sesame", "female", "she/her", "Unsure"];
+const SECRETS = ["under-18", "5145550000", "XL", "vegan", "No sesame", "female", "she/her", "Unsure", "isTravelReimbursementApproved", "travelReimbursementAmount", "travelReimbursementCurrency"];
 
 const CASES: { name: string; handler: RouteHandler; method: string; url: string; body?: unknown; arrange: () => void }[] = [
   {
@@ -77,6 +81,7 @@ describe.each(CASES)("$name", ({ handler, method, url, body, arrange }) => {
 
     expect(res.status).toBe(200);
     expect(text).toContain("data-science");
+    expect(text).toContain("travelReimbursement");
     for (const secret of SECRETS) expect(text).not.toContain(secret);
   });
 

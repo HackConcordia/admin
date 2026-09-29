@@ -42,15 +42,13 @@ const STATUS_OPTIONS = [
 ];
 
 const TRAVEL_REIMBURSEMENT_OPTIONS = [
-  { value: "true", label: "Required Travel Reimbursement (All)" },
-  { value: "quebec", label: "Required Travel Reimbursement in Quebec" },
-  {
-    value: "outside-quebec",
-    label: "Required Travel Reimbursement outside Quebec",
-  },
-  { value: "false", label: "Not Required Travel Reimbursement" },
-  { value: "approved", label: "Approved Travel Reimbursement" },
-  { value: "starred", label: "Starred Candidates" },
+  { value: "true", label: "Asked for travel reimbursement (all)" },
+  { value: "outside-quebec", label: "Asked for travel reimbursement, outside Quebec" },
+  { value: "quebec", label: "Asked for travel reimbursement, Quebec residents" },
+  { value: "false", label: "Said no to travel reimbursement" },
+  { value: "unanswered", label: "Didn't answer the travel question" },
+  { value: "approved", label: "Travel reimbursement approved" },
+  { value: "starred", label: "Starred candidates" },
 ];
 
 export default function ApplicationsFilters({

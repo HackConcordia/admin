@@ -1642,6 +1642,7 @@ export default function ApplicationView({
         onOpenChange={setTravelReimbursementDialogOpen}
         onSubmit={handleTravelReimbursementSubmit}
         candidateName={`${application.firstName} ${application.lastName}`}
+        quebecResident={isQuebecResident(application.country, application.city)}
       />
 
       <QrCodeCheckinDialog

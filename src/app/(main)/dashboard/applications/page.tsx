@@ -4,8 +4,8 @@ import { COOKIE_NAME, verifyAuthToken } from "@/lib/auth-token";
 import Admin from "@/repository/models/admin";
 import Application from "@/repository/models/application";
 import connectMongoDB from "@/repository/mongoose";
-import { QUEBEC_CITIES } from "@/lib/conuhacks/quebec";
-import { withLegacyCheckedIn } from "@/lib/status";
+import { buildApplicationsQuery } from "@/lib/conuhacks/application-query";
+import { fetchIsSuperAdmin } from "@/lib/require-admin";
 
 import { ApplicationTable } from "./_components/application-table";
 import { type ApplicationTableRow } from "./_components/columns";
@@ -74,14 +74,15 @@ async function getAuthFromCookies(): Promise<AuthPayload | null> {
 
   return {
     adminId: (payload as any).adminId,
-    isSuperAdmin: !!(payload as any).isSuperAdmin,
+    // The database decides, never the JWT claim (same rule as the API guards).
+    isSuperAdmin: (await fetchIsSuperAdmin(String((payload as any).adminId))) === true,
   };
 }
 
 /**
  * Map raw Mongo docs to ApplicationTableRow[]
  */
-function mapApplications(docs: any[]): ApplicationTableRow[] {
+function mapApplications(docs: any[], includeTravelDecision: boolean): ApplicationTableRow[] {
   return (docs ?? []).map((a) => ({
     _id: String(a._id),
     firstName: a.firstName,
@@ -91,99 +92,17 @@ function mapApplications(docs: any[]): ApplicationTableRow[] {
     school: a.school,
     processedBy: a.processedBy,
     processedAt: a.processedAt ? formatDateDDMMMYYYY(a.processedAt) : undefined,
-    travelReimbursementAmount: a.travelReimbursementAmount,
-    travelReimbursementCurrency: a.travelReimbursementCurrency,
-    isTravelReimbursementApproved: a.isTravelReimbursementApproved,
+    // Only super admins decide travel (A2), so regular reviewers never receive the decision.
+    ...(includeTravelDecision
+      ? {
+          travelReimbursementAmount: a.travelReimbursementAmount,
+          travelReimbursementCurrency: a.travelReimbursementCurrency,
+          isTravelReimbursementApproved: a.isTravelReimbursementApproved,
+        }
+      : {}),
     isStarred: a.isStarred || false,
     createdAt: a.createdAt ? formatDateDDMMMYYYY(a.createdAt) : undefined,
   }));
-}
-
-/**
- * Build MongoDB query based on filters
- */
-function buildQuery(
-  search: string,
-  status: string,
-  travelReimbursement: string,
-  assignedStatus?: string,
-  assignedIds?: string[],
-  assignedTo?: string // New param
-): Record<string, any> {
-  const query: Record<string, any> = {};
-
-  // Search by email or full name (firstName + lastName concatenated)
-  if (search) {
-    query.$or = [
-      { email: { $regex: search, $options: "i" } },
-      {
-        $expr: {
-          $regexMatch: {
-            input: { $concat: ["$firstName", " ", "$lastName"] },
-            regex: search,
-            options: "i",
-          },
-        },
-      },
-    ];
-  }
-
-  // Filter by status (can be comma-separated for multiple statuses).
-  // C4: selecting "Checked-in" also matches documents stored with legacy "CheckedIn".
-  if (status) {
-    const statuses = withLegacyCheckedIn(status.split(",").filter(Boolean));
-    if (statuses.length === 1) {
-      query.status = statuses[0];
-    } else if (statuses.length > 1) {
-      query.status = { $in: statuses };
-    }
-  }
-
-  // Filter by travel reimbursement
-  if (travelReimbursement === "true") {
-    query.travelReimbursement = true;
-  } else if (travelReimbursement === "false") {
-    query.travelReimbursement = false;
-  } else if (travelReimbursement === "quebec") {
-    // Travel reimbursement required AND located in Quebec
-    const quebecCities = [...QUEBEC_CITIES];
-    query.travelReimbursement = true;
-    query.country = "CA";
-    query.city = { $in: quebecCities };
-  } else if (travelReimbursement === "outside-quebec") {
-    // Travel reimbursement required AND NOT located in Quebec
-    const quebecCities = [...QUEBEC_CITIES];
-    query.travelReimbursement = true;
-    query.$or = [
-      { country: { $ne: "CA" } },
-      { country: "CA", city: { $nin: quebecCities } },
-    ];
-  } else if (travelReimbursement === "approved") {
-    query.isTravelReimbursementApproved = true;
-  } else if (travelReimbursement === "starred") {
-    query.isStarred = true;
-  }
-  // Filter by assigned status
-  if (assignedStatus === "assigned") {
-    query.processedBy = { $ne: "Not processed" };
-  } else if (assignedStatus === "not-assigned") {
-    query.processedBy = "Not processed";
-  }
-
-  // Filter by specific reviewers (assignedTo)
-  if (assignedTo) {
-    const reviewers = assignedTo.split(",").filter(Boolean);
-    if (reviewers.length > 0) {
-      query.processedBy = { $in: reviewers };
-    }
-  }
-
-  // Filter by assigned applications (for non-super admins)
-  if (assignedIds !== undefined) {
-    query._id = { $in: assignedIds };
-  }
-
-  return query;
 }
 
 /**
@@ -201,14 +120,7 @@ async function getPaginatedApplications(
   applications: ApplicationTableRow[];
   pagination: PaginationInfo;
 }> {
-  const query = buildQuery(
-    search,
-    status,
-    travelReimbursement,
-    assignedStatus,
-    undefined,
-    assignedTo
-  );
+  const query = buildApplicationsQuery({ search, status, travelReimbursement, assignedStatus, assignedTo });
 
   const total = await Application.countDocuments(query);
   const totalPages = Math.ceil(total / limit);
@@ -225,7 +137,7 @@ async function getPaginatedApplications(
     .exec();
 
   return {
-    applications: mapApplications(apps),
+    applications: mapApplications(apps, true),
     pagination: { page, limit, total, totalPages },
   };
 }
@@ -271,13 +183,7 @@ async function getPaginatedAssignedApplications(
     };
   }
 
-  const query = buildQuery(
-    search,
-    status,
-    travelReimbursement,
-    assignedStatus,
-    assignedIds
-  );
+  const query = buildApplicationsQuery({ search, status, travelReimbursement, assignedStatus, assignedIds });
 
   const total = await Application.countDocuments(query);
   const totalPages = Math.ceil(total / limit);
@@ -294,7 +200,7 @@ async function getPaginatedAssignedApplications(
     .exec();
 
   return {
-    applications: mapApplications(apps),
+    applications: mapApplications(apps, false),
     pagination: { page, limit, total, totalPages },
   };
 }
