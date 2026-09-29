@@ -1,6 +1,7 @@
 import connectMongoDB from "@/repository/mongoose";
 import { sendSuccessResponse, sendErrorResponse } from "@/repository/response";
 import Application from "@/repository/models/application";
+import { AGE_VALUES } from "@/lib/conuhacks/field-options";
 import { requireAdmin } from "@/lib/require-admin";
 import { CHECKED_IN_STATUSES } from "@/lib/status";
 
@@ -8,7 +9,8 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export const GET = async (request: Request) => {
-  const auth = await requireAdmin(request);
+  // Age is a super-admin-only field; this list exists for consent-form follow-up.
+  const auth = await requireAdmin(request, { superAdmin: true });
   if (!auth.ok) return auth.response;
 
   try {
@@ -24,10 +26,11 @@ export const GET = async (request: Request) => {
     };
 
     // Add age filter
+    // Age on the first day of the event, from the XI "age" bucket.
     if (filter === "above") {
-      baseQuery.isEighteenOrAbove = "yes";
+      baseQuery.age = { $in: AGE_VALUES.filter((value) => value !== "under-18") };
     } else if (filter === "below") {
-      baseQuery.isEighteenOrAbove = "no";
+      baseQuery.age = "under-18";
     }
 
     // Add search filter (search by name or email)
@@ -79,7 +82,7 @@ export const GET = async (request: Request) => {
       firstName: 1,
       lastName: 1,
       email: 1,
-      isEighteenOrAbove: 1,
+      age: 1,
       status: 1,
       school: 1,
     })

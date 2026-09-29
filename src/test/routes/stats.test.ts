@@ -13,7 +13,7 @@ vi.mock("@/repository/models/team", () => ({ default: teamModel }));
 import * as ageDistribution from "@/app/api/(group)/stats/age-distribution/route";
 import * as stats from "@/app/api/(group)/stats/route";
 import * as resumesExport from "@/app/api/(group)/resumes/export/route";
-import { adminCookie, buildRequest } from "@/test/http";
+import { NON_SUPER_ADMIN_ID, adminCookie, buildRequest } from "@/test/http";
 
 const app = (status: string) => ({
   status,
@@ -69,5 +69,65 @@ describe("GET /api/resumes/export status filter (C4)", () => {
       status: { $in: ["Submitted", "Admitted", "Waitlisted", "Confirmed", "Checked-in", "CheckedIn"] },
       "resume.id": { $exists: true, $nin: [null, ""] },
     });
+  });
+});
+
+describe("GET /api/stats redaction", () => {
+  it("zeroes T-shirt and dietary counts for a regular reviewer", async () => {
+    applicationModel.find.mockResolvedValue([{ ...app("Confirmed"), dietaryRestrictions: ['["vegan"]'] }]);
+    teamModel.find.mockResolvedValue([]);
+
+    const res = await stats.GET(buildRequest("/api/stats", { cookie: await adminCookie({ adminId: NON_SUPER_ADMIN_ID }) }));
+    const { data } = await res.json();
+
+    expect(data.tshirtCounts).toEqual({ S: 0, M: 0, L: 0, XL: 0 });
+    expect(data.dietaryRestrictionsData.every((entry: { count: number }) => entry.count === 0)).toBe(true);
+  });
+
+  it("keeps T-shirt counts for a super admin", async () => {
+    applicationModel.find.mockResolvedValue([app("Confirmed")]);
+    teamModel.find.mockResolvedValue([]);
+
+    const res = await stats.GET(buildRequest("/api/stats", { cookie: await adminCookie() }));
+    const { data } = await res.json();
+
+    expect(data.tshirtCounts.M).toBe(1);
+  });
+
+  it.each([
+    ["JSON in a one-element array", ['["vegan","halal"]'], 1],
+    ["an empty array", [], 0],
+    ["a plain array", ["vegan", "halal"], 1],
+    ["a JSON string", '["vegan","halal"]', 1],
+    ["none", ["none"], 0],
+  ])("counts dietary restrictions stored as %s", async (_label, stored, expected) => {
+    applicationModel.find.mockResolvedValue([{ ...app("Confirmed"), dietaryRestrictions: stored }]);
+    teamModel.find.mockResolvedValue([]);
+
+    const res = await stats.GET(buildRequest("/api/stats", { cookie: await adminCookie() }));
+    const { data } = await res.json();
+    const count = (name: string) =>
+      data.dietaryRestrictionsData.find((entry: { restriction: string }) => entry.restriction === name).count;
+
+    expect([count("Vegan"), count("Halal")]).toEqual([expected, expected]);
+  });
+});
+
+describe("GET /api/stats/age-distribution (XI)", () => {
+  it("is for super admins only", async () => {
+    const res = await ageDistribution.GET(
+      buildRequest("/api/stats/age-distribution", { cookie: await adminCookie({ adminId: NON_SUPER_ADMIN_ID }) }),
+    );
+    expect(res.status).toBe(403);
+  });
+
+  it("filters under-18 attendees by the age bucket", async () => {
+    const lean = vi.fn().mockResolvedValue([]);
+    const sort = vi.fn(() => ({ lean }));
+    applicationModel.find.mockReturnValue({ sort });
+
+    await ageDistribution.GET(buildRequest("/api/stats/age-distribution?filter=below", { cookie: await adminCookie() }));
+
+    expect(applicationModel.find.mock.calls[0][0]).toMatchObject({ age: "under-18" });
   });
 });

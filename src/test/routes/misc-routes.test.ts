@@ -23,7 +23,7 @@ const FILE_ID = "64e000000000000000000001";
 runGuardCases([
   { name: "GET /api/stats", handler: stats.GET, method: "GET", url: "/api/stats", level: "any" },
   { name: "GET /api/stats/advanced", handler: advanced.GET, method: "GET", url: "/api/stats/advanced", level: "any" },
-  { name: "GET /api/stats/age-distribution", handler: ageDistribution.GET, method: "GET", url: "/api/stats/age-distribution", level: "any" },
+  { name: "GET /api/stats/age-distribution", handler: ageDistribution.GET, method: "GET", url: "/api/stats/age-distribution", level: "super" },
   { name: "GET /api/settings/get-settings", handler: getSettings.GET, method: "GET", url: "/api/settings/get-settings", level: "any" },
   { name: "GET /api/meals", handler: meals.GET, method: "GET", url: "/api/meals", level: "any" },
   { name: "POST /api/meals", handler: meals.POST, method: "POST", url: "/api/meals", level: "any" },
