@@ -30,6 +30,14 @@ describe("buildApplicationsQuery", () => {
     expect(JSON.stringify(query)).toContain("$nin");
   });
 
+  it("ignores the approved-travel filter unless the caller is a super admin", () => {
+    const reviewer = buildApplicationsQuery({ travelReimbursement: "approved", assignedIds: ["1"], isSuperAdmin: false });
+    expect(JSON.stringify(reviewer)).not.toContain("isTravelReimbursementApproved");
+    expect(reviewer).toEqual({ _id: { $in: ["1"] } });
+    expect(JSON.stringify(buildApplicationsQuery({ travelReimbursement: "approved" }))).not.toContain("isTravelReimbursementApproved");
+    expect(buildApplicationsQuery({ travelReimbursement: "approved", isSuperAdmin: true })).toEqual({ isTravelReimbursementApproved: true });
+  });
+
   it("escapes regex characters in the search", () => {
     expect(JSON.stringify(buildApplicationsQuery({ search: "a.b(" }))).toContain("a\\\\.b\\\\(");
   });

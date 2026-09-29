@@ -27,6 +27,7 @@ type ApplicationsFiltersProps = {
   onSearchChange: (search: string) => void;
   onStatusChange: (status: string) => void;
   onTravelReimbursementChange: (value: string) => void;
+  isSuperAdmin?: boolean;
 };
 
 const STATUS_OPTIONS = [
@@ -61,6 +62,7 @@ export default function ApplicationsFilters({
   onSearchChange,
   onStatusChange,
   onTravelReimbursementChange,
+  isSuperAdmin = false,
   onAssignedStatusChange,
   onAssignedToChange, // New callback
 }: ApplicationsFiltersProps & {
@@ -357,7 +359,7 @@ export default function ApplicationsFilters({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={ALL_VALUE}>All applicants</SelectItem>
-                {TRAVEL_REIMBURSEMENT_OPTIONS.map((opt) => (
+                {TRAVEL_REIMBURSEMENT_OPTIONS.filter((opt) => isSuperAdmin || opt.value !== "approved").map((opt) => (
                   <SelectItem key={opt.value} value={opt.value}>
                     {opt.label}
                   </SelectItem>

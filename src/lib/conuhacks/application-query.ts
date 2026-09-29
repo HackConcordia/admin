@@ -27,7 +27,7 @@ export function travelFilterClause(filter: string): Record<string, unknown> | nu
   }
 }
 
-const escapeRegex = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+export const escapeRegex = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 export interface ApplicationsQueryInput {
   search?: string;
@@ -36,6 +36,8 @@ export interface ApplicationsQueryInput {
   assignedStatus?: string;
   assignedIds?: readonly string[];
   assignedTo?: string;
+  /** Decided by the caller from the database. Travel decisions are super-admin-only (A2). */
+  isSuperAdmin?: boolean;
 }
 
 export function buildApplicationsQuery(input: ApplicationsQueryInput): Record<string, unknown> {
@@ -57,7 +59,9 @@ export function buildApplicationsQuery(input: ApplicationsQueryInput): Record<st
   if (statuses.length === 1) clauses.push({ status: statuses[0] });
   if (statuses.length > 1) clauses.push({ status: { $in: statuses } });
 
-  const travel = input.travelReimbursement ? travelFilterClause(input.travelReimbursement) : null;
+  // The approved filter would reveal a super admin's travel decisions to a reviewer by set membership.
+  const travelFilter = input.travelReimbursement === "approved" && input.isSuperAdmin !== true ? "" : input.travelReimbursement;
+  const travel = travelFilter ? travelFilterClause(travelFilter) : null;
   if (travel) clauses.push(travel);
 
   if (input.assignedStatus === "assigned") clauses.push({ processedBy: { $ne: "Not processed" } });

@@ -69,6 +69,7 @@ export function Actions({
         onSearchChange={onSearchChange}
         onStatusChange={onStatusChange}
         onTravelReimbursementChange={onTravelReimbursementChange}
+        isSuperAdmin={isSuperAdmin}
         onAssignedStatusChange={onAssignedStatusChange}
         onAssignedToChange={onAssignedToChange}
       />

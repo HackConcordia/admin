@@ -120,7 +120,7 @@ async function getPaginatedApplications(
   applications: ApplicationTableRow[];
   pagination: PaginationInfo;
 }> {
-  const query = buildApplicationsQuery({ search, status, travelReimbursement, assignedStatus, assignedTo });
+  const query = buildApplicationsQuery({ search, status, travelReimbursement, assignedStatus, assignedTo, isSuperAdmin: true });
 
   const total = await Application.countDocuments(query);
   const totalPages = Math.ceil(total / limit);
@@ -183,7 +183,7 @@ async function getPaginatedAssignedApplications(
     };
   }
 
-  const query = buildApplicationsQuery({ search, status, travelReimbursement, assignedStatus, assignedIds });
+  const query = buildApplicationsQuery({ search, status, travelReimbursement, assignedStatus, assignedIds, isSuperAdmin: false });
 
   const total = await Application.countDocuments(query);
   const totalPages = Math.ceil(total / limit);
