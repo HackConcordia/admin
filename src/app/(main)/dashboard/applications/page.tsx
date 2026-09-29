@@ -5,6 +5,7 @@ import Admin from "@/repository/models/admin";
 import Application from "@/repository/models/application";
 import connectMongoDB from "@/repository/mongoose";
 import { buildApplicationsQuery } from "@/lib/conuhacks/application-query";
+import { formatSchool } from "@/lib/conuhacks/display";
 import { fetchIsSuperAdmin } from "@/lib/require-admin";
 
 import { ApplicationTable } from "./_components/application-table";
@@ -89,7 +90,7 @@ function mapApplications(docs: any[], includeTravelDecision: boolean): Applicati
     lastName: a.lastName,
     email: a.email,
     status: a.status,
-    school: a.school,
+    school: formatSchool(a.school, a.schoolOther),
     processedBy: a.processedBy,
     processedAt: a.processedAt ? formatDateDDMMMYYYY(a.processedAt) : undefined,
     // Only super admins decide travel (A2), so regular reviewers never receive the decision.
@@ -128,7 +129,7 @@ async function getPaginatedApplications(
 
   const apps = await Application.find(
     query,
-    "email firstName lastName status school processedBy processedAt travelReimbursementAmount travelReimbursementCurrency isTravelReimbursementApproved isStarred createdAt"
+    "email firstName lastName status school schoolOther processedBy processedAt travelReimbursementAmount travelReimbursementCurrency isTravelReimbursementApproved isStarred createdAt"
   )
     .sort({ createdAt: 1 })
     .skip(skip)
@@ -191,7 +192,7 @@ async function getPaginatedAssignedApplications(
 
   const apps = await Application.find(
     query,
-    "email firstName lastName status school processedBy processedAt travelReimbursementAmount travelReimbursementCurrency isTravelReimbursementApproved isStarred createdAt"
+    "email firstName lastName status school schoolOther processedBy processedAt travelReimbursementAmount travelReimbursementCurrency isTravelReimbursementApproved isStarred createdAt"
   )
     .sort({ createdAt: 1 })
     .skip(skip)
