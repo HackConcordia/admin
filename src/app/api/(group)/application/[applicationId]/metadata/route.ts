@@ -74,7 +74,7 @@ export const PATCH = async (
     const unsetFields: Record<string, any> = {};
     if (comments !== undefined) {
       // If comments is empty string or null, remove the field from DB
-      if (comments === "" || comments === null) {
+      if (comments === "") {
         unsetFields.comments = "";
       } else {
         updateFields.comments = comments;

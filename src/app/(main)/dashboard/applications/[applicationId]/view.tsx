@@ -181,72 +181,6 @@ const APPLICATION_STATUSES = statuses.map((s) => ({
 // Critical fields that require confirmation before saving
 const CRITICAL_FIELDS = ["status", "firstName", "lastName"];
 
-/**
- * Helper function to format array values for display
- * Handles arrays, stringified arrays, and arrays containing stringified arrays
- */
-function formatArrayValue(value: string | string[] | undefined | null): string {
-  if (!value) return "—";
-
-  let arrayValue: string[];
-
-  // If it's an array
-  if (Array.isArray(value)) {
-    // Check if it's an array with a single string element that looks like a stringified array
-    if (value.length === 1 && typeof value[0] === "string") {
-      const str = value[0].trim();
-      if (str.startsWith("[") && str.endsWith("]")) {
-        try {
-          const parsed = JSON.parse(str);
-          if (Array.isArray(parsed)) {
-            arrayValue = parsed;
-          } else {
-            arrayValue = value;
-          }
-        } catch {
-          arrayValue = value;
-        }
-      } else {
-        arrayValue = value;
-      }
-    } else {
-      // It's a regular array, use it directly
-      arrayValue = value;
-    }
-  }
-  // If it's a string, try to parse it as JSON
-  else if (typeof value === "string") {
-    const trimmed = value.trim();
-
-    // Check if it looks like a stringified array
-    if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
-      try {
-        const parsed = JSON.parse(trimmed);
-        if (Array.isArray(parsed)) {
-          arrayValue = parsed;
-        } else {
-          return value;
-        }
-      } catch {
-        return value;
-      }
-    } else {
-      // Not an array format, return as-is
-      return value;
-    }
-  }
-  // Otherwise, treat it as a single value
-  else {
-    return String(value);
-  }
-
-  // Filter out empty values and join with " | "
-  const filtered = arrayValue.filter(
-    (item) => item && item !== "none" && item !== "None"
-  );
-  return filtered.length > 0 ? filtered.join(" | ") : "—";
-}
-
 export type { ApplicationDetails, TeamData, TeamMemberInfo } from "@/lib/conuhacks/application-details";
 
 /** An applicant's link, clickable only when it is a real http(s) URL (never javascript:/data:). */
@@ -270,12 +204,10 @@ function ExternalLinkField({ label, value }: { label: string; value: string }) {
 
 export default function ApplicationView({
   application: initial,
-  adminEmail: initialAdminEmail,
   teamData,
   isSuperAdmin,
 }: {
   application: ApplicationDetails;
-  adminEmail: string | null;
   teamData?: TeamData;
   isSuperAdmin: boolean;
 }) {
@@ -283,9 +215,6 @@ export default function ApplicationView({
 
   const [application, setApplication] =
     React.useState<ApplicationDetails>(initial);
-  const [adminEmail, setAdminEmail] = React.useState<string | null>(
-    initialAdminEmail
-  );
   const [error, setError] = React.useState<string | null>(null);
   const [checkInError, setCheckInError] = React.useState<string | null>(null);
   const [isSaving, setIsSaving] = React.useState<
@@ -347,24 +276,6 @@ export default function ApplicationView({
     }
   }, [isEditMode, application]);
 
-  React.useEffect(() => {
-    let active = true;
-    async function loadAdmin() {
-      try {
-        if (adminEmail) return;
-        const meRes = await fetch(`/api/auth-token/me`, { cache: "no-store" });
-        if (!meRes.ok) return;
-        const meJson = await meRes.json();
-        if (!active) return;
-        setAdminEmail(meJson?.data?.email ?? null);
-      } catch {}
-    }
-    loadAdmin();
-    return () => {
-      active = false;
-    };
-  }, [adminEmail]);
-
   async function updateStatus(
     action: "admit" | "waitlist" | "reject",
     travelReimbursementData?: TravelReimbursementData
@@ -423,11 +334,7 @@ export default function ApplicationView({
     setActionConfirmationOpen(false);
     if (!confirmationAction) return;
 
-    if (confirmationAction === "admit" && application.travelReimbursement !== true) {
-      updateStatus("admit");
-    } else {
-      updateStatus(confirmationAction);
-    }
+    updateStatus(confirmationAction);
     setConfirmationAction(null);
   }
 
@@ -737,8 +644,6 @@ export default function ApplicationView({
 
   // Fields that use JSON string in array format: ['["value1","value2"]'] (registration storage)
   const JSON_STRING_ARRAY_FIELDS: string[] = ["languagesSpoken", "jobTypesInterested", "dietaryRestrictions"];
-  // Fields that use JSON string format directly: '["value1","value2"]' (none in ConUHacks XI)
-  const JSON_STRING_DIRECT_FIELDS: string[] = [];
 
   // Generic toggle function for any multiselect field
   function toggleMultiselectValue(
@@ -782,8 +687,6 @@ export default function ApplicationView({
       let storedValue: string | string[];
       if (JSON_STRING_ARRAY_FIELDS.includes(field)) {
         storedValue = [JSON.stringify(newValues)];
-      } else if (JSON_STRING_DIRECT_FIELDS.includes(field)) {
-        storedValue = JSON.stringify(newValues);
       } else {
         storedValue = newValues;
       }
@@ -802,40 +705,8 @@ export default function ApplicationView({
     type: "text" | "textarea" | "select" | "boolean" | "multiselect" = "text",
     options?: readonly { value: string; label: string }[]
   ) {
-    const value = isEditMode ? editedApplication[field] : application[field];
+    const value = editedApplication[field];
 
-    if (!isEditMode) {
-      if (type === "boolean") {
-        return (
-          <div className="space-y-1">
-            <div className="text-muted-foreground text-xs">{label}</div>
-            <div>{value ? "Yes" : "No"}</div>
-          </div>
-        );
-      }
-      if (type === "multiselect" || Array.isArray(value)) {
-        return (
-          <div className="space-y-1">
-            <div className="text-muted-foreground text-xs">{label}</div>
-            <div>{formatArrayValue(value as string | string[])}</div>
-          </div>
-        );
-      }
-      let displayValue = "—";
-      if (value !== null && value !== undefined && value !== "") {
-        displayValue = String(value);
-      }
-      return (
-        <div className="space-y-1">
-          <div className="text-muted-foreground text-xs">{label}</div>
-          <div className={type === "textarea" ? "whitespace-pre-wrap" : ""}>
-            {displayValue}
-          </div>
-        </div>
-      );
-    }
-
-    // Edit mode
     if (type === "boolean") {
       return (
         <div className="space-y-2">

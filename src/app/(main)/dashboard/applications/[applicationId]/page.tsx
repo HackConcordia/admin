@@ -68,5 +68,5 @@ export default async function Page({ params }: { params: Promise<{ applicationId
   // of the page's initial HTML/RSC payload, not just out of the rendered UI.
   const application = redactSensitiveApplicantFields(rawDetails, isSuperAdmin);
 
-  return <ApplicationView application={application} adminEmail={null} teamData={teamData} isSuperAdmin={isSuperAdmin} />;
+  return <ApplicationView application={application} teamData={teamData} isSuperAdmin={isSuperAdmin} />;
 }

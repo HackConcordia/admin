@@ -242,12 +242,11 @@ export function buildApplicationUpdate(body: unknown, context: ApplicationUpdate
   }
 
   const cleared = clearHiddenFields(fields, stored);
-  const visible = cleared;
-  const levelError = levelDependentError(visible, stored);
+  const levelError = levelDependentError(cleared, stored);
   if (levelError) return fail(levelError);
 
   const reviewer = parseReviewerFields(body);
   if (!reviewer.ok) return reviewer;
 
-  return { ok: true, set: { ...names.set, ...status.set, ...visible, ...reviewer.set } };
+  return { ok: true, set: { ...names.set, ...status.set, ...cleared, ...reviewer.set } };
 }
