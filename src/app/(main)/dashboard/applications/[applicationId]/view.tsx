@@ -99,7 +99,7 @@ import {
   AlertTriangle,
   Star,
 } from "lucide-react";
-import { DECISION_STATUSES, isCheckedInStatus, isSameStatus } from "@/lib/status";
+import { APPLICATION_STATUSES as VALID_STATUSES, DECISION_STATUSES, isCheckedInStatus, isSameStatus } from "@/lib/status";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -172,8 +172,8 @@ import { isQuebecResident } from "@/lib/conuhacks/quebec";
 import { describeTravelDecision, needsTravelDecision } from "@/lib/conuhacks/travel-block";
 import { safeExternalUrl } from "@/lib/safe-external-url";
 
-// Convert statuses to select options format
-const APPLICATION_STATUSES = statuses.map((s) => ({
+// Edit-form status options: only statuses the PUT route accepts (never "Not confirmed" and the like).
+const APPLICATION_STATUSES = statuses.filter((s) => (VALID_STATUSES as readonly string[]).includes(s.name)).map((s) => ({
   value: s.name,
   label: s.title,
 }));
@@ -199,6 +199,25 @@ function ExternalLinkField({ label, value }: { label: string; value: string }) {
         )}
       </div>
     </div>
+  );
+}
+
+/** The MLH consents given at registration, read-only. */
+function MlhConsents({ application }: { application: ApplicationDetails }) {
+  const items = [
+    ["MLH code of conduct", application.mlhConduct],
+    ["MLH terms and privacy policy", application.mlhTerms],
+    ["Emails from MLH", application.mlhEmails],
+  ] as const;
+  return (
+    <>
+      {items.map(([label, given]) => (
+        <div key={label} className="min-w-0 space-y-1">
+          <div className="text-muted-foreground text-xs">{label}</div>
+          <div>{given ? "Yes" : "No"}</div>
+        </div>
+      ))}
+    </>
   );
 }
 
@@ -1203,6 +1222,7 @@ export default function ApplicationView({
                         <ExternalLinkField label="LinkedIn" value={application.linkedin} />
                       </>
                     )}
+                    <MlhConsents application={application} />
                     <div className="space-y-2">
                       <Label className="text-xs">Resume</Label>
                       {isEditMode ? (

@@ -47,6 +47,10 @@ export type ApplicationDetails = {
   processedBy?: string;
   processedAt?: string;
   hasResume: boolean;
+  /** The MLH consents given at registration (read-only). */
+  mlhConduct: boolean;
+  mlhEmails: boolean;
+  mlhTerms: boolean;
   isTravelReimbursementApproved?: boolean;
   travelReimbursementAmount?: number;
   travelReimbursementCurrency?: string;
@@ -77,6 +81,9 @@ function hasStoredFile(file: unknown): boolean {
   const id = (file as { id?: unknown }).id;
   return typeof id === "string" && id !== "";
 }
+
+const consents = (doc: Record<string, unknown>): Record<string, unknown> =>
+  typeof doc.termsAndConditions === "object" && doc.termsAndConditions !== null ? (doc.termsAndConditions as Record<string, unknown>) : {};
 
 export function toApplicationDetails(doc: Record<string, unknown>): ApplicationDetails {
   return {
@@ -122,6 +129,9 @@ export function toApplicationDetails(doc: Record<string, unknown>): ApplicationD
     processedBy: text(doc.processedBy) || undefined,
     processedAt: isoDate(doc.processedAt),
     hasResume: hasStoredFile(doc.resume),
+    mlhConduct: consents(doc).mlhConduct === true,
+    mlhEmails: consents(doc).mlhEmails === true,
+    mlhTerms: consents(doc).mlhTerms === true,
     isTravelReimbursementApproved: typeof doc.isTravelReimbursementApproved === "boolean" ? doc.isTravelReimbursementApproved : undefined,
     travelReimbursementAmount: typeof doc.travelReimbursementAmount === "number" ? doc.travelReimbursementAmount : undefined,
     travelReimbursementCurrency: text(doc.travelReimbursementCurrency) || undefined,

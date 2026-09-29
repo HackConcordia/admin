@@ -15,6 +15,15 @@ describe("toApplicationDetails", () => {
     expect(details.jobTypesInterested).toEqual([]);
   });
 
+  it("reads the MLH consents as strict booleans (missing means not given)", () => {
+    expect(toApplicationDetails({ _id: "x", termsAndConditions: { mlhConduct: true, mlhEmails: false, mlhTerms: "yes" } })).toMatchObject({
+      mlhConduct: true,
+      mlhEmails: false,
+      mlhTerms: false,
+    });
+    expect(toApplicationDetails({ _id: "x" })).toMatchObject({ mlhConduct: false, mlhEmails: false, mlhTerms: false });
+  });
+
   it("keeps empty and plain-array list shapes", () => {
     const details = toApplicationDetails({
       _id: "x",
