@@ -18,6 +18,20 @@ describe("POST /api/auth-token/login", () => {
     expect(adminModel.findOne).not.toHaveBeenCalled();
   });
 
+  it("looks the email up case-insensitively, anchored and regex-escaped", async () => {
+    adminModel.findOne.mockResolvedValue(null);
+    await post({ email: "  Ada.Lovelace+x@Test.Dev ", password: "whatever1" });
+    expect(adminModel.findOne).toHaveBeenCalledWith({
+      email: { $regex: String.raw`^ada\.lovelace\+x@test\.dev$`, $options: "i" },
+    });
+  });
+
+  it("logs in a mixed-case stored admin with a lowercase email", async () => {
+    adminModel.findOne.mockResolvedValue({ _id: TEST_ADMIN_ID, email: "Ada@Test.Dev", password: await bcrypt.hash("right pass", 4) });
+    const res = await post({ email: "ada@test.dev", password: "right pass" });
+    expect(res.status).toBe(200);
+  });
+
   it("uses the same message for unknown email and wrong password", async () => {
     adminModel.findOne.mockResolvedValueOnce(null);
     const unknown = await post({ email: "nobody@test.dev", password: "whatever1" });
