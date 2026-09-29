@@ -88,6 +88,11 @@ describe("displayFieldValue", () => {
     expect(displayFieldValue(TRAVEL_FIELD, null)).toBe("Not answered");
   });
 
+  it("shows a picked dietary \"none\" as None, not as an unanswered dash", () => {
+    expect(displayFieldValue(spec("dietaryRestrictions"), ['["none"]'])).toBe("None");
+    expect(displayFieldValue(spec("dietaryRestrictions"), ['["vegan","halal"]'])).toBe("Vegan | Halal");
+  });
+
   it("shows an empty list, a bare JSON string and a plain array without throwing", () => {
     expect(displayFieldValue(spec("languagesSpoken"), undefined)).toBe("");
     expect(displayFieldValue(spec("languagesSpoken"), '["english"]')).toBe("English");

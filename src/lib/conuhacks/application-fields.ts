@@ -23,7 +23,7 @@ import { SchoolingLevels } from "@/constants/SchoolingLevels";
 import { Schools } from "@/constants/Schools";
 import { TShirtSizes } from "@/constants/TShirtSizes";
 import { UnderrepresentedGroups } from "@/constants/UnderrepresentedGroups";
-import { formatHackathons, formatList, formatTravelAnswer, formatYesNo, optionLabel } from "@/lib/conuhacks/display";
+import { formatDietaryRestrictions, formatHackathons, formatList, formatTravelAnswer, formatYesNo, optionLabel } from "@/lib/conuhacks/display";
 import { currentYearValues, isOtherLevel, requiresDegreeDetails } from "@/lib/conuhacks/field-options";
 import { listIncludes, parseListField } from "@/lib/conuhacks/list-field";
 
@@ -238,7 +238,8 @@ export function displayFieldValue(spec: ResolvedField, value: unknown): string {
     case "count":
       return formatHackathons(value);
     case "multiselect":
-      return formatList(value, spec.options ?? []);
+      // The form requires a dietary answer, so "none" reads as "None" (an empty cell would look unanswered).
+      return spec.key === "dietaryRestrictions" ? formatDietaryRestrictions(value) : formatList(value, spec.options ?? []);
     case "select":
       return optionLabel(spec.options ?? [], value);
     default:
