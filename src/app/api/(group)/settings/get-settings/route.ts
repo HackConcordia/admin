@@ -15,10 +15,7 @@ export const GET = async (req: NextRequest) => {
     await connectMongoDB();
     const settings = await Settings.findOne().lean<Record<string, unknown>>();
 
-    if (!settings) {
-      return sendErrorResponse("Failed to retrieve settings.", null, 500);
-    }
-
+    // No document yet (a fresh event database): answer with an empty view, all dates null.
     return sendSuccessResponse("Successfully retrieved settings document", toSettingsView(settings), 200);
   } catch (error) {
     console.error("Error in GET /api/settings/get-settings:", error instanceof Error ? error.name : "unknown error");

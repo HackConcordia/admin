@@ -25,6 +25,17 @@ describe("GET /api/settings/get-settings", () => {
     expect(data.dates.registrationClosingDate.display).toMatch(/January 20, 2027.*11:59\sPM.*EST/);
   });
 
+  it("answers 200 with an empty view when no Settings document exists yet", async () => {
+    settingsModel.findOne.mockReturnValue({ lean: vi.fn().mockResolvedValue(null) });
+
+    const res = await getSettings.GET(buildRequest("/api/settings/get-settings", { cookie: await adminCookie() }));
+
+    expect(res.status).toBe(200);
+    const { data } = await res.json();
+    expect(data.maxCapacity).toBeNull();
+    expect(Object.values(data.dates).every((date) => (date as { stored: unknown }).stored === null)).toBe(true);
+  });
+
   it("has no PATCH handler any more", () => {
     expect((getSettings as Record<string, unknown>).PATCH).toBeUndefined();
   });
