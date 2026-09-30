@@ -10,10 +10,8 @@ vi.mock("@/repository/models/admin", () => ({ default: { findById: createFindByI
 vi.mock("@/repository/models/application", () => ({ default: applicationModel }));
 vi.mock("@/repository/models/team", () => ({ default: teamModel }));
 
-import * as ageDistribution from "@/app/api/(group)/stats/age-distribution/route";
 import * as stats from "@/app/api/(group)/stats/route";
 import * as resumesExport from "@/app/api/(group)/resumes/export/route";
-import { escapeRegex } from "@/lib/conuhacks/application-query";
 import { NON_SUPER_ADMIN_ID, adminCookie, buildRequest } from "@/test/http";
 
 const app = (status: string) => ({
@@ -37,19 +35,6 @@ describe("GET /api/stats status counts (C4)", () => {
     expect(data.statusCounts["Checked-in"]).toBe(2);
     expect(data.statusCounts).not.toHaveProperty("CheckedIn");
     expect(data.statusCounts.Confirmed).toBe(1);
-  });
-});
-
-describe("GET /api/stats/age-distribution (C4)", () => {
-  it("includes applicants stored with the legacy CheckedIn value", async () => {
-    const lean = vi.fn().mockResolvedValue([]);
-    const sort = vi.fn(() => ({ lean }));
-    applicationModel.find.mockReturnValue({ sort });
-
-    const res = await ageDistribution.GET(buildRequest("/api/stats/age-distribution", { cookie: await adminCookie() }));
-
-    expect(res.status).toBe(200);
-    expect(applicationModel.find.mock.calls[0][0]).toEqual({ status: { $in: ["Confirmed", "Checked-in", "CheckedIn"] } });
   });
 });
 
@@ -116,25 +101,6 @@ describe("GET /api/stats redaction", () => {
   });
 });
 
-describe("GET /api/stats/age-distribution (XI)", () => {
-  it("is for super admins only", async () => {
-    const res = await ageDistribution.GET(
-      buildRequest("/api/stats/age-distribution", { cookie: await adminCookie({ adminId: NON_SUPER_ADMIN_ID }) }),
-    );
-    expect(res.status).toBe(403);
-  });
-
-  it("filters under-18 attendees by the age bucket", async () => {
-    const lean = vi.fn().mockResolvedValue([]);
-    const sort = vi.fn(() => ({ lean }));
-    applicationModel.find.mockReturnValue({ sort });
-
-    await ageDistribution.GET(buildRequest("/api/stats/age-distribution?filter=below", { cookie: await adminCookie() }));
-
-    expect(applicationModel.find.mock.calls[0][0]).toMatchObject({ age: "under-18" });
-  });
-});
-
 describe("stats routes error handling (L3)", () => {
   class DriverError extends Error {
     code = 11000;
@@ -147,7 +113,6 @@ describe("stats routes error handling (L3)", () => {
 
   it.each([
     ["/api/stats", stats.GET],
-    ["/api/stats/age-distribution", ageDistribution.GET],
   ])("%s logs only the error name and code and sends error: null", async (path, handler) => {
     const errorLog = vi.spyOn(console, "error").mockImplementation(() => undefined);
     applicationModel.find.mockImplementation(() => {
@@ -165,20 +130,4 @@ describe("stats routes error handling (L3)", () => {
     errorLog.mockRestore();
   });
 
-  it("escapes regex characters in the age-distribution search text", async () => {
-    const lean = vi.fn().mockResolvedValue([]);
-    applicationModel.find.mockReturnValue({ sort: vi.fn(() => ({ lean })) });
-
-    const res = await ageDistribution.GET(
-      buildRequest(`/api/stats/age-distribution?search=${encodeURIComponent("(a+)+$ b.c")}`, { cookie: await adminCookie() }),
-    );
-
-    expect(res.status).toBe(200);
-    const query = JSON.stringify(applicationModel.find.mock.calls.at(-1)?.[0]);
-    expect(query).not.toContain("(a+)+$");
-    // The query is JSON: compare with the escaped text as JSON encodes it.
-    const encoded = (value: string) => JSON.stringify(escapeRegex(value)).slice(1, -1);
-    expect(query).toContain(encoded("(a+)+$"));
-    expect(query).toContain(encoded("b.c"));
-  });
 });

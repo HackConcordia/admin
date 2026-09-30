@@ -14,7 +14,7 @@ describe("ConUHacks XI option values", () => {
     expect([...SCHOOLING_LEVELS]).toEqual(["CEGEP", "Undergraduate", "Graduate", "Recent graduate", "Other"]);
   });
 
-  it("age keeps an explicit under-18 bucket for the consent-form rule", () => {
+  it("age keeps an explicit under-18 bucket", () => {
     expect(AGE_VALUES[0]).toBe("under-18");
     expect(AGE_VALUES).toContain("30+");
   });

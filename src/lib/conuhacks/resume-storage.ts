@@ -22,7 +22,7 @@ export interface ApplicationFileField {
   mimetype: string;
 }
 
-/** The registration schema's defaults for resume/consentForm. */
+/** The registration schema's defaults for the resume. */
 export const EMPTY_FILE_FIELD: ApplicationFileField = {
   id: null,
   originalName: null,
