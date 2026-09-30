@@ -20,7 +20,21 @@ describe("escapeCsvCell", () => {
 const CRLF = "\r\n";
 
 // Splits one CSV line on the commas outside double quotes (city labels like "Montréal, Quebec" are quoted).
-const cells = (line: string): string[] => line.split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/);
+function cells(line: string): string[] {
+  const out: string[] = [];
+  let current = "";
+  let quoted = false;
+  for (const char of line) {
+    if (char === '"') quoted = !quoted;
+    if (char === "," && !quoted) {
+      out.push(current);
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+  return [...out, current];
+}
 
 describe("buildApplicationsCsv", () => {
   const csv = buildApplicationsCsv([
