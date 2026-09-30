@@ -1,139 +1,72 @@
-import connectMongoDB from "@/repository/mongoose";
+import { cookies } from "next/headers";
+import { notFound } from "next/navigation";
+
+import mongoose from "mongoose";
+
+import { COOKIE_NAME, verifyAuthToken } from "@/lib/auth-token";
+import { toApplicationDetails, type TeamData } from "@/lib/conuhacks/application-details";
+import { redactSensitiveApplicantFields } from "@/lib/conuhacks/redact-applicant-fields";
+import { fetchIsSuperAdmin } from "@/lib/require-admin";
 import Application from "@/repository/models/application";
 import Team from "@/repository/models/team";
-import { notFound } from "next/navigation";
-import ApplicationView, {
-  type ApplicationDetails,
-  type TeamData,
-} from "./view";
-import { cookies } from "next/headers";
-import { COOKIE_NAME, verifyAuthToken } from "@/lib/auth-token";
+import connectMongoDB from "@/repository/mongoose";
+
+import ApplicationView from "./view";
 
 export const dynamic = "force-dynamic";
 
+/** Same rule as the API (src/lib/require-admin.ts): super-admin status comes from the database, not the JWT claim. */
 async function getIsSuperAdminSSR(): Promise<boolean> {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get(COOKIE_NAME)?.value;
+    const token = (await cookies()).get(COOKIE_NAME)?.value;
     if (!token) return false;
-
     const payload = await verifyAuthToken(token);
-    return !!payload?.isSuperAdmin;
+    if (!payload) return false;
+    return (await fetchIsSuperAdmin(payload.adminId)) === true;
   } catch {
     return false;
   }
 }
 
-export default async function Page({
-  params,
-}: {
-  params: Promise<{ applicationId: string }>;
-}) {
+async function getTeamData(teamId: string): Promise<TeamData> {
+  if (!teamId || !mongoose.Types.ObjectId.isValid(teamId)) return null;
+  try {
+    const team = await Team.findById(teamId).select("teamName members").lean<{ teamName?: string; members?: { userId: string }[] }>().exec();
+    if (!team) return null;
+
+    const memberIds = (team.members ?? []).map((member) => member.userId);
+    const members = await Application.find({ _id: { $in: memberIds } }).select("_id firstName lastName email").lean().exec();
+
+    return {
+      teamId,
+      teamName: team.teamName ?? "",
+      members: (members as Record<string, unknown>[]).map((member) => ({
+        userId: String(member._id),
+        firstName: String(member.firstName ?? ""),
+        lastName: String(member.lastName ?? ""),
+        email: String(member.email ?? ""),
+      })),
+    };
+  } catch (error) {
+    console.error("Failed to fetch team data:", error instanceof Error ? error.message : "unknown error");
+    return null;
+  }
+}
+
+export default async function Page({ params }: { params: Promise<{ applicationId: string }> }) {
   const { applicationId } = await params;
-  if (!applicationId) return notFound();
+  if (!applicationId || !mongoose.Types.ObjectId.isValid(applicationId)) return notFound();
 
   await connectMongoDB();
-  const app = (await Application.findById(applicationId).lean()) as any;
-  if (!app) return notFound();
+  const doc = await Application.findById(applicationId).lean<Record<string, unknown>>();
+  if (!doc) return notFound();
 
-  const application: ApplicationDetails = {
-    _id: String(app._id),
-    firstName: app.firstName,
-    lastName: app.lastName,
-    isEighteenOrAbove: app.isEighteenOrAbove,
-    phoneNumber: app.phoneNumber,
-    email: app.email,
-    country: app.country,
-    city: app.city,
-    school: app.school,
-    schoolOther: app.schoolOther,
-    faculty: app.faculty,
-    facultyOther: app.facultyOther,
-    levelOfStudy: app.levelOfStudy,
-    levelOfStudyOther: app.levelOfStudyOther,
-    program: app.program,
-    programOther: app.programOther,
-    graduationSemester: app.graduationSemester,
-    graduationYear: app.graduationYear,
-    coolProject: app.coolProject,
-    excitedAbout: app.excitedAbout,
-    travelReimbursement: app.travelReimbursement,
-    preferredLanguage: app.preferredLanguage,
-    workingLanguages: app.workingLanguages,
-    workingLanguagesOther: app.workingLanguagesOther,
-    shirtSize: app.shirtSize,
-    dietaryRestrictions: Array.isArray(app.dietaryRestrictions)
-      ? app.dietaryRestrictions
-      : [],
-    dietaryRestrictionsDescription: app.dietaryRestrictionsDescription,
-    github: app.github,
-    linkedin: app.linkedin,
-    gender: app.gender,
-    pronouns: app.pronouns,
-    underrepresented: app.underrepresented,
-    jobRolesLookingFor: app.jobRolesLookingFor,
-    workRegions: app.workRegions,
-    workRegionsOther: app.workRegionsOther,
-    jobTypesInterested: app.jobTypesInterested,
-    jobTypesInterestedOther: app.jobTypesInterestedOther,
-    isRegisteredForCoop: app.isRegisteredForCoop,
-    nextCoopTerm: app.nextCoopTerm,
-    nextCoopTermOther: app.nextCoopTermOther,
-    status: app.status,
-    teamId: app.teamId,
-    processedBy: app.processedBy,
-    processedAt: app.processedAt?.toISOString?.() ?? undefined,
-    hasResume: Boolean(app?.resume?.id),
-    isTravelReimbursementApproved: app.isTravelReimbursementApproved,
-    travelReimbursementAmount: app.travelReimbursementAmount,
-    travelReimbursementCurrency: app.travelReimbursementCurrency,
-    comments: app.comments,
-    skillTags: app.skillTags,
-    isStarred: app.isStarred,
-  };
+  const rawDetails = toApplicationDetails(doc);
+  const [teamData, isSuperAdmin] = await Promise.all([getTeamData(rawDetails.teamId ?? ""), getIsSuperAdminSSR()]);
+  // Never send shirtSize/dietaryRestrictions/gender/pronouns etc. to a non-super admin's browser,
+  // even though the view also hides them: server-side redaction is what actually keeps them out
+  // of the page's initial HTML/RSC payload, not just out of the rendered UI.
+  const application = redactSensitiveApplicantFields(rawDetails, isSuperAdmin);
 
-  // Fetch team data if the applicant is in a team
-  let teamData: TeamData = null;
-  try {
-    if (app.teamId) {
-      const team = await Team.findById(app.teamId)
-        .select("teamName members")
-        .lean()
-        .exec();
-
-      if (team) {
-        // Fetch member details
-        const memberIds = (team as any).members.map((m: any) => m.userId);
-        const members = await Application.find({ _id: { $in: memberIds } })
-          .select("_id firstName lastName email")
-          .lean()
-          .exec();
-
-        teamData = {
-          teamId: String(app.teamId),
-          teamName: (team as any).teamName,
-          members: members.map((m: any) => ({
-            userId: String(m._id),
-            firstName: m.firstName,
-            lastName: m.lastName,
-            email: m.email,
-          })),
-        };
-      }
-    }
-  } catch (error) {
-    console.error("Failed to fetch team data:", error);
-    // Continue without team data if fetch fails
-  }
-
-  const isSuperAdmin = await getIsSuperAdminSSR();
-
-  return (
-    <ApplicationView
-      application={application}
-      adminEmail={null}
-      teamData={teamData}
-      isSuperAdmin={isSuperAdmin}
-    />
-  );
+  return <ApplicationView application={application} teamData={teamData} isSuperAdmin={isSuperAdmin} />;
 }

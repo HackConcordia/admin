@@ -97,7 +97,7 @@ export default function DashboardPage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
         <p className="text-muted-foreground">
-          Overview of ConUHacks X applications and statistics
+          Overview of ConUHacks XI applications and statistics
         </p>
       </div>
 

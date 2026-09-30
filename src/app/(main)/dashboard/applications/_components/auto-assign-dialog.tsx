@@ -15,6 +15,7 @@ import {
 type AutoAssignStats = {
   unassignedCount: number;
   reviewerCount: number;
+  heldForManualAssignment?: number;
 } | null;
 
 type AutoAssignDialogProps = {
@@ -26,7 +27,8 @@ type AutoAssignDialogProps = {
 };
 
 export function AutoAssignDialog({ open, onOpenChange, stats, onConfirm, autoAssigning }: AutoAssignDialogProps) {
-  const unassigned = stats?.unassignedCount ?? 0;
+  const held = stats?.heldForManualAssignment ?? 0;
+  const unassigned = Math.max((stats?.unassignedCount ?? 0) - held, 0);
   const reviewers = stats?.reviewerCount ?? 0;
   const estimatedPerReviewer = reviewers > 0 ? Math.ceil(unassigned / reviewers) : 0;
 
@@ -51,6 +53,12 @@ export function AutoAssignDialog({ open, onOpenChange, stats, onConfirm, autoAss
               <div className="text-muted-foreground mt-3 text-xs">
                 Note: Team members will be assigned together to the same reviewer.
               </div>
+              {held > 0 && (
+                <div className="mt-3 text-xs font-medium text-amber-600 dark:text-amber-400">
+                  {held} application{held === 1 ? "" : "s"} (travel reimbursement requests and their teammates) will be
+                  left for manual assignment to a super admin.
+                </div>
+              )}
             </div>
           ) : (
             <div className="text-muted-foreground text-sm">Loading statistics...</div>
@@ -60,7 +68,7 @@ export function AutoAssignDialog({ open, onOpenChange, stats, onConfirm, autoAss
           <Button variant="secondary" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={onConfirm} disabled={autoAssigning || !stats || stats.unassignedCount === 0}>
+          <Button onClick={onConfirm} disabled={autoAssigning || !stats || unassigned === 0}>
             {autoAssigning ? "Assigning..." : "Auto Assign"}
           </Button>
         </DialogFooter>

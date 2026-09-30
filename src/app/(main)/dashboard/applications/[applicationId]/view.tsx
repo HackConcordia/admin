@@ -99,7 +99,7 @@ import {
   AlertTriangle,
   Star,
 } from "lucide-react";
-import { isCheckedInStatus } from "@/lib/status";
+import { APPLICATION_STATUSES as VALID_STATUSES, DECISION_STATUSES, isCheckedInStatus, isSameStatus } from "@/lib/status";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -157,29 +157,23 @@ import { ApplicationStatusBadge } from "../_components/application-status-badge"
 import { TeamInfoCard } from "./team-info-card";
 
 // Import form options from constants
-import { AgeOptions } from "@/constants/AgeOptions";
-import { Genders } from "@/constants/Genders";
-import { Pronouns } from "@/constants/Pronouns";
-import { UnderrepresentedGroups } from "@/constants/UnderrepresentedGroups";
-import { Schools } from "@/constants/Schools";
-import { Faculties } from "@/constants/Faculties";
-import { LevelOfStudyTypes } from "@/constants/LevelOfStudyTypes";
-import { Programs } from "@/constants/Programs";
-import { GraduationSemesters } from "@/constants/GraduationSemesters";
-import { GraduationYears } from "@/constants/GraduationYears";
-import { TShirtSizes } from "@/constants/TShirtSizes";
-import { DietaryRestrictions } from "@/constants/DietaryRestrictions";
-import { CommunicationLanguages } from "@/constants/CommunicationLanguages";
-import { WorkingLanguages } from "@/constants/WorkingLanguages";
-import { WorkRegions } from "@/constants/WorkRegions";
-import { JobTypes } from "@/constants/JobTypes";
-import { JobRoles } from "@/constants/JobRoles";
-import { CoopTerms } from "@/constants/CoopTerms";
-import { Countries } from "@/constants/Countries";
 import { statuses } from "@/constants/statuses";
+import {
+  TRAVEL_FIELD,
+  UNANSWERED_CHOICE,
+  displayFieldValue,
+  parseChoice,
+  resolveSections,
+  type ResolvedField,
+} from "@/lib/conuhacks/application-fields";
+import type { ApplicationDetails, TeamData } from "@/lib/conuhacks/application-details";
+import { formatTravelAnswer } from "@/lib/conuhacks/display";
+import { isQuebecResident } from "@/lib/conuhacks/quebec";
+import { describeTravelDecision, needsTravelDecision } from "@/lib/conuhacks/travel-block";
+import { safeExternalUrl } from "@/lib/safe-external-url";
 
-// Convert statuses to select options format
-const APPLICATION_STATUSES = statuses.map((s) => ({
+// Edit-form status options: only statuses the PUT route accepts (never "Not confirmed" and the like).
+const APPLICATION_STATUSES = statuses.filter((s) => (VALID_STATUSES as readonly string[]).includes(s.name)).map((s) => ({
   value: s.name,
   label: s.title,
 }));
@@ -187,147 +181,52 @@ const APPLICATION_STATUSES = statuses.map((s) => ({
 // Critical fields that require confirmation before saving
 const CRITICAL_FIELDS = ["status", "firstName", "lastName"];
 
-/**
- * Helper function to format array values for display
- * Handles arrays, stringified arrays, and arrays containing stringified arrays
- */
-function formatArrayValue(value: string | string[] | undefined | null): string {
-  if (!value) return "—";
+export type { ApplicationDetails, TeamData, TeamMemberInfo } from "@/lib/conuhacks/application-details";
 
-  let arrayValue: string[];
-
-  // If it's an array
-  if (Array.isArray(value)) {
-    // Check if it's an array with a single string element that looks like a stringified array
-    if (value.length === 1 && typeof value[0] === "string") {
-      const str = value[0].trim();
-      if (str.startsWith("[") && str.endsWith("]")) {
-        try {
-          const parsed = JSON.parse(str);
-          if (Array.isArray(parsed)) {
-            arrayValue = parsed;
-          } else {
-            arrayValue = value;
-          }
-        } catch {
-          arrayValue = value;
-        }
-      } else {
-        arrayValue = value;
-      }
-    } else {
-      // It's a regular array, use it directly
-      arrayValue = value;
-    }
-  }
-  // If it's a string, try to parse it as JSON
-  else if (typeof value === "string") {
-    const trimmed = value.trim();
-
-    // Check if it looks like a stringified array
-    if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
-      try {
-        const parsed = JSON.parse(trimmed);
-        if (Array.isArray(parsed)) {
-          arrayValue = parsed;
-        } else {
-          return value;
-        }
-      } catch {
-        return value;
-      }
-    } else {
-      // Not an array format, return as-is
-      return value;
-    }
-  }
-  // Otherwise, treat it as a single value
-  else {
-    return String(value);
-  }
-
-  // Filter out empty values and join with " | "
-  const filtered = arrayValue.filter(
-    (item) => item && item !== "none" && item !== "None"
+/** An applicant's link, clickable only when it is a real http(s) URL (never javascript:/data:). */
+function ExternalLinkField({ label, value }: { label: string; value: string }) {
+  const href = safeExternalUrl(value);
+  return (
+    <div className="min-w-0 space-y-1">
+      <div className="text-muted-foreground text-xs">{label}</div>
+      <div className="truncate">
+        {href ? (
+          <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+            {value}
+          </a>
+        ) : (
+          value || "—"
+        )}
+      </div>
+    </div>
   );
-  return filtered.length > 0 ? filtered.join(" | ") : "—";
 }
 
-export type TeamMemberInfo = {
-  userId: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-};
-
-export type TeamData = {
-  teamId: string;
-  teamName: string;
-  members: TeamMemberInfo[];
-} | null;
-
-export type ApplicationDetails = {
-  _id: string;
-  firstName: string;
-  lastName: string;
-  isEighteenOrAbove: string;
-  phoneNumber: string;
-  email: string;
-  country: string;
-  city: string;
-  school: string;
-  schoolOther: string;
-  faculty: string;
-  facultyOther: string;
-  levelOfStudy: string;
-  levelOfStudyOther: string;
-  program: string;
-  programOther: string;
-  graduationSemester: string;
-  graduationYear: string;
-  coolProject: string;
-  excitedAbout: string;
-  travelReimbursement: boolean;
-  preferredLanguage: string;
-  workingLanguages: string;
-  workingLanguagesOther: string;
-  shirtSize: string;
-  dietaryRestrictions?: string[];
-  dietaryRestrictionsDescription: string;
-  github: string;
-  linkedin: string;
-  gender: string;
-  pronouns: string;
-  underrepresented: string;
-  jobRolesLookingFor: string;
-  workRegions: string;
-  workRegionsOther: string;
-  jobTypesInterested: string;
-  jobTypesInterestedOther: string;
-  isRegisteredForCoop: boolean;
-  nextCoopTerm: string;
-  nextCoopTermOther: string;
-  status: string;
-  teamId?: string;
-  processedBy?: string;
-  processedAt?: string;
-  hasResume?: boolean;
-  isTravelReimbursementApproved?: boolean;
-  travelReimbursementAmount?: number;
-  travelReimbursementCurrency?: string;
-  comments?: string;
-  skillTags?: string[];
-  isStarred?: boolean;
-};
+/** The MLH consents given at registration, read-only. */
+function MlhConsents({ application }: { application: ApplicationDetails }) {
+  const items = [
+    ["MLH code of conduct", application.mlhConduct],
+    ["MLH terms and privacy policy", application.mlhTerms],
+    ["Emails from MLH", application.mlhEmails],
+  ] as const;
+  return (
+    <>
+      {items.map(([label, given]) => (
+        <div key={label} className="min-w-0 space-y-1">
+          <div className="text-muted-foreground text-xs">{label}</div>
+          <div>{given ? "Yes" : "No"}</div>
+        </div>
+      ))}
+    </>
+  );
+}
 
 export default function ApplicationView({
   application: initial,
-  adminEmail: initialAdminEmail,
   teamData,
   isSuperAdmin,
 }: {
   application: ApplicationDetails;
-  adminEmail: string | null;
   teamData?: TeamData;
   isSuperAdmin: boolean;
 }) {
@@ -335,9 +234,6 @@ export default function ApplicationView({
 
   const [application, setApplication] =
     React.useState<ApplicationDetails>(initial);
-  const [adminEmail, setAdminEmail] = React.useState<string | null>(
-    initialAdminEmail
-  );
   const [error, setError] = React.useState<string | null>(null);
   const [checkInError, setCheckInError] = React.useState<string | null>(null);
   const [isSaving, setIsSaving] = React.useState<
@@ -399,24 +295,6 @@ export default function ApplicationView({
     }
   }, [isEditMode, application]);
 
-  React.useEffect(() => {
-    let active = true;
-    async function loadAdmin() {
-      try {
-        if (adminEmail) return;
-        const meRes = await fetch(`/api/auth-token/me`, { cache: "no-store" });
-        if (!meRes.ok) return;
-        const meJson = await meRes.json();
-        if (!active) return;
-        setAdminEmail(meJson?.data?.email ?? null);
-      } catch {}
-    }
-    loadAdmin();
-    return () => {
-      active = false;
-    };
-  }, [adminEmail]);
-
   async function updateStatus(
     action: "admit" | "waitlist" | "reject",
     travelReimbursementData?: TravelReimbursementData
@@ -453,7 +331,7 @@ export default function ApplicationView({
   }
 
   function handleAdmitClick() {
-    if (application.travelReimbursement) {
+    if (needsTravelDecision(application.travelReimbursement, isSuperAdmin)) {
       setTravelReimbursementDialogOpen(true);
     } else {
       setConfirmationAction("admit");
@@ -475,11 +353,7 @@ export default function ApplicationView({
     setActionConfirmationOpen(false);
     if (!confirmationAction) return;
 
-    if (confirmationAction === "admit" && !application.travelReimbursement) {
-      updateStatus("admit");
-    } else {
-      updateStatus(confirmationAction);
-    }
+    updateStatus(confirmationAction);
     setConfirmationAction(null);
   }
 
@@ -646,6 +520,19 @@ export default function ApplicationView({
     }
   }
 
+  // The status goes in the body only when the super admin changed it, with the status the form
+  // loaded, so the server can refuse (409) a save that would revert a decision made meanwhile.
+  function buildSaveBody() {
+    const { status, ...rest } = editedApplication;
+    const statusChanged = status !== undefined && !isSameStatus(status, application.status);
+    return {
+      ...rest,
+      comments,
+      skillTags,
+      ...(statusChanged ? { status, expectedStatus: application.status } : {}),
+    };
+  }
+
   // Save all changes
   async function saveChanges() {
     try {
@@ -656,16 +543,12 @@ export default function ApplicationView({
       const res = await fetch(`/api/application/${application._id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...editedApplication,
-          comments,
-          skillTags,
-        }),
+        body: JSON.stringify(buildSaveBody()),
       });
 
       if (!res.ok) {
         const json = await res.json();
-        throw new Error(json?.error || `Update failed with ${res.status}`);
+        throw new Error(json?.message || `Update failed with ${res.status}`);
       }
 
       const json = await res.json();
@@ -715,21 +598,13 @@ export default function ApplicationView({
   function handleResumeSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file type
-      const allowedTypes = [
-        "application/pdf",
-        "application/msword",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      ];
-      if (!allowedTypes.includes(file.type)) {
-        toast.error(
-          "Invalid file type. Only PDF and Word documents are allowed."
-        );
+      // Same limits as the registration app: PDF only, 4 MB.
+      if (file.type !== "application/pdf") {
+        toast.error("Invalid file type. Only PDF files are allowed.");
         return;
       }
-      // Validate file size (5MB max)
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error("File too large. Maximum size is 5MB.");
+      if (file.size > 4 * 1024 * 1024) {
+        toast.error("File too large. Maximum size is 4MB.");
         return;
       }
       setResumeFile(file);
@@ -786,58 +661,9 @@ export default function ApplicationView({
     }
   }
 
-  // Fields that use JSON string in array format: ['["value1","value2"]']
-  const JSON_STRING_ARRAY_FIELDS = [
-    "workRegions",
-    "jobTypesInterested",
-    "dietaryRestrictions",
-  ];
-  // Fields that use JSON string format directly: '["value1","value2"]'
-  const JSON_STRING_DIRECT_FIELDS = ["workingLanguages"];
+  // Fields that use JSON string in array format: ['["value1","value2"]'] (registration storage)
+  const JSON_STRING_ARRAY_FIELDS: string[] = ["languagesSpoken", "jobTypesInterested", "dietaryRestrictions"];
 
-  // Helper to check if "other" option is selected for a field
-  function isOtherSelected(field: keyof ApplicationDetails): boolean {
-    const data = isEditMode ? editedApplication : application;
-    const value = data[field];
-    if (!value) return false;
-    // For multiselect fields, check if array contains "other"
-    if (Array.isArray(value)) {
-      // Check if it's JSON string in array format
-      if (
-        value.length === 1 &&
-        typeof value[0] === "string" &&
-        value[0].trim().startsWith("[")
-      ) {
-        try {
-          const parsed = JSON.parse(value[0]);
-          if (Array.isArray(parsed)) {
-            return parsed.some((v: string) => v.toLowerCase() === "other");
-          }
-        } catch {
-          // Fall through
-        }
-      }
-      return value.some((v) => String(v).toLowerCase() === "other");
-    }
-    // For string fields (including JSON string format)
-    if (typeof value === "string") {
-      // Check if it's a JSON array string
-      if (value.trim().startsWith("[")) {
-        try {
-          const parsed = JSON.parse(value);
-          if (Array.isArray(parsed)) {
-            return parsed.some(
-              (v: string) => String(v).toLowerCase() === "other"
-            );
-          }
-        } catch {
-          // Fall through
-        }
-      }
-      return value.toLowerCase() === "other";
-    }
-    return false;
-  }
   // Generic toggle function for any multiselect field
   function toggleMultiselectValue(
     field: keyof ApplicationDetails,
@@ -880,8 +706,6 @@ export default function ApplicationView({
       let storedValue: string | string[];
       if (JSON_STRING_ARRAY_FIELDS.includes(field)) {
         storedValue = [JSON.stringify(newValues)];
-      } else if (JSON_STRING_DIRECT_FIELDS.includes(field)) {
-        storedValue = JSON.stringify(newValues);
       } else {
         storedValue = newValues;
       }
@@ -898,42 +722,10 @@ export default function ApplicationView({
     label: string,
     field: keyof ApplicationDetails,
     type: "text" | "textarea" | "select" | "boolean" | "multiselect" = "text",
-    options?: { value: string; label: string }[]
+    options?: readonly { value: string; label: string }[]
   ) {
-    const value = isEditMode ? editedApplication[field] : application[field];
+    const value = editedApplication[field];
 
-    if (!isEditMode) {
-      if (type === "boolean") {
-        return (
-          <div className="space-y-1">
-            <div className="text-muted-foreground text-xs">{label}</div>
-            <div>{value ? "Yes" : "No"}</div>
-          </div>
-        );
-      }
-      if (type === "multiselect" || Array.isArray(value)) {
-        return (
-          <div className="space-y-1">
-            <div className="text-muted-foreground text-xs">{label}</div>
-            <div>{formatArrayValue(value as string | string[])}</div>
-          </div>
-        );
-      }
-      let displayValue = "—";
-      if (value !== null && value !== undefined && value !== "") {
-        displayValue = String(value);
-      }
-      return (
-        <div className="space-y-1">
-          <div className="text-muted-foreground text-xs">{label}</div>
-          <div className={type === "textarea" ? "whitespace-pre-wrap" : ""}>
-            {displayValue}
-          </div>
-        </div>
-      );
-    }
-
-    // Edit mode
     if (type === "boolean") {
       return (
         <div className="space-y-2">
@@ -1144,6 +936,48 @@ export default function ApplicationView({
     );
   }
 
+  // A registry field: view mode shows the option label (displayFieldValue). Edit mode reuses
+  // renderField, except for the two inputs a plain select/switch can't hold (null answers).
+  function renderResolvedField(spec: ResolvedField) {
+    const key = spec.key as keyof ApplicationDetails;
+    const value = isEditMode ? editedApplication[key] : application[key];
+
+    if (!isEditMode) {
+      return (
+        <div className="min-w-0 space-y-1">
+          <div className="text-muted-foreground text-xs">{spec.label}</div>
+          <div className={spec.input === "textarea" ? "whitespace-pre-wrap" : "break-words"}>
+            {displayFieldValue(spec, value) || "—"}
+          </div>
+        </div>
+      );
+    }
+
+    if (spec.input === "nullableBoolean" || spec.input === "count") {
+      const choices = [{ value: UNANSWERED_CHOICE, label: "Not answered" }, ...(spec.options ?? [])];
+      const current = value === null || value === undefined ? UNANSWERED_CHOICE : String(value);
+      return (
+        <div className="space-y-2">
+          <Label className="text-xs">{spec.label}</Label>
+          <Select value={current} onValueChange={(choice) => updateField(key, parseChoice(spec.input, choice) as never)}>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {choices.map((choice) => (
+                <SelectItem key={choice.value} value={choice.value}>
+                  {choice.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      );
+    }
+
+    return renderField(spec.label, key, spec.input, spec.options);
+  }
+
   return (
     <div className="grid grid-cols-1 gap-4 md:gap-6">
       <div className="flex flex-col gap-3">
@@ -1273,7 +1107,10 @@ export default function ApplicationView({
                               {editedApplication.status} (current)
                             </SelectItem>
                           )}
-                        {APPLICATION_STATUSES.map((status) => (
+                        {/* Admit, Waitlist and Refuse are decisions: they go through the decision buttons. */}
+                        {APPLICATION_STATUSES.filter(
+                          (status) => !DECISION_STATUSES.includes(status.value) || isSameStatus(status.value, application.status),
+                        ).map((status) => (
                           <SelectItem key={status.value} value={status.value}>
                             {status.label}
                           </SelectItem>
@@ -1302,392 +1139,51 @@ export default function ApplicationView({
               <Separator />
 
               <div className="space-y-6">
-                {/* Personal Information */}
-                {isSuperAdmin && (
-                  <>
+                {resolveSections(isEditMode ? editedApplication : application, { isSuperAdmin }).map((section) => (
+                  <React.Fragment key={section.id}>
                     <div>
-                      <h3 className="mb-6 text-sm font-semibold">
-                        Personal Information
-                      </h3>
-                      <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
-                        {renderField(
-                          "18 or Above",
-                          "isEighteenOrAbove",
-                          "select",
-                          AgeOptions("en")
-                        )}
-                        {renderField("Phone Number", "phoneNumber", "text")}
-                        {renderField(
-                          "Gender",
-                          "gender",
-                          "select",
-                          Genders("en").filter((g) => g.value !== "")
-                        )}
-                        {renderField(
-                          "Pronouns",
-                          "pronouns",
-                          "select",
-                          Pronouns("en").filter((p) => p.value !== "")
-                        )}
-                        {renderField(
-                          "Underrepresented",
-                          "underrepresented",
-                          "select",
-                          UnderrepresentedGroups("en")
-                        )}
+                      <h3 className="mb-6 text-sm font-semibold">{section.title}</h3>
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+                        {section.fields.map((spec) => (
+                          <div key={spec.key} className={spec.input === "textarea" ? "md:col-span-4" : undefined}>
+                            {renderResolvedField(spec)}
+                          </div>
+                        ))}
                       </div>
                     </div>
 
                     <Separator />
-                  </>
-                )}
+                  </React.Fragment>
+                ))}
 
-                {/* Education */}
+                {/* Travel reimbursement: the applicant's answer for everyone; the decision is super-admin-only (A2) */}
                 <div>
-                  <h3 className="mb-6 text-sm font-semibold">Education</h3>
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
-                    {renderField("School", "school", "select", Schools("en"))}
-                    {isOtherSelected("school") &&
-                      renderField("School (Other)", "schoolOther", "text")}
-                    {renderField(
-                      "Faculty",
-                      "faculty",
-                      "select",
-                      Faculties("en")
-                    )}
-                    {isOtherSelected("faculty") &&
-                      renderField("Faculty (Other)", "facultyOther", "text")}
-                    {renderField(
-                      "Level of Study",
-                      "levelOfStudy",
-                      "select",
-                      LevelOfStudyTypes("en")
-                    )}
-                    {isOtherSelected("levelOfStudy") &&
-                      renderField(
-                        "Level of Study (Other)",
-                        "levelOfStudyOther",
-                        "text"
-                      )}
-                    {renderField(
-                      "Program",
-                      "program",
-                      "select",
-                      Programs("en")
-                    )}
-                    {isOtherSelected("program") &&
-                      renderField("Program (Other)", "programOther", "text")}
-                    {renderField(
-                      "Graduation Semester",
-                      "graduationSemester",
-                      "select",
-                      GraduationSemesters("en")
-                    )}
-                    {renderField(
-                      "Graduation Year",
-                      "graduationYear",
-                      "select",
-                      GraduationYears("en")
-                    )}
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* Logistics */}
-                <div>
-                  <h3 className="mb-6 text-sm font-semibold">Logistics</h3>
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
-                    {(() => {
-                      const countriesList = Countries("en");
-                      const currentValue = isEditMode
-                        ? editedApplication.country
-                        : application.country;
-                      // Match by code (value) or by label (for backwards compatibility)
-                      const matchedCountry = countriesList.find(
-                        (c) =>
-                          c.value.toLowerCase() ===
-                            currentValue?.toLowerCase() ||
-                          c.label.toLowerCase() === currentValue?.toLowerCase()
-                      );
-                      if (!isEditMode) {
-                        // Display mode - show full country name
-                        return (
-                          <div className="space-y-1 min-w-0">
-                            <div className="text-muted-foreground text-xs">
-                              Country
-                            </div>
-                            <div
-                              className="truncate"
-                              title={
-                                matchedCountry?.label || currentValue || ""
-                              }
-                            >
-                              {matchedCountry?.label || currentValue || "—"}
-                            </div>
-                          </div>
-                        );
-                      }
-                      // Edit mode
-                      return (
-                        <div className="space-y-2 min-w-0">
-                          <Label className="text-xs">Country</Label>
-                          <Select
-                            value={matchedCountry?.value || currentValue || ""}
-                            onValueChange={(v) => updateField("country", v)}
-                          >
-                            <SelectTrigger className="w-full truncate">
-                              <SelectValue
-                                placeholder="Select country"
-                                className="truncate"
-                              />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {currentValue && !matchedCountry && (
-                                <SelectItem value={currentValue}>
-                                  {currentValue} (current)
-                                </SelectItem>
-                              )}
-                              {countriesList.map((country, idx) => (
-                                <SelectItem
-                                  key={`${country.value}-${idx}`}
-                                  value={country.value}
-                                >
-                                  {country.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                  <h3 className="mb-6 text-sm font-semibold">Travel Reimbursement</h3>
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+                    <div className="space-y-2">
+                      {isEditMode ? (
+                        renderResolvedField(TRAVEL_FIELD)
+                      ) : (
+                        <div className="space-y-1">
+                          <div className="text-muted-foreground text-xs">{TRAVEL_FIELD.label}</div>
+                          <div>{formatTravelAnswer(application.travelReimbursement)}</div>
                         </div>
-                      );
-                    })()}
-                    {renderField("City", "city", "text")}
-                    {isSuperAdmin &&
-                      renderField(
-                        "Shirt Size",
-                        "shirtSize",
-                        "select",
-                        TShirtSizes("en")
                       )}
-                    {isSuperAdmin &&
-                      renderField(
-                        "Dietary Restrictions",
-                        "dietaryRestrictions",
-                        "multiselect",
-                        DietaryRestrictions("en")
+                      {isQuebecResident(application.country, application.city) && (
+                        <Badge variant="outline" className="border-amber-500 text-amber-600">
+                          Quebec resident
+                        </Badge>
                       )}
-                    {isSuperAdmin && isOtherSelected("dietaryRestrictions") && (
-                      <div className="md:col-span-1">
-                        {renderField(
-                          "Dietary Restrictions Description",
-                          "dietaryRestrictionsDescription",
-                          "textarea"
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* Project Experience */}
-                <div>
-                  <h3 className="mb-6 text-sm font-semibold">
-                    Project Experience
-                  </h3>
-                  <div className="space-y-6">
-                    {renderField("Cool Project", "coolProject", "textarea")}
-                    {renderField(
-                      "What are you excited about?",
-                      "excitedAbout",
-                      "textarea"
-                    )}
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* Career Interests */}
-                <div>
-                  <h3 className="mb-6 text-sm font-semibold">
-                    Career Interests
-                  </h3>
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-                    {renderField(
-                      "Job Roles Looking For",
-                      "jobRolesLookingFor",
-                      "select",
-                      JobRoles("en")
-                    )}
-                    {renderField(
-                      "Work Regions",
-                      "workRegions",
-                      "multiselect",
-                      WorkRegions("en")
-                    )}
-                    {isOtherSelected("workRegions") &&
-                      renderField(
-                        "Work Regions (Other)",
-                        "workRegionsOther",
-                        "text"
-                      )}
-                    {renderField(
-                      "Job Types Interested",
-                      "jobTypesInterested",
-                      "multiselect",
-                      JobTypes("en")
-                    )}
-                    {isOtherSelected("jobTypesInterested") &&
-                      renderField(
-                        "Job Types (Other)",
-                        "jobTypesInterestedOther",
-                        "text"
-                      )}
-                    {renderField(
-                      "Registered for Co-op",
-                      "isRegisteredForCoop",
-                      "boolean"
-                    )}
-                    {renderField(
-                      "Next Co-op Term",
-                      "nextCoopTerm",
-                      "select",
-                      CoopTerms("en")
-                    )}
-                    {isOtherSelected("nextCoopTerm") &&
-                      renderField(
-                        "Next Co-op Term (Other)",
-                        "nextCoopTermOther",
-                        "text"
-                      )}
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* Preferences */}
-                <div>
-                  <h3 className="mb-6 text-sm font-semibold">Preferences</h3>
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-                    {renderField(
-                      "Preferred Language",
-                      "preferredLanguage",
-                      "select",
-                      CommunicationLanguages("en")
-                    )}
-                    {renderField(
-                      "Working Languages",
-                      "workingLanguages",
-                      "multiselect",
-                      WorkingLanguages("en")
-                    )}
-                    {isOtherSelected("workingLanguages") &&
-                      renderField(
-                        "Working Languages (Other)",
-                        "workingLanguagesOther",
-                        "text"
-                      )}
-                    {renderField(
-                      "Travel Reimbursement",
-                      "travelReimbursement",
-                      "boolean"
-                    )}
-                    {(application.isTravelReimbursementApproved !== undefined ||
-                      isEditMode) && (
+                    </div>
+                    {isSuperAdmin && !isEditMode && application.travelReimbursement === true && (
                       <div className="space-y-1 md:col-span-2">
-                        {isEditMode ? (
-                          <div className="grid grid-cols-3 gap-4">
-                            <div className="space-y-2">
-                              <Label className="text-xs">
-                                Travel Reimbursement Approved
-                              </Label>
-                              <Switch
-                                checked={
-                                  editedApplication.isTravelReimbursementApproved ||
-                                  false
-                                }
-                                onCheckedChange={(checked) =>
-                                  updateField(
-                                    "isTravelReimbursementApproved",
-                                    checked
-                                  )
-                                }
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label className="text-xs">Amount</Label>
-                              <Input
-                                type="number"
-                                value={
-                                  editedApplication.travelReimbursementAmount ||
-                                  ""
-                                }
-                                onChange={(e) => {
-                                  const value = e.target.value;
-                                  // Only allow empty string or positive integers
-                                  if (value === "" || /^\d+$/.test(value)) {
-                                    updateField(
-                                      "travelReimbursementAmount",
-                                      value ? parseInt(value, 10) : undefined
-                                    );
-                                  }
-                                }}
-                                onKeyDown={(e) => {
-                                  // Prevent decimal point, comma, and e/E (scientific notation)
-                                  if (
-                                    e.key === "." ||
-                                    e.key === "," ||
-                                    e.key === "e" ||
-                                    e.key === "E"
-                                  ) {
-                                    e.preventDefault();
-                                  }
-                                }}
-                                step="1"
-                                className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label className="text-xs">Currency</Label>
-                              <Select
-                                value={
-                                  editedApplication.travelReimbursementCurrency ||
-                                  ""
-                                }
-                                onValueChange={(v) =>
-                                  updateField("travelReimbursementCurrency", v)
-                                }
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="CAD">CAD</SelectItem>
-                                  <SelectItem value="USD">USD</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </div>
-                        ) : (
-                          <>
-                            <div className="text-muted-foreground text-xs">
-                              Travel Reimbursement Status
-                            </div>
-                            <div>
-                              {application.isTravelReimbursementApproved ? (
-                                <span className="font-semibold text-green-600">
-                                  Approved:{" "}
-                                  {application.travelReimbursementAmount}{" "}
-                                  {application.travelReimbursementCurrency}
-                                </span>
-                              ) : (
-                                <span className="text-muted-foreground">
-                                  Not Approved
-                                </span>
-                              )}
-                            </div>
-                          </>
-                        )}
+                        <div className="text-muted-foreground text-xs">Travel Reimbursement Decision</div>
+                        <div
+                          className={application.isTravelReimbursementApproved ? "font-semibold text-green-600" : "text-muted-foreground"}
+                        >
+                          {describeTravelDecision(application)}
+                        </div>
+                        <div className="text-muted-foreground text-xs">Set when admitting the applicant.</div>
                       </div>
                     )}
                   </div>
@@ -1722,46 +1218,11 @@ export default function ApplicationView({
                       </>
                     ) : (
                       <>
-                        <div className="space-y-1">
-                          <div className="text-muted-foreground text-xs">
-                            GitHub
-                          </div>
-                          <div>
-                            {application.github ? (
-                              <a
-                                href={application.github}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 underline"
-                              >
-                                {application.github}
-                              </a>
-                            ) : (
-                              "—"
-                            )}
-                          </div>
-                        </div>
-                        <div className="space-y-1">
-                          <div className="text-muted-foreground text-xs">
-                            LinkedIn
-                          </div>
-                          <div>
-                            {application.linkedin ? (
-                              <a
-                                href={application.linkedin}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 underline"
-                              >
-                                {application.linkedin}
-                              </a>
-                            ) : (
-                              "—"
-                            )}
-                          </div>
-                        </div>
+                        <ExternalLinkField label="GitHub" value={application.github} />
+                        <ExternalLinkField label="LinkedIn" value={application.linkedin} />
                       </>
                     )}
+                    <MlhConsents application={application} />
                     <div className="space-y-2">
                       <Label className="text-xs">Resume</Label>
                       {isEditMode ? (
@@ -1790,7 +1251,7 @@ export default function ApplicationView({
                             <input
                               ref={fileInputRef}
                               type="file"
-                              accept=".pdf,.doc,.docx"
+                              accept=".pdf,application/pdf"
                               onChange={handleResumeSelect}
                               className="hidden"
                             />
@@ -1820,7 +1281,7 @@ export default function ApplicationView({
                             )}
                           </div>
                           <p className="text-xs text-muted-foreground">
-                            Accepted formats: PDF, DOC, DOCX (max 5MB)
+                            Accepted format: PDF (max 4MB)
                           </p>
                         </div>
                       ) : (
@@ -2076,6 +1537,7 @@ export default function ApplicationView({
         onOpenChange={setTravelReimbursementDialogOpen}
         onSubmit={handleTravelReimbursementSubmit}
         candidateName={`${application.firstName} ${application.lastName}`}
+        quebecResident={isQuebecResident(application.country, application.city)}
       />
 
       <QrCodeCheckinDialog

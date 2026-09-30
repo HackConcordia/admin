@@ -4,6 +4,7 @@ import connectMongoDB from "@/repository/mongoose";
 import { sendErrorResponse, sendSuccessResponse } from "@/repository/response";
 import Admin from "@/repository/models/admin";
 import Application from "@/repository/models/application";
+import { groupForAutoAssign, type UnassignedApplication } from "@/lib/auto-assign-groups";
 import { requireAdmin } from "@/lib/require-admin";
 
 /**
@@ -13,7 +14,9 @@ import { requireAdmin } from "@/lib/require-admin";
  *
  * Algorithm:
  * 1. Fetch all unassigned applications with status "Submitted" and processedBy "Not processed"
- * 2. Group applications by teamId (empty teamId = individual group)
+ * 2. Group applications by teamId (empty teamId = individual group), then hold back every group
+ *    with a travel reimbursement request: those (and their teams) are assigned manually to a
+ *    super admin
  * 3. Get all non-SuperAdmin reviewers
  * 4. Track current assignments per reviewer
  * 5. Sort groups by size (largest first) for better distribution
@@ -31,11 +34,15 @@ export const GET = async (req: NextRequest) => {
 
     await connectMongoDB();
 
-    // Count unassigned applications
-    const unassignedCount = await Application.countDocuments({
+    const unassignedApplications = await Application.find({
       status: "Submitted",
       processedBy: "Not processed",
-    });
+    })
+      .select("_id teamId travelReimbursement")
+      .lean<UnassignedApplication[]>()
+      .exec();
+    const unassignedCount = unassignedApplications.length;
+    const { heldApplications, heldGroups } = groupForAutoAssign(unassignedApplications);
 
     // Count available reviewers (non-SuperAdmin admins)
     const reviewerCount = await Admin.countDocuments({ isSuperAdmin: false });
@@ -45,6 +52,8 @@ export const GET = async (req: NextRequest) => {
       {
         unassignedCount,
         reviewerCount,
+        heldForManualAssignment: heldApplications,
+        heldGroups,
       },
       200
     );
@@ -73,8 +82,8 @@ export const POST = async (req: NextRequest) => {
       status: "Submitted",
       processedBy: "Not processed",
     })
-      .select("_id teamId")
-      .lean<{ _id: string; teamId: string }[]>()
+      .select("_id teamId travelReimbursement")
+      .lean<UnassignedApplication[]>()
       .exec();
 
     if (!unassignedApplications || unassignedApplications.length === 0) {
@@ -84,6 +93,8 @@ export const POST = async (req: NextRequest) => {
           totalAssigned: 0,
           reviewerStats: [],
           teamsAssigned: 0,
+          heldForManualAssignment: 0,
+          heldGroups: 0,
         },
         200
       );
@@ -94,19 +105,15 @@ export const POST = async (req: NextRequest) => {
     );
 
     // Step 2: Group applications by teamId
-    const teamGroups = new Map<string, string[]>();
+    const {
+      assignable: teamGroups,
+      heldApplications: heldForManualAssignment,
+      heldGroups,
+    } = groupForAutoAssign(unassignedApplications);
 
-    for (const app of unassignedApplications) {
-      const teamId = app.teamId || `individual_${app._id}`;
+    console.log(`Grouped into ${teamGroups.size} groups (teams + individuals), held ${heldGroups} for manual assignment`);
 
-      if (!teamGroups.has(teamId)) {
-        teamGroups.set(teamId, []);
-      }
-
-      teamGroups.get(teamId)!.push(app._id.toString());
-    }
-
-    console.log(`Grouped into ${teamGroups.size} groups (teams + individuals)`);
+    const totalAssigned = unassignedApplications.length - heldForManualAssignment;
 
     // Step 3: Get all non-SuperAdmin reviewers
     const reviewers = await Admin.find({ isSuperAdmin: false })
@@ -229,7 +236,7 @@ export const POST = async (req: NextRequest) => {
     await Promise.all(updatePromises);
 
     console.log(
-      `Successfully assigned ${unassignedApplications.length} applications`
+      `Successfully assigned ${totalAssigned} applications`
     );
 
     // Prepare response statistics
@@ -241,12 +248,19 @@ export const POST = async (req: NextRequest) => {
       })
     );
 
+    const heldNote =
+      heldForManualAssignment > 0
+        ? ` ${heldForManualAssignment} application${heldForManualAssignment === 1 ? "" : "s"} (travel reimbursement requests and their teammates) left for manual assignment to a super admin.`
+        : "";
+
     return sendSuccessResponse(
-      "Applications successfully auto-assigned",
+      `Applications successfully auto-assigned.${heldNote}`,
       {
-        totalAssigned: unassignedApplications.length,
+        totalAssigned,
         reviewerStats,
         teamsAssigned,
+        heldForManualAssignment,
+        heldGroups,
       },
       200
     );

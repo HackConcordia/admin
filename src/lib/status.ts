@@ -42,3 +42,11 @@ export function withLegacyCheckedIn(statuses: readonly string[]): string[] {
   const expanded = statuses.flatMap((status) => (isCheckedInStatus(status) ? [...CHECKED_IN_STATUSES] : [status]));
   return [...new Set(expanded)];
 }
+
+/** True when both are the same status, treating the legacy "CheckedIn" and "Checked-in" as equal. */
+export function isSameStatus(a: unknown, b: unknown): boolean {
+  return a === b || (isCheckedInStatus(a) && isCheckedInStatus(b));
+}
+
+/** Decisions that must go through PATCH /api/status/[id] (emails, travel decision, allowed transitions). */
+export const DECISION_STATUSES: readonly string[] = ["Admitted", "Waitlisted", "Refused"];

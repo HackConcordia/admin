@@ -44,3 +44,13 @@ describe("C4 checked-in status", () => {
     expect(enumValues).toContain("CheckedIn");
   });
 });
+
+describe("isSameStatus", () => {
+  it("treats both checked-in spellings as equal and everything else strictly", async () => {
+    const { isSameStatus } = await import("@/lib/status");
+    expect(isSameStatus("CheckedIn", "Checked-in")).toBe(true);
+    expect(isSameStatus("Admitted", "Admitted")).toBe(true);
+    expect(isSameStatus("Admitted", "Confirmed")).toBe(false);
+    expect(isSameStatus(undefined, "Confirmed")).toBe(false);
+  });
+});

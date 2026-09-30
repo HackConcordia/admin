@@ -12,9 +12,9 @@ const userSchema = new mongoose.Schema(
     gender: { type: String, default: "" },
     pronouns: { type: String, default: "" },
     processedBy: { type: String, default: "Not processed" },
-    verificationToken: { type: String, default: "", unique: true },
+    verificationToken: { type: String, default: null },
     verificationSentAt: { type: Date, default: null },
-    resetPasswordToken: { type: String, default: "", unique: true },
+    resetPasswordToken: { type: String, default: null },
     resetPasswordExpires: { type: Date, default: null },
     isOAuthUser: { type: Boolean, default: false }, // Correctly defined field
   },

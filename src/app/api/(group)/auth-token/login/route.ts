@@ -4,6 +4,7 @@ import connectMongoDB from "@/repository/mongoose";
 import Admin from "@/repository/models/admin";
 import { sendErrorResponse, sendSuccessResponse } from "@/repository/response";
 import { COOKIE_MAX_AGE_SECONDS, COOKIE_NAME, signAuthToken } from "@/lib/auth-token";
+import { escapeRegex } from "@/lib/conuhacks/application-query";
 import { DUMMY_BCRYPT_HASH, isBcryptHash, verifyPassword } from "@/lib/password";
 
 export const POST = async (req: NextRequest) => {
@@ -16,7 +17,10 @@ export const POST = async (req: NextRequest) => {
 
     await connectMongoDB();
 
-    const admin = await Admin.findOne({ email });
+    // The seed script lowercases emails, but older admins may be stored mixed-case: match the
+    // whole address case-insensitively (anchored and escaped, so no other pattern gets through).
+    const normalizedEmail = email.trim().toLowerCase();
+    const admin = await Admin.findOne({ email: { $regex: `^${escapeRegex(normalizedEmail)}$`, $options: "i" } });
     const stored = admin && isBcryptHash(admin.password) ? admin.password : DUMMY_BCRYPT_HASH;
     const passwordMatches = await verifyPassword(password, stored);
 

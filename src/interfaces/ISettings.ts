@@ -1,5 +1,8 @@
 export default interface ISettings {
-  registrationOpeningDate: Date;
-  registrationClosingDate: Date;
-  confirmationDate: Date;
+  registrationOpeningDate?: Date | string;
+  registrationClosingDate?: Date | string;
+  confirmationDate?: Date | string;
+  checkInOpeningDate?: Date | string;
+  checkInClosingDate?: Date | string;
+  maxCapacity?: number;
 }

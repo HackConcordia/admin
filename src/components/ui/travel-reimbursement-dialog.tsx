@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { TRAVEL_AMOUNT_LIMITS as CURRENCY_LIMITS } from "@/lib/conuhacks/travel-decision";
 
 export interface TravelReimbursementData {
   approved: boolean;
@@ -25,18 +26,16 @@ interface TravelReimbursementDialogProps {
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: TravelReimbursementData) => void;
   candidateName: string;
+  /** Quebec residents are flagged, not blocked: the organizer decides. */
+  quebecResident?: boolean;
 }
-
-const CURRENCY_LIMITS = {
-  CAD: 150,
-  USD: 100,
-};
 
 export function TravelReimbursementDialog({
   open,
   onOpenChange,
   onSubmit,
   candidateName,
+  quebecResident = false,
 }: TravelReimbursementDialogProps) {
   const [approved, setApproved] = React.useState<boolean | null>(null);
   const [currency, setCurrency] = React.useState<"CAD" | "USD">("CAD");
@@ -105,6 +104,14 @@ export function TravelReimbursementDialog({
             {candidateName} has requested travel reimbursement. Please choose whether to approve
             their request.
           </DialogDescription>
+          {quebecResident && (
+            <p
+              role="alert"
+              className="rounded-md border border-amber-500 bg-amber-50 p-2 text-sm text-amber-800 dark:bg-amber-950 dark:text-amber-200"
+            >
+              This applicant lives in Quebec. Travel reimbursement is normally for hackers from outside Quebec.
+            </p>
+          )}
         </DialogHeader>
 
         <div className="space-y-6 py-4">

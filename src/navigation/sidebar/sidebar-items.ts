@@ -51,7 +51,7 @@ export interface NavGroup {
 export const sidebarItems: NavGroup[] = [
   {
     id: 1,
-    label: "CONUHACKS X",
+    label: "CONUHACKS XI",
     items: [
       {
         title: "Dashboard",

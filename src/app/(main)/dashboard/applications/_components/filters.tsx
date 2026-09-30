@@ -27,6 +27,7 @@ type ApplicationsFiltersProps = {
   onSearchChange: (search: string) => void;
   onStatusChange: (status: string) => void;
   onTravelReimbursementChange: (value: string) => void;
+  isSuperAdmin?: boolean;
 };
 
 const STATUS_OPTIONS = [
@@ -42,15 +43,13 @@ const STATUS_OPTIONS = [
 ];
 
 const TRAVEL_REIMBURSEMENT_OPTIONS = [
-  { value: "true", label: "Required Travel Reimbursement (All)" },
-  { value: "quebec", label: "Required Travel Reimbursement in Quebec" },
-  {
-    value: "outside-quebec",
-    label: "Required Travel Reimbursement outside Quebec",
-  },
-  { value: "false", label: "Not Required Travel Reimbursement" },
-  { value: "approved", label: "Approved Travel Reimbursement" },
-  { value: "starred", label: "Starred Candidates" },
+  { value: "true", label: "Asked for travel reimbursement (all)" },
+  { value: "outside-quebec", label: "Asked for travel reimbursement, outside Quebec" },
+  { value: "quebec", label: "Asked for travel reimbursement, Quebec residents" },
+  { value: "false", label: "Said no to travel reimbursement" },
+  { value: "unanswered", label: "Didn't answer the travel question" },
+  { value: "approved", label: "Travel reimbursement approved" },
+  { value: "starred", label: "Starred candidates" },
 ];
 
 export default function ApplicationsFilters({
@@ -63,6 +62,7 @@ export default function ApplicationsFilters({
   onSearchChange,
   onStatusChange,
   onTravelReimbursementChange,
+  isSuperAdmin = false,
   onAssignedStatusChange,
   onAssignedToChange, // New callback
 }: ApplicationsFiltersProps & {
@@ -359,7 +359,7 @@ export default function ApplicationsFilters({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={ALL_VALUE}>All applicants</SelectItem>
-                {TRAVEL_REIMBURSEMENT_OPTIONS.map((opt) => (
+                {TRAVEL_REIMBURSEMENT_OPTIONS.filter((opt) => isSuperAdmin || opt.value !== "approved").map((opt) => (
                   <SelectItem key={opt.value} value={opt.value}>
                     {opt.label}
                   </SelectItem>

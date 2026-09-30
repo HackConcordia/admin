@@ -45,6 +45,7 @@ type TableCardsProps = {
 type AutoAssignStats = {
   unassignedCount: number;
   reviewerCount: number;
+  heldForManualAssignment?: number;
 } | null;
 
 export function ApplicationTable({
@@ -249,6 +250,7 @@ export function ApplicationTable({
           setAutoAssignStats({
             unassignedCount: json.data.unassignedCount || 0,
             reviewerCount: json.data.reviewerCount || 0,
+            heldForManualAssignment: json.data.heldForManualAssignment || 0,
           });
         }
       } catch (error) {
@@ -400,11 +402,16 @@ export function ApplicationTable({
   }
 
   function handleAutoAssignSuccess(stats: any) {
+    const held = stats?.heldForManualAssignment || 0;
+    const heldNote = `${held} application${held === 1 ? "" : "s"} (travel reimbursement requests and their teammates) were left for manual assignment to a super admin.`;
+
     if (stats?.totalAssigned === 0) {
-      toast.success("No unassigned applications found");
+      toast.success(held > 0 ? `No applications were auto-assigned. ${heldNote}` : "No unassigned applications found");
     } else {
       toast.success(
-        `Successfully assigned ${stats?.totalAssigned} applications to ${stats?.reviewerStats?.length} reviewers`
+        `Successfully assigned ${stats?.totalAssigned} applications to ${stats?.reviewerStats?.length} reviewers${
+          held > 0 ? `. ${heldNote}` : ""
+        }`
       );
     }
 
