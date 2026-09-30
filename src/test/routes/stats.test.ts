@@ -13,6 +13,7 @@ vi.mock("@/repository/models/team", () => ({ default: teamModel }));
 import * as ageDistribution from "@/app/api/(group)/stats/age-distribution/route";
 import * as stats from "@/app/api/(group)/stats/route";
 import * as resumesExport from "@/app/api/(group)/resumes/export/route";
+import { escapeRegex } from "@/lib/conuhacks/application-query";
 import { NON_SUPER_ADMIN_ID, adminCookie, buildRequest } from "@/test/http";
 
 const app = (status: string) => ({
@@ -129,5 +130,53 @@ describe("GET /api/stats/age-distribution (XI)", () => {
     await ageDistribution.GET(buildRequest("/api/stats/age-distribution?filter=below", { cookie: await adminCookie() }));
 
     expect(applicationModel.find.mock.calls[0][0]).toMatchObject({ age: "under-18" });
+  });
+});
+
+describe("stats routes error handling (L3)", () => {
+  class DriverError extends Error {
+    code = 11000;
+    keyValue = { email: "ada@example.com" };
+    constructor() {
+      super("E11000 duplicate key ada@example.com");
+      this.name = "MongoServerError";
+    }
+  }
+
+  it.each([
+    ["/api/stats", stats.GET],
+    ["/api/stats/age-distribution", ageDistribution.GET],
+  ])("%s logs only the error name and code and sends error: null", async (path, handler) => {
+    const errorLog = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    applicationModel.find.mockImplementation(() => {
+      throw new DriverError();
+    });
+
+    const res = await handler(buildRequest(path, { cookie: await adminCookie() }));
+    const text = await res.text();
+
+    expect(res.status).toBe(500);
+    expect(JSON.parse(text).error).toBeNull();
+    expect(text).not.toContain("ada@example.com");
+    expect(JSON.stringify(errorLog.mock.calls)).not.toContain("ada@example.com");
+    expect(JSON.stringify(errorLog.mock.calls)).toContain("MongoServerError (code 11000)");
+    errorLog.mockRestore();
+  });
+
+  it("escapes regex characters in the age-distribution search text", async () => {
+    const lean = vi.fn().mockResolvedValue([]);
+    applicationModel.find.mockReturnValue({ sort: vi.fn(() => ({ lean })) });
+
+    const res = await ageDistribution.GET(
+      buildRequest(`/api/stats/age-distribution?search=${encodeURIComponent("(a+)+$ b.c")}`, { cookie: await adminCookie() }),
+    );
+
+    expect(res.status).toBe(200);
+    const query = JSON.stringify(applicationModel.find.mock.calls.at(-1)?.[0]);
+    expect(query).not.toContain("(a+)+$");
+    // The query is JSON: compare with the escaped text as JSON encodes it.
+    const encoded = (value: string) => JSON.stringify(escapeRegex(value)).slice(1, -1);
+    expect(query).toContain(encoded("(a+)+$"));
+    expect(query).toContain(encoded("b.c"));
   });
 });

@@ -1,9 +1,11 @@
 import connectMongoDB from "@/repository/mongoose";
 import { sendSuccessResponse, sendErrorResponse } from "@/repository/response";
 import Application from "@/repository/models/application";
+import { escapeRegex } from "@/lib/conuhacks/application-query";
 import { AGE_VALUES } from "@/lib/conuhacks/field-options";
 import { requireAdmin } from "@/lib/require-admin";
 import { CHECKED_IN_STATUSES } from "@/lib/status";
+import { describeError } from "@/lib/volunteers";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -40,36 +42,36 @@ export const GET = async (request: Request) => {
       if (searchTerms.length === 1) {
         // Single word: search in firstName, lastName, or email
         baseQuery.$or = [
-          { firstName: { $regex: searchTerms[0], $options: "i" } },
-          { lastName: { $regex: searchTerms[0], $options: "i" } },
-          { email: { $regex: searchTerms[0], $options: "i" } },
+          { firstName: { $regex: escapeRegex(searchTerms[0]), $options: "i" } },
+          { lastName: { $regex: escapeRegex(searchTerms[0]), $options: "i" } },
+          { email: { $regex: escapeRegex(searchTerms[0]), $options: "i" } },
         ];
       } else {
         // Multiple words: could be "firstName lastName" or "lastName firstName"
         // Match all terms against firstName + lastName combination
         baseQuery.$or = [
           // Match email with full search string
-          { email: { $regex: search, $options: "i" } },
+          { email: { $regex: escapeRegex(search), $options: "i" } },
           // First term matches firstName AND second term matches lastName
           {
             $and: [
-              { firstName: { $regex: searchTerms[0], $options: "i" } },
-              { lastName: { $regex: searchTerms.slice(1).join(" "), $options: "i" } },
+              { firstName: { $regex: escapeRegex(searchTerms[0]), $options: "i" } },
+              { lastName: { $regex: escapeRegex(searchTerms.slice(1).join(" ")), $options: "i" } },
             ],
           },
           // First term matches lastName AND second term matches firstName
           {
             $and: [
-              { lastName: { $regex: searchTerms[0], $options: "i" } },
-              { firstName: { $regex: searchTerms.slice(1).join(" "), $options: "i" } },
+              { lastName: { $regex: escapeRegex(searchTerms[0]), $options: "i" } },
+              { firstName: { $regex: escapeRegex(searchTerms.slice(1).join(" ")), $options: "i" } },
             ],
           },
           // All terms must match somewhere in firstName or lastName
           {
             $and: searchTerms.map((term) => ({
               $or: [
-                { firstName: { $regex: term, $options: "i" } },
-                { lastName: { $regex: term, $options: "i" } },
+                { firstName: { $regex: escapeRegex(term), $options: "i" } },
+                { lastName: { $regex: escapeRegex(term), $options: "i" } },
               ],
             })),
           },
@@ -94,12 +96,8 @@ export const GET = async (request: Request) => {
       applications
     );
   } catch (error) {
-    console.error("Error during GET request:", error);
-    return sendErrorResponse(
-      "Failed to retrieve age distribution applicants",
-      error,
-      500
-    );
+    console.error("Error during GET request:", describeError(error));
+    return sendErrorResponse("Failed to retrieve age distribution applicants", null, 500);
   }
 };
 

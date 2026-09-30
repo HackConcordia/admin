@@ -13,6 +13,7 @@ import { parseListField } from "@/lib/conuhacks/list-field";
 import { redactSensitiveStats } from "@/lib/conuhacks/stats-redaction";
 import { fetchIsSuperAdmin, requireAdmin } from "@/lib/require-admin";
 import { mergeCheckedInCounts } from "@/lib/status";
+import { describeError } from "@/lib/volunteers";
 
 // Utility function to format dietary restriction names
 const formatDisplayName = (restriction: string) => {
@@ -200,11 +201,7 @@ export const GET = async (req: NextRequest) => {
       redactSensitiveStats(responseData, isSuperAdmin)
     );
   } catch (error) {
-    console.error("Error during GET request:", error);
-    return sendErrorResponse(
-      "Failed to retrieve applicant statistics",
-      error,
-      500
-    );
+    console.error("Error during GET request:", describeError(error));
+    return sendErrorResponse("Failed to retrieve applicant statistics", null, 500);
   }
 };
