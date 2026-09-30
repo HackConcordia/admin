@@ -5,6 +5,7 @@ import { sendErrorResponse, sendSuccessResponse } from "@/repository/response";
 import Admin from "@/repository/models/admin";
 import { hashPassword, validateNewPassword } from "@/lib/password";
 import { requireAdmin } from "@/lib/require-admin";
+import { escapeRegex } from "@/lib/conuhacks/application-query";
 
 export const POST = async (req: NextRequest) => {
   const auth = await requireAdmin(req, { superAdmin: true });
@@ -24,7 +25,9 @@ export const POST = async (req: NextRequest) => {
 
     await connectMongoDB();
 
-    const existing = await Admin.findOne({ email: String(email) });
+    // Same normalization as login and the seed script: trimmed, lowercased, matched whole and case-insensitively.
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const existing = await Admin.findOne({ email: { $regex: `^${escapeRegex(normalizedEmail)}$`, $options: "i" } });
     if (existing) {
       return sendErrorResponse("An admin with this email already exists", null, 409);
     }
@@ -32,7 +35,7 @@ export const POST = async (req: NextRequest) => {
     const newAdmin = await Admin.create({
       firstName: String(firstName),
       lastName: String(lastName),
-      email: String(email),
+      email: normalizedEmail,
       password: await hashPassword(password),
     });
 
