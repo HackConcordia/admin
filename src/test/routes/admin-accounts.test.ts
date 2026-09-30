@@ -51,6 +51,39 @@ describe("POST /api/admin/create-admin", () => {
     expect(body.data).toEqual({ _id: OTHER_ADMIN_ID, firstName: "Ada", lastName: "Lovelace", email: "ada@test.dev", isSuperAdmin: false });
   });
 
+  it("stores the email trimmed and lowercased", async () => {
+    adminModel.findOne.mockResolvedValue(null);
+    adminModel.create.mockImplementation(async (doc: Record<string, unknown>) => ({ _id: OTHER_ADMIN_ID, isSuperAdmin: false, ...doc }));
+
+    const res = await createAdmin.POST(
+      buildRequest("/api/admin/create-admin", {
+        method: "POST",
+        cookie: await adminCookie({ isSuperAdmin: true }),
+        body: { ...NEW_ADMIN, email: "  Ada@Test.DEV " },
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    expect((adminModel.create.mock.calls[0][0] as { email: string }).email).toBe("ada@test.dev");
+    expect((await res.json()).data.email).toBe("ada@test.dev");
+  });
+
+  it("looks up duplicates with an anchored, escaped, case-insensitive match", async () => {
+    adminModel.findOne.mockResolvedValue({ _id: "existing" });
+
+    const res = await createAdmin.POST(
+      buildRequest("/api/admin/create-admin", {
+        method: "POST",
+        cookie: await adminCookie({ isSuperAdmin: true }),
+        body: { ...NEW_ADMIN, email: "Ada.L+x@Test.dev" },
+      }),
+    );
+
+    expect(res.status).toBe(409);
+    expect(adminModel.create).not.toHaveBeenCalled();
+    expect(adminModel.findOne).toHaveBeenCalledWith({ email: { $regex: "^ada\\.l\\+x@test\\.dev$", $options: "i" } });
+  });
+
   it("rejects a password shorter than 8 characters", async () => {
     const res = await createAdmin.POST(
       buildRequest("/api/admin/create-admin", {
