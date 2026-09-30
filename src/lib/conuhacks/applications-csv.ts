@@ -1,9 +1,12 @@
 /** CSV export of ConUHacks XI applications (super admins). Pure and client-safe. */
+import { CurrentYears } from "@/constants/CurrentYears";
 import { DegreeLengths } from "@/constants/DegreeLengths";
+import { DegreeTypes } from "@/constants/DegreeTypes";
 import { Genders } from "@/constants/Genders";
 import { JobRoles } from "@/constants/JobRoles";
 import { JobTypes } from "@/constants/JobTypes";
 import { Pronouns } from "@/constants/Pronouns";
+import { UnderrepresentedGroups } from "@/constants/UnderrepresentedGroups";
 import { travelFilterClause } from "@/lib/conuhacks/application-query";
 import {
   formatAge,
@@ -54,7 +57,7 @@ export const CSV_FIELDS =
   "discipline disciplineOther hackathons coolProject excitedAbout isRegisteredForCoop jobRolesLookingFor jobTypesInterested " +
   "jobTypesInterestedOther travelReimbursement isTravelReimbursementApproved travelReimbursementAmount travelReimbursementCurrency " +
   "shirtSize dietaryRestrictions dietaryRestrictionsDescription gender pronouns underrepresented github linkedin resume teamId " +
-  "processedBy isStarred createdAt";
+  "processedBy processedAt checkedInAt isStarred createdAt termsAndConditions";
 
 type Doc = Record<string, unknown>;
 
@@ -79,6 +82,10 @@ function isoDate(value: unknown): string {
 
 const yesNoBlank = (value: unknown): string => (value === true ? "yes" : value === false ? "no" : "");
 
+function consents(doc: Doc): Record<string, unknown> {
+  return typeof doc.termsAndConditions === "object" && doc.termsAndConditions !== null ? (doc.termsAndConditions as Record<string, unknown>) : {};
+}
+
 const COLUMNS: readonly { header: string; value: (doc: Doc) => string }[] = [
   { header: "Application ID", value: (doc) => String(doc._id ?? "") },
   { header: "First name", value: (doc) => text(doc.firstName) },
@@ -95,9 +102,9 @@ const COLUMNS: readonly { header: string; value: (doc: Doc) => string }[] = [
   { header: "Student or recent graduate", value: (doc) => formatYesNo(doc.isStudentOrRecentGraduate) },
   { header: "Level of schooling", value: (doc) => formatLevel(doc.currentLevelOfSchooling, doc.otherLevelOfSchooling) },
   { header: "School", value: (doc) => formatSchool(doc.school, doc.schoolOther) },
-  { header: "Current year", value: (doc) => text(doc.currentYear) },
+  { header: "Current year", value: (doc) => optionLabel(CurrentYears(text(doc.currentLevelOfSchooling), "en"), doc.currentYear) },
   { header: "Degree length", value: (doc) => optionLabel(DegreeLengths("en"), doc.degreeLength) },
-  { header: "Degree type", value: (doc) => text(doc.degreeType) },
+  { header: "Degree type", value: (doc) => optionLabel(DegreeTypes(text(doc.currentLevelOfSchooling), "en"), doc.degreeType) },
   { header: "Discipline", value: (doc) => formatDiscipline(doc.discipline, doc.disciplineOther) },
   { header: "Hackathons", value: (doc) => formatHackathons(doc.hackathons) },
   { header: "Cool project", value: (doc) => text(doc.coolProject) },
@@ -114,7 +121,7 @@ const COLUMNS: readonly { header: string; value: (doc: Doc) => string }[] = [
   { header: "Dietary details", value: (doc) => text(doc.dietaryRestrictionsDescription) },
   { header: "Gender", value: (doc) => optionLabel(Genders("en"), doc.gender) },
   { header: "Pronouns", value: (doc) => optionLabel(Pronouns("en"), doc.pronouns) },
-  { header: "Underrepresented", value: (doc) => text(doc.underrepresented) },
+  { header: "Underrepresented", value: (doc) => optionLabel(UnderrepresentedGroups("en"), doc.underrepresented) },
   { header: "GitHub", value: (doc) => text(doc.github) },
   { header: "LinkedIn", value: (doc) => text(doc.linkedin) },
   { header: "Resume on file", value: resumeOnFile },
@@ -122,6 +129,11 @@ const COLUMNS: readonly { header: string; value: (doc: Doc) => string }[] = [
   { header: "Reviewer", value: (doc) => text(doc.processedBy) },
   { header: "Starred", value: (doc) => (doc.isStarred === true ? "yes" : "no") },
   { header: "Applied at", value: (doc) => isoDate(doc.createdAt) },
+  { header: "MLH code of conduct", value: (doc) => yesNoBlank(consents(doc).mlhConduct) },
+  { header: "MLH terms and privacy policy", value: (doc) => yesNoBlank(consents(doc).mlhTerms) },
+  { header: "MLH emails", value: (doc) => yesNoBlank(consents(doc).mlhEmails) },
+  { header: "Processed at", value: (doc) => isoDate(doc.processedAt) },
+  { header: "Checked in at", value: (doc) => isoDate(doc.checkedInAt) },
 ];
 
 export const CSV_HEADERS: readonly string[] = COLUMNS.map((column) => column.header);
