@@ -1,4 +1,6 @@
 export interface IStats {
+  /** False for a regular reviewer: the T-shirt and dietary counts are zeroed, so the page hides those charts. */
+  sensitiveVisible: boolean;
   totalApplicants: number;
   statusCounts: {
     Unverified: number;

@@ -92,7 +92,7 @@ export default function DashboardPage() {
       ? (stats.applicantsChange / stats.newApplicants24To48Hours) * 100
       : 0;
 
-  // Calculate total shirts from tshirtCounts
+  // Calculate total shirts from tshirtCounts (the chart is hidden while the counts are redacted)
   const totalShirts = Object.values(stats.tshirtCounts).reduce(
     (sum, count) => sum + count,
     0
@@ -172,23 +172,25 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* T-Shirt Size Distribution */}
-        <Card className="lg:col-span-1">
-          <CardHeader>
-            <CardTitle className="text-lg font-medium">
-              T-Shirt Size Distribution
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <TShirtDistribution
-              data={stats.tshirtCounts}
-              totalShirts={totalShirts}
-            />
-          </CardContent>
-        </Card>
+        {/* T-Shirt Size Distribution (super admins only) */}
+        {stats.sensitiveVisible && (
+          <Card className="lg:col-span-1">
+            <CardHeader>
+              <CardTitle className="text-lg font-medium">
+                T-Shirt Size Distribution
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <TShirtDistribution
+                data={stats.tshirtCounts}
+                totalShirts={totalShirts}
+              />
+            </CardContent>
+          </Card>
+        )}
 
         {/* Small Stats Grid */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className={`grid grid-cols-2 gap-4 ${stats.sensitiveVisible ? "" : "lg:col-span-2"}`}>
           <StatCard
             title="Starred Applicants"
             value={`${stats.starredApplicantsCount} / ${stats.validApplicantsCount}`}
@@ -228,7 +230,7 @@ export default function DashboardPage() {
       {/* Third Row */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Schools */}
-        <Card>
+        <Card className={stats.sensitiveVisible ? undefined : "lg:col-span-3"}>
           <CardHeader>
             <CardTitle className="text-lg font-medium">Schools</CardTitle>
           </CardHeader>
@@ -237,17 +239,19 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Dietary Restrictions */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-lg font-medium">
-              Dietary Restriction
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <DietaryChart data={stats.dietaryRestrictionsData} />
-          </CardContent>
-        </Card>
+        {/* Dietary Restrictions (super admins only) */}
+        {stats.sensitiveVisible && (
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="text-lg font-medium">
+                Dietary Restriction
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <DietaryChart data={stats.dietaryRestrictionsData} />
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Footer */}

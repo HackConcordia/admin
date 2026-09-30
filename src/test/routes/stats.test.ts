@@ -83,6 +83,7 @@ describe("GET /api/stats redaction", () => {
 
     expect(data.tshirtCounts).toEqual({ S: 0, M: 0, L: 0, XL: 0 });
     expect(data.dietaryRestrictionsData.every((entry: { count: number }) => entry.count === 0)).toBe(true);
+    expect(data.sensitiveVisible).toBe(false);
   });
 
   it("keeps T-shirt counts for a super admin", async () => {
@@ -93,6 +94,7 @@ describe("GET /api/stats redaction", () => {
     const { data } = await res.json();
 
     expect(data.tshirtCounts.M).toBe(1);
+    expect(data.sensitiveVisible).toBe(true);
   });
 
   it.each([

@@ -198,7 +198,7 @@ export const GET = async (req: NextRequest) => {
     const isSuperAdmin = (await fetchIsSuperAdmin(auth.admin.adminId)) === true;
     return sendSuccessResponse(
       "Applicant statistics retrieved successfully",
-      redactSensitiveStats(responseData, isSuperAdmin)
+      { ...redactSensitiveStats(responseData, isSuperAdmin), sensitiveVisible: isSuperAdmin }
     );
   } catch (error) {
     console.error("Error during GET request:", describeError(error));

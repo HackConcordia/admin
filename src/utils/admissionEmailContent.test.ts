@@ -4,7 +4,6 @@ import type { EmailEventConfig } from "@/config/event";
 import { admittedEmail, discordInviteEmail, refusedEmail, waitlistedEmail } from "@/utils/admissionEmailContent";
 
 const CONFIG: EmailEventConfig = {
-  eventId: "6700000000000000000c0a11",
   eventName: "ConUHacks XI",
   eventDatesLabel: "Saturday, February 6 and Sunday, February 7, 2027",
   eventDatesLabelFr: "samedi 6 et dimanche 7 février 2027",
@@ -15,7 +14,6 @@ const CONFIG: EmailEventConfig = {
   discordInviteUrl: null,
   travelGuidelinesUrl: null,
   travelGuidelinesUrlFr: null,
-  meals: [],
 };
 const ADA = { firstName: "Ada", lastName: "Lovelace" };
 

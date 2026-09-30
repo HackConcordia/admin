@@ -67,7 +67,7 @@ describe("PATCH /api/status/[applicationId]", () => {
   });
 
   it.each(["admit", "waitlist", "reject"])("still decides (%s) when EVENT_ID and EVENT_MEALS are missing or invalid", async (action) => {
-    for (const bad of [{}, { EVENT_ID: "placeholder", EVENT_MEALS: "not json" }]) {
+    for (const bad of [{} as Record<string, string>, { EVENT_ID: "placeholder", EVENT_MEALS: "not json" }]) {
       stubEnv({ ...EMAIL_ENV, ...bad });
       applicationModel.findOneAndUpdate.mockClear();
 
