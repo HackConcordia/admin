@@ -69,6 +69,16 @@ describe("computeAdvancedStats", () => {
 });
 
 describe("redactSensitiveAdvancedStats", () => {
+  it("hides the approved travel totals from a regular reviewer (A2) and keeps the requested counts", () => {
+    const stats = computeAdvancedStats(APPS, ADMINS);
+    const redacted = redactSensitiveAdvancedStats(stats, false);
+    expect(redacted.overallTravelReimbursement).toBeNull();
+    expect(redacted.confirmedTravelReimbursement).toBeNull();
+    expect(redacted.travelReimbursement).toEqual(stats.travelReimbursement);
+    expect(redactSensitiveAdvancedStats(stats, true).overallTravelReimbursement).toBe(289);
+    expect(redactSensitiveAdvancedStats(stats, true).confirmedTravelReimbursement).toBe(289);
+  });
+
   it("empties gender and age for a regular reviewer only", () => {
     const stats = computeAdvancedStats(APPS, ADMINS);
     const redacted = redactSensitiveAdvancedStats(stats, false);

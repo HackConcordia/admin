@@ -4,11 +4,12 @@ export interface NameCount {
 }
 
 export interface IAdvancedStats {
-  /** False for a regular reviewer: gender and age are then empty (super-admin-only fields). */
+  /** False for a regular reviewer: gender and age are then empty and the approved travel totals are null. */
   sensitiveVisible: boolean;
   totalApplicants: number;
-  overallTravelReimbursement: number;
-  confirmedTravelReimbursement: number;
+  /** Approved reimbursements in CAD. Travel decisions are super-admin-only (A2), so null for a regular reviewer. */
+  overallTravelReimbursement: number | null;
+  confirmedTravelReimbursement: number | null;
   travelReimbursement: {
     requested: number;
     requestedOutsideQuebec: number;

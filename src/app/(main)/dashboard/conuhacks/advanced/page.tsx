@@ -132,13 +132,15 @@ export default function AdvancedAnalyticsPage() {
 
       {/* Quick Stats Row */}
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <QuickStatCard
-          title="Travel Reimbursement (CAD)"
-          value={stats.overallTravelReimbursement}
-          secondaryValue={stats.confirmedTravelReimbursement}
-          icon={Plane}
-          color="#22c55e"
-        />
+        {stats.sensitiveVisible && (
+          <QuickStatCard
+            title="Travel Reimbursement (CAD)"
+            value={stats.overallTravelReimbursement ?? 0}
+            secondaryValue={stats.confirmedTravelReimbursement ?? 0}
+            icon={Plane}
+            color="#22c55e"
+          />
+        )}
         <QuickStatCard
           title="Travel requests outside Quebec"
           value={stats.travelReimbursement.requestedOutsideQuebec}

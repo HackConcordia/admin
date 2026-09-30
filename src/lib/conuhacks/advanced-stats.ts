@@ -142,13 +142,16 @@ export function computeAdvancedStats(applications: readonly App[], admins: reado
 /**
  * Empties the breakdowns of super-admin-only fields (gender, age; SUPER_ADMIN_ONLY_FIELD_KEYS) for a
  * caller who is not a DB-verified super admin. Empty, not zeroed, because an off-list gender becomes
- * its own label (applicant text).
+ * its own label (applicant text). The approved travel totals are nulled too: a total that moves right
+ * after a super admin's decision would reveal that decision (A2).
  */
 export function redactSensitiveAdvancedStats(stats: IAdvancedStats, isSuperAdmin: boolean): IAdvancedStats {
   if (isSuperAdmin) return stats;
   return {
     ...stats,
     sensitiveVisible: false,
+    overallTravelReimbursement: null,
+    confirmedTravelReimbursement: null,
     genderDistribution: [],
     ageDistribution: { eighteenOrAbove: 0, underEighteen: 0, notAnswered: 0, buckets: [] },
   };
