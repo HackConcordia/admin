@@ -1,7 +1,7 @@
 import { Language } from "@/lib/LanguageContext";
 import { AGE_VALUES } from "@/lib/conuhacks/field-options";
 
-/** Age on the first day of ConUHacks XI (Feb 6, 2027). "under-18" triggers the consent-form notice. */
+/** Age on the first day of ConUHacks XI (Feb 6, 2027). */
 export const AgeOptions = (lang: Language = "en") =>
   AGE_VALUES.map((value) => ({
     value,

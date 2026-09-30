@@ -1,5 +1,5 @@
 /**
- * Response headers for serving an applicant-uploaded GridFS file (resume / consent form) back
+ * Response headers for serving an applicant-uploaded GridFS file (the resume) back
  * to an admin. The `mimetype` and `filename` both come from applicant-controlled metadata, so
  * neither is trusted as-is: the content type is allowlisted (anything else degrades to
  * `application/octet-stream`), `X-Content-Type-Options: nosniff` stops the browser from
