@@ -9,8 +9,11 @@ import Application from "@/repository/models/application";
 import Team from "@/repository/models/team";
 
 import { statuses } from "@/constants/statuses";
-import { requireAdmin } from "@/lib/require-admin";
+import { parseListField } from "@/lib/conuhacks/list-field";
+import { redactSensitiveStats } from "@/lib/conuhacks/stats-redaction";
+import { fetchIsSuperAdmin, requireAdmin } from "@/lib/require-admin";
 import { mergeCheckedInCounts } from "@/lib/status";
+import { describeError } from "@/lib/volunteers";
 
 // Utility function to format dietary restriction names
 const formatDisplayName = (restriction: string) => {
@@ -28,8 +31,6 @@ export const GET = async (req: NextRequest) => {
 
   try {
     await connectMongoDB();
-
-    console.log("GET request received");
 
     // Fetch all applications, including dietaryRestrictions (as a string representation of array)
     const applications = await Application.find(
@@ -139,28 +140,10 @@ export const GET = async (req: NextRequest) => {
     // Dietary restriction counts
     let applicantsWithNoRestrictions = 0;
     const dietaryRestrictionCounts = applications.reduce((acc, app) => {
-      let restrictions: string[] = [];
-
-      // Parse dietaryRestrictions if available
-      try {
-        const rawRestrictions = app.dietaryRestrictions;
-        // Check if dietaryRestrictions exists, is an array, has items, and first item is valid JSON
-        if (
-          rawRestrictions &&
-          Array.isArray(rawRestrictions) &&
-          rawRestrictions.length > 0 &&
-          rawRestrictions[0] &&
-          rawRestrictions[0] !== "undefined" &&
-          typeof rawRestrictions[0] === "string"
-        ) {
-          const parsed = JSON.parse(rawRestrictions[0]);
-          if (Array.isArray(parsed)) {
-            restrictions = parsed;
-          }
-        }
-      } catch {
-        // Silently handle parsing errors - these applicants will be counted as "no restrictions"
-      }
+      // Every stored shape ([], ['[]'], ['["a"]'], plain array, JSON string, ["none"]); "none" is no restriction.
+      const restrictions = parseListField(app.dietaryRestrictions).filter(
+        (restriction) => restriction !== "" && restriction.toLowerCase() !== "none"
+      );
 
       // Count applicants with no restrictions
       if (restrictions.length === 0) {
@@ -212,16 +195,13 @@ export const GET = async (req: NextRequest) => {
       starredPercentage,
       unassignedApplications,
     };
+    const isSuperAdmin = (await fetchIsSuperAdmin(auth.admin.adminId)) === true;
     return sendSuccessResponse(
       "Applicant statistics retrieved successfully",
-      responseData
+      { ...redactSensitiveStats(responseData, isSuperAdmin), sensitiveVisible: isSuperAdmin }
     );
   } catch (error) {
-    console.error("Error during GET request:", error);
-    return sendErrorResponse(
-      "Failed to retrieve applicant statistics",
-      error,
-      500
-    );
+    console.error("Error during GET request:", describeError(error));
+    return sendErrorResponse("Failed to retrieve applicant statistics", null, 500);
   }
 };

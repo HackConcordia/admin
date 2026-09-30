@@ -1,59 +1,35 @@
+export interface NameCount {
+  name: string;
+  count: number;
+}
+
 export interface IAdvancedStats {
+  /** False for a regular reviewer: gender and age are then empty and the approved travel totals are null. */
+  sensitiveVisible: boolean;
   totalApplicants: number;
-  overallTravelReimbursement: number;
-  confirmedTravelReimbursement: number;
-  facultyDistribution: {
-    name: string;
-    count: number;
-  }[];
-  levelOfStudyDistribution: {
-    name: string;
-    count: number;
-  }[];
-  programDistribution: {
-    name: string;
-    count: number;
-  }[];
-  graduationYearDistribution: {
-    year: string;
-    count: number;
-  }[];
+  /** Approved reimbursements in CAD. Travel decisions are super-admin-only (A2), so null for a regular reviewer. */
+  overallTravelReimbursement: number | null;
+  confirmedTravelReimbursement: number | null;
   travelReimbursement: {
-    needed: number;
-    notNeeded: number;
+    requested: number;
+    requestedOutsideQuebec: number;
+    requestedFromQuebec: number;
+    notRequested: number;
+    unanswered: number;
   };
-  preferredLanguageDistribution: {
-    name: string;
-    count: number;
-  }[];
-  genderDistribution: {
-    name: string;
-    count: number;
-  }[];
-  countryDistribution: {
-    code: string;
-    count: number;
-  }[];
-  coopStats: {
-    registered: number;
-    notRegistered: number;
-  };
-  jobTypesDistribution: {
-    name: string;
-    count: number;
-  }[];
-  workRegionsDistribution: {
-    name: string;
-    count: number;
-  }[];
-  adminAssignmentMetrics: {
-    adminName: string;
-    email: string;
-    totalAssigned: number;
-    submittedAssigned: number;
-  }[];
-  ageDistribution: {
-    eighteenOrAbove: number;
-    underEighteen: number;
-  };
+  studentOrRecentGraduate: number;
+  levelOfSchoolingDistribution: NameCount[];
+  currentYearDistribution: NameCount[];
+  degreeLengthDistribution: NameCount[];
+  disciplineDistribution: NameCount[];
+  communicationLanguageDistribution: NameCount[];
+  languagesSpokenDistribution: NameCount[];
+  hackathonsDistribution: NameCount[];
+  genderDistribution: NameCount[];
+  countryDistribution: { code: string; count: number }[];
+  coopStats: { registered: number; notRegistered: number };
+  jobTypesDistribution: NameCount[];
+  adminAssignmentMetrics: { adminName: string; email: string; totalAssigned: number; submittedAssigned: number }[];
+  /** Confirmed and checked-in applicants only. */
+  ageDistribution: { eighteenOrAbove: number; underEighteen: number; notAnswered: number; buckets: NameCount[] };
 }

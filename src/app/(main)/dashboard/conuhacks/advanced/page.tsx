@@ -31,23 +31,12 @@ import {
   Loader2,
 } from "lucide-react";
 import {
-  Bar,
-  BarChart,
-  XAxis,
-  YAxis,
-  CartesianGrid,
   Cell,
   Pie,
   PieChart,
   ResponsiveContainer,
   Tooltip,
 } from "recharts";
-import {
-  ChartConfig,
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
 
 const COLORS = [
   "#3b82f6",
@@ -67,7 +56,7 @@ interface AgeApplicant {
   firstName: string;
   lastName: string;
   email: string;
-  isEighteenOrAbove: string;
+  age: string;
   status: string;
   school: string;
 }
@@ -143,16 +132,18 @@ export default function AdvancedAnalyticsPage() {
 
       {/* Quick Stats Row */}
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        {stats.sensitiveVisible && (
+          <QuickStatCard
+            title="Travel Reimbursement (CAD)"
+            value={stats.overallTravelReimbursement ?? 0}
+            secondaryValue={stats.confirmedTravelReimbursement ?? 0}
+            icon={Plane}
+            color="#22c55e"
+          />
+        )}
         <QuickStatCard
-          title="Travel Reimbursement (CAD)"
-          value={stats.overallTravelReimbursement}
-          secondaryValue={stats.confirmedTravelReimbursement}
-          icon={Plane}
-          color="#22c55e"
-        />
-        <QuickStatCard
-          title="Need Travel Reimbursement"
-          value={stats.travelReimbursement.needed}
+          title="Travel requests outside Quebec"
+          value={stats.travelReimbursement.requestedOutsideQuebec}
           total={stats.totalApplicants}
           icon={Plane}
           color="#f97316"
@@ -217,7 +208,8 @@ export default function AdvancedAnalyticsPage() {
         </Card>
       )}
 
-      {/* Age Distribution (Confirmed & Checked-in only) */}
+      {/* Age Distribution (Confirmed & Checked-in only; super admins only) */}
+      {stats.sensitiveVisible && (
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
@@ -242,9 +234,17 @@ export default function AdvancedAnalyticsPage() {
           </CardHeader>
           <CardContent>
             <AgeDistributionChart data={stats.ageDistribution} />
+            {stats.ageDistribution.buckets.some((bucket) => bucket.count > 0) && (
+              <div className="mt-4">
+                <HorizontalBarChart
+                  data={stats.ageDistribution.buckets.filter((bucket) => bucket.count > 0)}
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
+      )}
 
       {/* Age Distribution Dialog */}
       <AgeDistributionDialog
@@ -252,44 +252,46 @@ export default function AdvancedAnalyticsPage() {
         onOpenChange={setAgeDialogOpen}
       />
 
-      {/* Row 1: Gender & Language */}
+      {/* Row 1: Gender (super admins only) & Communication Language */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Users className="h-5 w-5" />
-              Gender Distribution
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <PieChartComponent data={stats.genderDistribution} />
-          </CardContent>
-        </Card>
+        {stats.sensitiveVisible && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Users className="h-5 w-5" />
+                Gender Distribution
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <PieChartComponent data={stats.genderDistribution} />
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <Languages className="h-5 w-5" />
-              Preferred Language
+              Communication Language
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <PieChartComponent data={stats.preferredLanguageDistribution} />
+            <PieChartComponent data={stats.communicationLanguageDistribution} />
           </CardContent>
         </Card>
       </div>
 
-      {/* Row 2: Faculty & Level of Study */}
+      {/* Row 2: Discipline & Level of Schooling */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <Building className="h-5 w-5" />
-              Faculty Distribution
+              Discipline
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <HorizontalBarChart data={stats.facultyDistribution.slice(0, 8)} />
+            <HorizontalBarChart data={stats.disciplineDistribution.slice(0, 8)} />
           </CardContent>
         </Card>
 
@@ -297,37 +299,37 @@ export default function AdvancedAnalyticsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <GraduationCap className="h-5 w-5" />
-              Level of Study
+              Level of Schooling
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <HorizontalBarChart data={stats.levelOfStudyDistribution} />
+            <HorizontalBarChart data={stats.levelOfSchoolingDistribution} />
           </CardContent>
         </Card>
       </div>
 
-      {/* Row 3: Programs & Graduation Year */}
+      {/* Row 3: Languages Spoken & Hackathons Attended */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Top Programs</CardTitle>
+            <CardTitle className="text-lg">Languages Spoken</CardTitle>
           </CardHeader>
           <CardContent>
-            <HorizontalBarChart data={stats.programDistribution.slice(0, 8)} />
+            <HorizontalBarChart data={stats.languagesSpokenDistribution} />
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Graduation Year</CardTitle>
+            <CardTitle className="text-lg">Hackathons Attended</CardTitle>
           </CardHeader>
           <CardContent>
-            <GraduationYearChart data={stats.graduationYearDistribution} />
+            <HorizontalBarChart data={stats.hackathonsDistribution} />
           </CardContent>
         </Card>
       </div>
 
-      {/* Row 4: Job Types & Work Regions */}
+      {/* Row 4: Job Types & Current Year */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
@@ -353,17 +355,17 @@ export default function AdvancedAnalyticsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <Globe className="h-5 w-5" />
-              Preferred Work Regions
+              Current Year
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {stats.workRegionsDistribution.length > 0 ? (
+            {stats.currentYearDistribution.length > 0 ? (
               <HorizontalBarChart
-                data={stats.workRegionsDistribution.slice(0, 6)}
+                data={stats.currentYearDistribution.slice(0, 8)}
               />
             ) : (
               <div className="text-muted-foreground flex h-32 items-center justify-center text-sm">
-                No data available for work regions
+                No data available for current year
               </div>
             )}
           </CardContent>
@@ -677,49 +679,6 @@ function AgeDistributionChart({
   );
 }
 
-// Graduation Year Bar Chart
-function GraduationYearChart({
-  data,
-}: {
-  data: { year: string; count: number }[];
-}) {
-  const chartConfig = {
-    count: {
-      label: "Applicants",
-      color: "#3b82f6",
-    },
-  } satisfies ChartConfig;
-
-  return (
-    <ChartContainer config={chartConfig} className="h-[200px] w-full">
-      <BarChart
-        data={data}
-        margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-      >
-        <CartesianGrid
-          vertical={false}
-          strokeDasharray="3 3"
-          className="stroke-muted"
-        />
-        <XAxis
-          dataKey="year"
-          tickLine={false}
-          axisLine={false}
-          tick={{ fontSize: 12 }}
-        />
-        <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
-        <ChartTooltip content={<ChartTooltipContent />} />
-        <Bar
-          dataKey="count"
-          fill="var(--color-count)"
-          radius={[4, 4, 0, 0]}
-          maxBarSize={40}
-        />
-      </BarChart>
-    </ChartContainer>
-  );
-}
-
 // Skeleton Loading Component
 function AdvancedAnalyticsSkeleton() {
   return (
@@ -918,12 +877,12 @@ function ApplicantList({
               </p>
               <span
                 className={`text-xs px-2 py-0.5 rounded-full ${
-                  applicant.isEighteenOrAbove === "yes"
+                  applicant.age !== "under-18"
                     ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
                     : "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
                 }`}
               >
-                {applicant.isEighteenOrAbove === "yes" ? "18+" : "<18"}
+                {applicant.age === "under-18" ? "Under 18" : applicant.age || "Not answered"}
               </span>
               <span
                 className={`text-xs px-2 py-0.5 rounded-full ${

@@ -2,17 +2,14 @@
 
 import * as React from "react";
 import { useEffect, useMemo, useState } from "react";
-import { Lock } from "lucide-react";
-
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTablePagination } from "@/components/data-table/data-table-pagination";
-import { CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useDataTableInstance } from "@/hooks/use-data-table-instance";
+import type { MealDay } from "@/lib/conuhacks/meals";
 
-import { getJan24Columns, getJan25Columns, type MealTableRow } from "./columns";
+import { getMealDayColumns, type MealTableRow } from "./columns";
 
 type MealTableProps = {
   initialData: MealTableRow[];
@@ -22,25 +19,21 @@ type MealTableProps = {
     totalRecords: number;
     totalPages: number;
   };
+  eventName: string;
+  mealDays: MealDay[];
+  configError: string | null;
 };
 
-export function MealTable({ initialData, initialPagination }: MealTableProps) {
+export function MealTable({ initialData, initialPagination, eventName, mealDays, configError }: MealTableProps) {
   const [data, setData] = useState<MealTableRow[]>(initialData);
   const [pagination, setPagination] = useState(initialPagination);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [activeTab, setActiveTab] = useState("jan24");
+  const [activeTab, setActiveTab] = useState(mealDays[0]?.date ?? "");
 
   // Track the previous search value to detect actual user changes
   const prevSearchRef = React.useRef(search);
-
-  // Check if January 25, 2026 is accessible (after midnight EST)
-  const isJan25Accessible = useMemo(() => {
-    const now = new Date();
-    const jan25Start = new Date("2026-01-25T00:00:00-05:00");
-    return now >= jan25Start;
-  }, []);
 
   // Handle meal update callback
   const handleMealUpdate = (mealId: string, updatedMeals: MealTableRow["meals"]) => {
@@ -48,12 +41,10 @@ export function MealTable({ initialData, initialPagination }: MealTableProps) {
   };
 
   // Get appropriate columns based on active tab
-  const columns = useMemo(() => {
-    if (activeTab === "jan24") {
-      return getJan24Columns(handleMealUpdate);
-    }
-    return getJan25Columns(handleMealUpdate);
-  }, [activeTab]);
+  const columns = useMemo(
+    () => getMealDayColumns(mealDays.find((day) => day.date === activeTab) ?? mealDays[0], handleMealUpdate),
+    [activeTab, mealDays],
+  );
 
   const table = useDataTableInstance({
     data,
@@ -120,85 +111,48 @@ export function MealTable({ initialData, initialPagination }: MealTableProps) {
   }, [table.getState().pagination.pageIndex]);
 
   return (
-    <Tabs value={activeTab} onValueChange={setActiveTab}>
-      <div className="flex justify-between w-full gap-4">
-        <div>
-          <h2>Meals Management</h2>
-          <p className="text-xs text-muted-foreground">Track meal consumption for ConuHacks 2026</p>
-        </div>
-        <TooltipProvider>
-          <TabsList className="grid w-full max-w-md grid-cols-2">
-            <TabsTrigger value="jan24">January 24, 2026</TabsTrigger>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="relative">
-                  <TabsTrigger value="jan25" disabled={!isJan25Accessible} className="w-full">
-                    {!isJan25Accessible && <Lock className="mr-2 h-4 w-4" />}
-                    January 25, 2026
-                  </TabsTrigger>
-                </div>
-              </TooltipTrigger>
-              {!isJan25Accessible && (
-                <TooltipContent>
-                  <p>Available on January 25, 2026</p>
-                </TooltipContent>
-              )}
-            </Tooltip>
-          </TabsList>
-        </TooltipProvider>
+    <div className="flex flex-col gap-4">
+      <div>
+        <h2>Meals Management</h2>
+        <p className="text-xs text-muted-foreground">Track meal consumption for {eventName}</p>
       </div>
-
-      <Input
-        placeholder="Search by name or email..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="w-full my-4"
-      />
-
-      <TabsContent value="jan24">
-
-        <div className="flex flex-col gap-4">
-          <div className="overflow-hidden rounded-md border">
-            {loading ? (
-              <div className="flex h-24 items-center justify-center">
-                <p className="text-muted-foreground">Loading...</p>
+      {configError && <p className="text-sm text-red-600">Meal schedule unavailable: {configError}</p>}
+      {!configError && mealDays.length === 0 && (
+        <p className="text-sm text-muted-foreground">No meals are scheduled for this event (EVENT_MEALS is empty).</p>
+      )}
+      {mealDays.length > 0 && (
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList>
+            {mealDays.map((day) => (
+              <TabsTrigger key={day.date} value={day.date}>
+                {day.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          <Input
+            placeholder="Search by name or email..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="my-4 w-full"
+          />
+          {mealDays.map((day) => (
+            <TabsContent key={day.date} value={day.date}>
+              <div className="flex flex-col gap-4">
+                <div className="overflow-hidden rounded-md border">
+                  {loading ? (
+                    <div className="flex h-24 items-center justify-center">
+                      <p className="text-muted-foreground">Loading...</p>
+                    </div>
+                  ) : (
+                    <DataTable table={table} columns={columns} />
+                  )}
+                </div>
+                <DataTablePagination table={table} />
               </div>
-            ) : (
-              <DataTable table={table} columns={columns} />
-            )}
-          </div>
-          <DataTablePagination table={table} />
-        </div>
-      </TabsContent>
-
-      <TabsContent value="jan25" className="mt-4">
-        <div className="flex flex-col gap-4">
-          <div className="mb-4">
-            <h2 className="text-muted-foreground mb-4 text-center text-lg font-semibold">
-              MEALS FOR JANUARY 25, 2026
-            </h2>
-            <Input
-              placeholder="Search by name or email..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="max-w-sm"
-            />
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-4">
-          <div className="overflow-hidden rounded-md border">
-            {loading ? (
-              <div className="flex h-24 items-center justify-center">
-                <p className="text-muted-foreground">Loading...</p>
-              </div>
-            ) : (
-              <DataTable table={table} columns={columns} />
-            )}
-          </div>
-          <DataTablePagination table={table} />
-        </div>
-      </TabsContent>
-    </Tabs>
+            </TabsContent>
+          ))}
+        </Tabs>
+      )}
+    </div>
   );
 }

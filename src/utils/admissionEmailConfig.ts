@@ -1,424 +1,74 @@
 import sgMail from "@sendgrid/mail";
 
-interface TravelReimbursementData {
-  approved: boolean;
-  amount?: number;
-  currency?: string;
-}
+import { getEmailEventConfig } from "@/config/event";
+import {
+  admittedEmail,
+  discordInviteEmail,
+  refusedEmail,
+  waitlistedEmail,
+  type EmailContent,
+  type TravelDecisionSummary,
+} from "@/utils/admissionEmailContent";
 
-function getSendGridConfig() {
+const SENDER_NAME = "HackConcordia";
+
+async function deliver(kind: string, to: string, content: EmailContent, replyTo: string): Promise<boolean> {
   const apiKey = process.env.SENDGRID_API_KEY;
-  const fromEmail = process.env.SENDGRID_FROM_EMAIL!;
-  const replyToEmail =
-    process.env.CONTACT_EMAIL || "team.hackconcordia@ecaconcordia.ca";
+  const fromEmail = process.env.SENDGRID_FROM_EMAIL;
 
   if (!apiKey) {
-    console.warn(
-      "SENDGRID_API_KEY is not configured. Emails will not be sent."
-    );
-    return null;
+    console.log(`[Email Stub] ${kind}: ${content.subject}`);
+    return true;
+  }
+  if (!fromEmail) {
+    console.error(`[Email] SENDGRID_FROM_EMAIL is not set; the ${kind} email was not sent`);
+    return false;
   }
 
-  sgMail.setApiKey(apiKey);
-  return { fromEmail, replyToEmail };
+  try {
+    sgMail.setApiKey(apiKey);
+    await sgMail.send({
+      to,
+      from: { email: fromEmail, name: SENDER_NAME },
+      replyTo: { email: replyTo, name: SENDER_NAME },
+      subject: content.subject,
+      text: content.text,
+      html: content.html,
+    });
+    console.log(`[Email] Sent ${kind} email`);
+    return true;
+  } catch (error) {
+    console.error(`[Email] Failed to send ${kind} email:`, error instanceof Error ? error.name : "unknown error");
+    return false;
+  }
 }
 
 export async function sendAdmittedEmail(
   email: string,
   firstName: string,
   lastName: string,
-  travelReimbursement?: TravelReimbursementData
+  travel?: TravelDecisionSummary,
 ): Promise<boolean> {
-  try {
-    const config = getSendGridConfig();
-
-    if (!config) {
-      console.log(
-        `[Email Stub] Admitted -> to: ${email}, name: ${firstName} ${lastName}, travel: ${JSON.stringify(
-          travelReimbursement
-        )}`
-      );
-      return true;
-    }
-
-    // Determine travel reimbursement text based on scenario
-    let travelTextEnglish = "";
-    let travelTextFrench = "";
-    let travelHtmlEnglish = "";
-    let travelHtmlFrench = "";
-
-    if (
-      travelReimbursement?.approved &&
-      travelReimbursement.amount &&
-      travelReimbursement.currency
-    ) {
-      // Travel reimbursement accepted
-      travelTextEnglish = `
-Travel Reimbursement:
-
-You have been approved for a travel reimbursement of up to $${travelReimbursement.amount} ${travelReimbursement.currency}. Please refer to the following document for further guidelines on eligible reimbursement expenses: https://drive.google.com/file/d/1-7HbWwvpoTLa2Mpw406qMu4K0Dit9GOt/view?usp=drive_link. Instructions on how to submit reimbursement requests will be provided closer to the event date.
-`;
-      travelTextFrench = `
-Remboursement des frais de déplacement :
-
-Vous avez été approuvé pour un remboursement de voyage d'un montant maximum de $${travelReimbursement.amount} ${travelReimbursement.currency}. Veuillez consulter le document suivant pour plus de détails sur les dépenses éligibles au remboursement: https://drive.google.com/file/d/1Bqh9FSkdL2RlPJEXvq7vAmCLb-T9pM1W/view?usp=drive_link. Les instructions sur la façon de soumettre les demandes de remboursement seront fournies à l'approche de la date de l'événement.
-`;
-      travelHtmlEnglish = `
-<p><strong>Travel Reimbursement:</strong></p>
-<p>You have been approved for a travel reimbursement of <strong>up to $${travelReimbursement.amount} ${travelReimbursement.currency}.</strong> Please refer to the following document for further guidelines on eligible reimbursement expenses: <a href="https://drive.google.com/file/d/1-7HbWwvpoTLa2Mpw406qMu4K0Dit9GOt/view?usp=drive_link">ConUHacks X Travel Reimbursement Guidelines</a>. Instructions on how to submit reimbursement requests will be provided closer to the event date.</p>
-`;
-      travelHtmlFrench = `
-<p><strong>Remboursement des frais de déplacement :</strong></p>
-<p>Vous avez été approuvé pour un remboursement de voyage d'un montant <strong>maximum de $${travelReimbursement.amount} ${travelReimbursement.currency}.</strong> Veuillez consulter le document suivant pour plus de détails sur les dépenses éligibles au remboursement: <a href="https://drive.google.com/file/d/1Bqh9FSkdL2RlPJEXvq7vAmCLb-T9pM1W/view?usp=drive_link">Directives concernant le remboursement des frais de déplacement pour ConUHacks X</a>. Les instructions sur la façon de soumettre les demandes de remboursement seront fournies à l'approche de la date de l'événement.</p>
-`;
-    } else if (travelReimbursement?.approved === false) {
-      // Travel reimbursement rejected
-      travelTextEnglish = `
-Travel Reimbursement:
-
-We received a large number of travel reimbursement applications this year, and after careful consideration, we regret to inform you that we are not able to provide you with a travel reimbursement at this time. Regardless, we still hope to see you at ConUHacks X.
-`;
-      travelTextFrench = `
-Remboursement des frais de déplacement :
-
-Nous avons reçu un grand nombre de demandes de remboursement de voyage cette année, et après une étude approfondie, nous avons le regret de vous informer que nous ne sommes pas en mesure de vous offrir un remboursement de voyage pour le moment. Néanmoins, nous espérons toujours vous voir à ConUHacks X.
-`;
-      travelHtmlEnglish = `
-<p><strong>Travel Reimbursement:</strong></p>
-<p>We received a large number of travel reimbursement applications this year, and after careful consideration, we regret to inform you that we are not able to provide you with a travel reimbursement at this time. Regardless, we still hope to see you at ConUHacks X.</p>
-`;
-      travelHtmlFrench = `
-<p><strong>Remboursement des frais de déplacement :</strong></p>
-<p>Nous avons reçu un grand nombre de demandes de remboursement de voyage cette année, et après une étude approfondie, nous avons le regret de vous informer que nous ne sommes pas en mesure de vous offrir un remboursement de voyage pour le moment. Néanmoins, nous espérons toujours vous voir à ConUHacks X.</p>
-`;
-    }
-    // If travelReimbursement is undefined/null, no travel section is included
-
-    const msg = {
-      to: email,
-      from: { email: config.fromEmail, name: "HackConcordia" },
-      replyTo: { email: config.replyToEmail, name: "HackConcordia" },
-      subject:
-        "You have been accepted to ConUHacks X, please confirm your attendance! // Vous avez été accepté à ConUHacks X, veuillez confirmer votre présence!",
-      text: `Version française suivra
-
-Dear ${firstName} ${lastName},
-
-Congratulations! We are excited to inform you that you have been admitted to ConUHacks X!
-${travelTextEnglish}
-Please confirm (or decline) your attendance here: https://register.conuhacks.io/
-
-ConUHacks X will take place from Saturday, January 24th to Sunday, January 25th at Concordia University's John Molson Building (1600 Blvd. De Maisonneuve Ouest, Montreal, Quebec H3H 0A1).
-
-Feel free to reach out to team.hackconcordia@ecaconcordia.ca if you have any questions or concerns.
-
-We hope to see you there,
-
-The HackConcordia Team
-
----
-
-Cher(ère) ${firstName} ${lastName},
-
-Félicitations! Nous sommes heureux de vous informer que vous avez été admis à ConUHacks X!
-${travelTextFrench}
-Veuillez confirmer (ou refuser) votre participation ici: https://register.conuhacks.io/
-
-ConUHacks X se déroulera du samedi 24 janvier au dimanche 25 janvier à l'édifice John Molson de l'Université Concordia (1600 Boulevard De Maisonneuve Ouest, Montréal, Québec H3H 0A1).
-
-N'hésitez pas à contacter team.hackconcordia@ecaconcordia.ca si vous avez des questions ou des préoccupations.
-
-Nous espérons vous y voir,
-
-L'équipe HackConcordia`,
-      html: `<p><em>Version française suivra</em></p>
-
-<p>Dear ${firstName} ${lastName},</p>
-
-<p><strong>Congratulations!</strong> We are excited to inform you that you have been admitted to ConUHacks X!</p>
-${travelHtmlEnglish}
-<p>Please <strong>confirm (or decline) your attendance</strong> here: <a href="https://register.conuhacks.io/">https://register.conuhacks.io/</a></p>
-
-<p>ConUHacks X will take place from Saturday, January 24th to Sunday, January 25th at Concordia University's John Molson Building (1600 Blvd. De Maisonneuve Ouest, Montreal, Quebec H3H 0A1).</p>
-
-<p>Feel free to reach out to <a href="mailto:team.hackconcordia@ecaconcordia.ca">team.hackconcordia@ecaconcordia.ca</a> if you have any questions or concerns.</p>
-
-<p>We hope to see you there,</p>
-
-<p>The HackConcordia Team</p>
-
-<hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;">
-
-<p>Cher(ère) ${firstName} ${lastName},</p>
-
-<p><strong>Félicitations!</strong> Nous sommes heureux de vous informer que vous avez été admis à ConUHacks X!</p>
-${travelHtmlFrench}
-<p>Veuillez <strong>confirmer (ou refuser) votre participation</strong> ici: <a href="https://register.conuhacks.io/">https://register.conuhacks.io/</a></p>
-
-<p>ConUHacks X se déroulera du samedi 24 janvier au dimanche 25 janvier à l'édifice John Molson de l'Université Concordia (1600 Boulevard De Maisonneuve Ouest, Montréal, Québec H3H 0A1).</p>
-
-<p>N'hésitez pas à contacter <a href="mailto:team.hackconcordia@ecaconcordia.ca">team.hackconcordia@ecaconcordia.ca</a> si vous avez des questions ou des préoccupations.</p>
-
-<p>Nous espérons vous y voir,</p>
-
-<p>L'équipe HackConcordia</p>`,
-    };
-
-    await sgMail.send(msg);
-    console.log(`[Email] Successfully sent admission email to ${email}`);
-    return true;
-  } catch (error) {
-    console.error("[Email] Failed to send admission email:", error);
-    return false;
-  }
+  const config = getEmailEventConfig();
+  return deliver("admitted", email, admittedEmail({ firstName, lastName }, config, travel), config.contactEmail);
 }
 
-export async function sendWaitlistedEmail(
-  email: string,
-  firstName: string,
-  lastName: string
-): Promise<boolean> {
-  try {
-    const config = getSendGridConfig();
-
-    if (!config) {
-      console.log(
-        `[Email Stub] Waitlisted -> to: ${email}, name: ${firstName} ${lastName}`
-      );
-      return true;
-    }
-
-    const msg = {
-      to: email,
-      from: { email: config.fromEmail, name: "HackConcordia" },
-      replyTo: { email: config.replyToEmail, name: "HackConcordia" },
-      subject:
-        "ConUHacks X Application Update // Mise à jour de votre candidature ConUHacks X",
-      text: `Version française suivra
-
-Dear ${firstName} ${lastName},
-
-Thank you for taking the time to apply to ConUHacks X.
-
-We're excited by the strong interest and by the quality of applications we received this year. At this time you have been placed on the waitlist for ConUHacks X.
-
-This means that if a spot becomes available, we will reach out to you as soon as possible with further instructions on how to confirm your attendance. We encourage you to keep an eye on your inbox, as spots may open up leading up to the event.
-
-Feel free to reach out to team.hackconcordia@ecaconcordia.ca if you have any questions or concerns. Please note that our support team is not involved in the application review process and they are unable to offer or assign spots.
-
-Kind regards,
-
-The HackConcordia Team
-
----
-
-Cher(ère) ${firstName} ${lastName},
-
-Merci d'avoir pris le temps de postuler à ConUHacks X.
-
-Nous sommes ravis de l'intérêt marqué et de la qualité des candidatures que nous avons reçues cette année. Pour l'instant, vous avez été placé sur la liste d'attente pour ConUHacks X.
-
-Cela signifie que si une place se libère, nous vous contacterons dès que possible pour vous donner des instructions supplémentaires sur la manière de confirmer votre participation. Nous vous encourageons à surveiller votre boîte de réception, car des places pourraient se libérer à l'approche de l'événement.
-
-N'hésitez pas à contacter team.hackconcordia@ecaconcordia.ca si vous avez des questions ou des préoccupations. Veuillez noter que notre équipe d'assistance n'est pas impliquée dans le processus d'évaluation des candidatures et qu'elle n'est pas en mesure d'offrir ou d'attribuer des places.
-
-Cordialement,
-
-L'équipe HackConcordia`,
-      html: `<p><em>Version française suivra</em></p>
-
-<p>Dear ${firstName} ${lastName},</p>
-
-<p>Thank you for taking the time to apply to ConUHacks X.</p>
-
-<p>We're excited by the strong interest and by the quality of applications we received this year. At this time you have been placed on the waitlist for ConUHacks X.</p>
-
-<p>This means that if a spot becomes available, we will reach out to you as soon as possible with further instructions on how to confirm your attendance. We encourage you to keep an eye on your inbox, as spots may open up leading up to the event.</p>
-
-<p>Feel free to reach out to <a href="mailto:team.hackconcordia@ecaconcordia.ca">team.hackconcordia@ecaconcordia.ca</a> if you have any questions or concerns. Please note that our support team is not involved in the application review process and they are unable to offer or assign spots.</p>
-
-<p>Kind regards,</p>
-
-<p>The HackConcordia Team</p>
-
-<hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;">
-
-<p>Cher(ère) ${firstName} ${lastName},</p>
-
-<p>Merci d'avoir pris le temps de postuler à ConUHacks X.</p>
-
-<p>Nous sommes ravis de l'intérêt marqué et de la qualité des candidatures que nous avons reçues cette année. Pour l'instant, vous avez été placé sur la liste d'attente pour ConUHacks X.</p>
-
-<p>Cela signifie que si une place se libère, nous vous contacterons dès que possible pour vous donner des instructions supplémentaires sur la manière de confirmer votre participation. Nous vous encourageons à surveiller votre boîte de réception, car des places pourraient se libérer à l'approche de l'événement.</p>
-
-<p>N'hésitez pas à contacter <a href="mailto:team.hackconcordia@ecaconcordia.ca">team.hackconcordia@ecaconcordia.ca</a> si vous avez des questions ou des préoccupations. Veuillez noter que notre équipe d'assistance n'est pas impliquée dans le processus d'évaluation des candidatures et qu'elle n'est pas en mesure d'offrir ou d'attribuer des places.</p>
-
-<p>Cordialement,</p>
-
-<p>L'équipe HackConcordia</p>`,
-    };
-
-    await sgMail.send(msg);
-    console.log(`[Email] Successfully sent waitlist email to ${email}`);
-    return true;
-  } catch (error) {
-    console.error("[Email] Failed to send waitlist email:", error);
-    return false;
-  }
+export async function sendWaitlistedEmail(email: string, firstName: string, lastName: string): Promise<boolean> {
+  const config = getEmailEventConfig();
+  return deliver("waitlisted", email, waitlistedEmail({ firstName, lastName }, config), config.contactEmail);
 }
 
-export async function sendRefusedEmail(
-  email: string,
-  firstName: string,
-  lastName: string
-): Promise<boolean> {
-  try {
-    const config = getSendGridConfig();
-
-    if (!config) {
-      console.log(
-        `[Email Stub] Refused -> to: ${email}, name: ${firstName} ${lastName}`
-      );
-      return true;
-    }
-
-    const msg = {
-      to: email,
-      from: { email: config.fromEmail, name: "HackConcordia" },
-      replyTo: { email: config.replyToEmail, name: "HackConcordia" },
-      subject:
-        "ConUHacks X Application Update // Mise à jour de votre candidature ConUHacks X",
-      text: `Version française suivra
-
-Dear ${firstName} ${lastName},
-
-Thank you for taking the time to apply to ConUHacks X.
-
-We received a large number of applications this year, and after careful consideration, we regret to inform you that we are unable to offer you a spot at ConUHacks X at this time.
-
-This decision was not easy, and it is in no way a reflection of your skills or potential. We truly appreciate your interest in ConUHacks and encourage you to apply again for future events.
-
-We hope you'll continue to stay involved in the hackathon community, and we wish you the very best in your future projects and endeavors.
-
-Feel free to reach out to team.hackconcordia@ecaconcordia.ca if you have any questions or concerns. Please note that our support team is not involved in the application review process and they are unable to offer or assign spots.
-
-Kind regards,
-
-The HackConcordia Team
-
----
-
-Cher(ère) ${firstName} ${lastName},
-
-Merci d'avoir pris le temps de postuler à ConUHacks X.
-
-Nous avons reçu un grand nombre de candidatures cette année, et après mûre réflexion, nous avons le regret de vous informer que nous ne sommes pas en mesure de vous offrir une place à ConUHacks X pour le moment.
-
-Cette décision n'a pas été facile à prendre et ne reflète en aucun cas vos compétences ou votre potentiel. Nous apprécions sincèrement votre intérêt pour ConUHacks et vous encourageons à postuler à nouveau pour de futurs événements.
-
-Nous espérons que vous continuerez à vous impliquer dans la communauté des hackathons et vous souhaitons beaucoup de succès dans vos futurs projets et entreprises.
-
-N'hésitez pas à contacter team.hackconcordia@ecaconcordia.ca si vous avez des questions ou des préoccupations. Veuillez noter que notre équipe d'assistance n'est pas impliquée dans le processus d'évaluation des candidatures et qu'elle n'est pas en mesure d'offrir ou d'attribuer des places.
-
-Cordialement,
-
-L'équipe HackConcordia`,
-      html: `<p><em>Version française suivra</em></p>
-
-<p>Dear ${firstName} ${lastName},</p>
-
-<p>Thank you for taking the time to apply to ConUHacks X.</p>
-
-<p>We received a large number of applications this year, and after careful consideration, we regret to inform you that we are unable to offer you a spot at ConUHacks X at this time.</p>
-
-<p>This decision was not easy, and it is in no way a reflection of your skills or potential. We truly appreciate your interest in ConUHacks and encourage you to apply again for future events.</p>
-
-<p>We hope you'll continue to stay involved in the hackathon community, and we wish you the very best in your future projects and endeavors.</p>
-
-<p>Feel free to reach out to <a href="mailto:team.hackconcordia@ecaconcordia.ca">team.hackconcordia@ecaconcordia.ca</a> if you have any questions or concerns. Please note that our support team is not involved in the application review process and they are unable to offer or assign spots.</p>
-
-<p>Kind regards,</p>
-
-<p>The HackConcordia Team</p>
-
-<hr style="margin: 20px 0; border: none; border-top: 1px solid #ccc;">
-
-<p>Cher(ère) ${firstName} ${lastName},</p>
-
-<p>Merci d'avoir pris le temps de postuler à ConUHacks X.</p>
-
-<p>Nous avons reçu un grand nombre de candidatures cette année, et après mûre réflexion, nous avons le regret de vous informer que nous ne sommes pas en mesure de vous offrir une place à ConUHacks X pour le moment.</p>
-
-<p>Cette décision n'a pas été facile à prendre et ne reflète en aucun cas vos compétences ou votre potentiel. Nous apprécions sincèrement votre intérêt pour ConUHacks et vous encourageons à postuler à nouveau pour de futurs événements.</p>
-
-<p>Nous espérons que vous continuerez à vous impliquer dans la communauté des hackathons et vous souhaitons beaucoup de succès dans vos futurs projets et entreprises.</p>
-
-<p>N'hésitez pas à contacter <a href="mailto:team.hackconcordia@ecaconcordia.ca">team.hackconcordia@ecaconcordia.ca</a> si vous avez des questions ou des préoccupations. Veuillez noter que notre équipe d'assistance n'est pas impliquée dans le processus d'évaluation des candidatures et qu'elle n'est pas en mesure d'offrir ou d'attribuer des places.</p>
-
-<p>Cordialement,</p>
-
-<p>L'équipe HackConcordia</p>`,
-    };
-
-    await sgMail.send(msg);
-    console.log(`[Email] Successfully sent rejection email to ${email}`);
-    return true;
-  } catch (error) {
-    console.error("[Email] Failed to send rejection email:", error);
-    return false;
-  }
+export async function sendRefusedEmail(email: string, firstName: string, lastName: string): Promise<boolean> {
+  const config = getEmailEventConfig();
+  return deliver("refused", email, refusedEmail({ firstName, lastName }, config), config.contactEmail);
 }
 
-export async function sendDiscordLink(
-  email: string,
-  firstName: string,
-  lastName: string
-): Promise<boolean> {
-  try {
-    const config = getSendGridConfig();
-
-    if (!config) {
-      console.log(
-        `[Email Stub] Discord Link -> to: ${email}, name: ${firstName} ${lastName}`
-      );
-      return true;
-    }
-
-    // TODO: Add the actual Invitation link for the discord channel
-    const discordLink = "https://discord.gg/NrbYm59KYZ";
-
-    const msg = {
-      to: email,
-      from: { email: config.fromEmail, name: "HackConcordia" },
-      replyTo: { email: config.replyToEmail, name: "HackConcordia" },
-      subject:
-        "Join the ConUHacks X Discord Server / Rejoignez le serveur Discord ConUHacks X",
-      html: `<p><strong>Le message en français suivra</strong></p>
-            
-            <p>Hello ${firstName} ${lastName},</p>
-            <p>Welcome to ConUHacks X! Join our Discord server to get important updates, find or complete your team, and access everything you need for the event.</p>
-            <p><a href="${discordLink}">ConUHacks X Discord</a></p>
-            <p><b>Make sure to check the Welcome Guide in the server for all the instructions.</b></p>
-            <p>We can't wait to see you there!</p>
-            <p>Thank you,</p>
-            <p>The HackConcordia Team</p>
-            
-            <hr>
-            
-            <p>Bonjour ${firstName} ${lastName},</p>
-            <p>Bienvenue à ConUHacks X ! Rejoignez notre serveur Discord pour recevoir des mises à jour importantes, trouver ou compléter votre équipe, et accéder à tout ce dont vous avez besoin pour l'événement.</p>
-            <p><a href="${discordLink}">Discord ConUHacks X</a></p>
-            <p><b>Assurez-vous de consulter le Guide de bienvenue sur le serveur pour toutes les instructions.</b></p>
-            <p>Nous avons hâte de vous y voir !</p>
-            <p>Merci,</p>
-            <p>L'équipe HackConcordia</p>`,
-    };
-
-    await sgMail.send(msg);
-    console.log(`[Email] Successfully sent Discord link email to ${email}`);
+export async function sendDiscordLink(email: string, firstName: string, lastName: string): Promise<boolean> {
+  const config = getEmailEventConfig();
+  const content = discordInviteEmail({ firstName, lastName }, config);
+  if (!content) {
+    console.log("[Email] DISCORD_INVITE_URL is not set; skipping the Discord invite email");
     return true;
-  } catch (error) {
-    console.error("[Email] Failed to send Discord link email:", error);
-    return false;
   }
+  return deliver("discord-invite", email, content, config.contactEmail);
 }
