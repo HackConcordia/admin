@@ -1,6 +1,6 @@
 import sgMail from "@sendgrid/mail";
 
-import { getEventConfig } from "@/config/event";
+import { getEmailEventConfig } from "@/config/event";
 import {
   admittedEmail,
   discordInviteEmail,
@@ -49,22 +49,22 @@ export async function sendAdmittedEmail(
   lastName: string,
   travel?: TravelDecisionSummary,
 ): Promise<boolean> {
-  const config = getEventConfig();
+  const config = getEmailEventConfig();
   return deliver("admitted", email, admittedEmail({ firstName, lastName }, config, travel), config.contactEmail);
 }
 
 export async function sendWaitlistedEmail(email: string, firstName: string, lastName: string): Promise<boolean> {
-  const config = getEventConfig();
+  const config = getEmailEventConfig();
   return deliver("waitlisted", email, waitlistedEmail({ firstName, lastName }, config), config.contactEmail);
 }
 
 export async function sendRefusedEmail(email: string, firstName: string, lastName: string): Promise<boolean> {
-  const config = getEventConfig();
+  const config = getEmailEventConfig();
   return deliver("refused", email, refusedEmail({ firstName, lastName }, config), config.contactEmail);
 }
 
 export async function sendDiscordLink(email: string, firstName: string, lastName: string): Promise<boolean> {
-  const config = getEventConfig();
+  const config = getEmailEventConfig();
   const content = discordInviteEmail({ firstName, lastName }, config);
   if (!content) {
     console.log("[Email] DISCORD_INVITE_URL is not set; skipping the Discord invite email");

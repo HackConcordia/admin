@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const applicationModel = vi.hoisted(() => ({ findById: vi.fn(), findOneAndUpdate: vi.fn() }));
 const mealModel = vi.hoisted(() => ({ exists: vi.fn(), create: vi.fn() }));
 const mappingModel = vi.hoisted(() => ({ findOne: vi.fn(), create: vi.fn(), deleteOne: vi.fn(), updateOne: vi.fn() }));
-const eventConfig = vi.hoisted(() => ({ getEventConfig: vi.fn() }));
+const eventConfig = vi.hoisted(() => ({ getCheckInEventConfig: vi.fn() }));
 
 vi.mock("@/repository/mongoose", () => ({ default: vi.fn() }));
 vi.mock("@/repository/models/application", () => ({ default: applicationModel }));
@@ -16,9 +16,9 @@ import { runGuardCases } from "@/test/guard-cases";
 import { TEST_ADMIN_EMAIL, adminCookie, buildRequest, routeContext } from "@/test/http";
 
 const USER_ID = "64c000000000000000000001";
-const HACKDEC_EVENT_ID = "6700000000000000000dec26";
+const EVENT_ID_FIXTURE = "6700000000000000000dec26";
 const CONFIG = {
-  eventId: HACKDEC_EVENT_ID,
+  eventId: EVENT_ID_FIXTURE,
   meals: [
     { date: "2026-11-28", type: "breakfast" },
     { date: "2026-11-28", type: "lunch" },
@@ -45,14 +45,14 @@ async function patch(body: unknown, userId = USER_ID) {
 describe("PATCH /api/check-in/[userId]", () => {
   beforeEach(() => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
-    eventConfig.getEventConfig.mockReset();
+    eventConfig.getCheckInEventConfig.mockReset();
     for (const model of [applicationModel, mealModel, mappingModel]) {
       for (const fn of Object.values(model)) fn.mockReset();
     }
   });
 
   function happyPath() {
-    eventConfig.getEventConfig.mockReturnValue(CONFIG);
+    eventConfig.getCheckInEventConfig.mockReturnValue(CONFIG);
     applicationModel.findById.mockResolvedValue(CONFIRMED);
     applicationModel.findOneAndUpdate.mockResolvedValue({ ...CONFIRMED, status: "Checked-in" });
     mappingModel.findOne.mockResolvedValue(null);
@@ -63,7 +63,7 @@ describe("PATCH /api/check-in/[userId]", () => {
   }
 
   it("returns 409 for an applicant stored with the legacy CheckedIn value", async () => {
-    eventConfig.getEventConfig.mockReturnValue(CONFIG);
+    eventConfig.getCheckInEventConfig.mockReturnValue(CONFIG);
     applicationModel.findById.mockResolvedValue({ status: "CheckedIn" });
 
     const res = await patch({ status: "Checked-in", qrCodeNumber: 7 });
@@ -73,7 +73,7 @@ describe("PATCH /api/check-in/[userId]", () => {
   });
 
   it("returns 409 when the applicant is not Confirmed", async () => {
-    eventConfig.getEventConfig.mockReturnValue(CONFIG);
+    eventConfig.getCheckInEventConfig.mockReturnValue(CONFIG);
     applicationModel.findById.mockResolvedValue({ status: "Admitted" });
 
     expect((await patch({ status: "Checked-in", qrCodeNumber: 7 })).status).toBe(409);
@@ -86,14 +86,14 @@ describe("PATCH /api/check-in/[userId]", () => {
 
     expect(res.status).toBe(200);
     expect(mappingModel.create).toHaveBeenCalledWith(
-      expect.objectContaining({ qrCodeNumber: 7, applicationId: USER_ID, eventId: HACKDEC_EVENT_ID, checkedInBy: TEST_ADMIN_EMAIL }),
+      expect.objectContaining({ qrCodeNumber: 7, applicationId: USER_ID, eventId: EVENT_ID_FIXTURE, checkedInBy: TEST_ADMIN_EMAIL }),
     );
     expect(applicationModel.findOneAndUpdate).toHaveBeenCalledWith(
       { _id: USER_ID, status: "Confirmed" },
       { $set: { status: "Checked-in", checkedInAt: expect.any(Date) } },
       { new: true },
     );
-    expect(mappingModel.findOne).toHaveBeenCalledWith({ qrCodeNumber: 7, eventId: HACKDEC_EVENT_ID });
+    expect(mappingModel.findOne).toHaveBeenCalledWith({ qrCodeNumber: 7, eventId: EVENT_ID_FIXTURE });
     expect(mealModel.exists).toHaveBeenCalledWith({ email: "ada@example.com" });
     expect(mappingModel.deleteOne).not.toHaveBeenCalled();
     expect(mealModel.create).toHaveBeenCalledWith({
@@ -108,7 +108,7 @@ describe("PATCH /api/check-in/[userId]", () => {
   });
 
   it("returns 409 when the badge is already assigned, without checking in", async () => {
-    eventConfig.getEventConfig.mockReturnValue(CONFIG);
+    eventConfig.getCheckInEventConfig.mockReturnValue(CONFIG);
     applicationModel.findById.mockResolvedValue(CONFIRMED);
     mappingModel.findOne.mockResolvedValue({ _id: MAPPING_ID, qrCodeNumber: 7, applicationId: "64c0000000000000000000ff", checkedInAt: null });
 
@@ -120,7 +120,7 @@ describe("PATCH /api/check-in/[userId]", () => {
 
   it("creates no meal record when EVENT_MEALS is empty", async () => {
     happyPath();
-    eventConfig.getEventConfig.mockReturnValue({ ...CONFIG, meals: [] });
+    eventConfig.getCheckInEventConfig.mockReturnValue({ ...CONFIG, meals: [] });
 
     expect((await patch({ status: "Checked-in", qrCodeNumber: 8 })).status).toBe(200);
     expect(mealModel.create).not.toHaveBeenCalled();
@@ -272,7 +272,7 @@ describe("PATCH /api/check-in/[userId]", () => {
   });
 
   it("changes nothing when the event settings are broken", async () => {
-    eventConfig.getEventConfig.mockImplementationOnce(() => {
+    eventConfig.getCheckInEventConfig.mockImplementationOnce(() => {
       throw new Error("Missing required environment variable EVENT_ID");
     });
 
@@ -282,8 +282,21 @@ describe("PATCH /api/check-in/[userId]", () => {
     expect(applicationModel.findById).not.toHaveBeenCalled();
   });
 
+  it("names EVENT_MEALS when the meal schedule is missing, and changes nothing", async () => {
+    eventConfig.getCheckInEventConfig.mockImplementationOnce(() => {
+      throw Object.assign(new Error("Missing required environment variable EVENT_MEALS"), { variable: "EVENT_MEALS" });
+    });
+
+    const res = await patch({ status: "Checked-in", qrCodeNumber: 7 });
+    const body = await res.json();
+
+    expect(res.status).toBe(500);
+    expect(body.message).toBe("Event settings are incomplete: EVENT_MEALS");
+    expect(applicationModel.findById).not.toHaveBeenCalled();
+  });
+
   it("returns 400 for an invalid user id or badge number", async () => {
-    eventConfig.getEventConfig.mockReturnValue(CONFIG);
+    eventConfig.getCheckInEventConfig.mockReturnValue(CONFIG);
     expect((await patch({ status: "Checked-in" }, "not-an-id")).status).toBe(400);
     expect((await patch({ status: "Checked-in", qrCodeNumber: 0 })).status).toBe(400);
     expect(applicationModel.findById).not.toHaveBeenCalled();

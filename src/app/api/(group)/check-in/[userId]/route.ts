@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 
-import { getEventConfig, type EventConfig } from "@/config/event";
+import { getCheckInEventConfig, type CheckInEventConfig } from "@/config/event";
 import { buildMealRecords } from "@/lib/conuhacks/meals";
 import { requireAdmin } from "@/lib/require-admin";
 import { CHECKED_IN_STATUS, isCheckedInStatus } from "@/lib/status";
@@ -103,7 +103,7 @@ async function releaseBadge(release: Release): Promise<void> {
 
 // The applicant is already checked in when this runs: a missing meal record must not turn that
 // into an error. Deduplicated by email like event-checkin (meals.email is unique).
-async function seedMeals(userId: string, applicant: CheckInApplicant, config: EventConfig): Promise<void> {
+async function seedMeals(userId: string, applicant: CheckInApplicant, config: CheckInEventConfig): Promise<void> {
   if (config.meals.length === 0) return;
   try {
     if (await Meal.exists({ email: applicant.email })) return;
@@ -148,12 +148,15 @@ export const PATCH = async (req: NextRequest, { params }: { params: Promise<{ us
       return sendErrorResponse("QR code number must be a positive integer", null, 400);
     }
 
-    let config: EventConfig;
+    let config: CheckInEventConfig;
     try {
-      config = getEventConfig();
+      config = getCheckInEventConfig();
     } catch (error) {
       console.error("Check-in refused, event settings are invalid:", describeError(error));
-      return sendErrorResponse("Event settings are not configured", null, 500);
+      // Only the variable's name is sent, never a value.
+      const variable = (error as { variable?: unknown } | null)?.variable;
+      const message = typeof variable === "string" ? `Event settings are incomplete: ${variable}` : "Event settings are not configured";
+      return sendErrorResponse(message, null, 500);
     }
 
     await connectMongoDB();

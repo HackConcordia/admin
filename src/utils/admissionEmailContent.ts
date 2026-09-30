@@ -1,7 +1,7 @@
 /**
  * ConUHacks XI decision emails: English first, then French. Pure; names are HTML-escaped.
  */
-import type { EventConfig } from "@/config/event";
+import type { EmailEventConfig } from "@/config/event";
 
 export interface EmailRecipient {
   firstName?: string | null;
@@ -69,7 +69,7 @@ function greetings(recipient: EmailRecipient): { en: string; fr: string } {
   return { en: name ? `Hi ${name},` : "Hi,", fr: name ? `Bonjour ${name},` : "Bonjour," };
 }
 
-function contactLines(config: EventConfig): { en: string; fr: string } {
+function contactLines(config: EmailEventConfig): { en: string; fr: string } {
   return {
     en: `Questions? Write to us at ${config.contactEmail} or reply to this email.`,
     fr: `Des questions ? Écrivez-nous à ${config.contactEmail} ou répondez à ce courriel.`,
@@ -90,7 +90,7 @@ const GUIDELINES_LABEL = {
   fr: "Directives concernant le remboursement des frais de déplacement",
 };
 
-function travelParagraphs(travel: TravelDecisionSummary | undefined, config: EventConfig): { en: Paragraph[]; fr: Paragraph[] } {
+function travelParagraphs(travel: TravelDecisionSummary | undefined, config: EmailEventConfig): { en: Paragraph[]; fr: Paragraph[] } {
   if (travel?.approved === true && travel.amount && travel.currency) {
     const frUrl = config.travelGuidelinesUrlFr ?? config.travelGuidelinesUrl;
     const en: Paragraph[] = [`Travel reimbursement: you are approved for up to ${travel.amount} ${travel.currency}.`];
@@ -118,7 +118,7 @@ function travelParagraphs(travel: TravelDecisionSummary | undefined, config: Eve
   return { en: [], fr: [] };
 }
 
-export function admittedEmail(recipient: EmailRecipient, config: EventConfig, travel?: TravelDecisionSummary): EmailContent {
+export function admittedEmail(recipient: EmailRecipient, config: EmailEventConfig, travel?: TravelDecisionSummary): EmailContent {
   const hello = greetings(recipient);
   const contact = contactLines(config);
   const travelText = travelParagraphs(travel, config);
@@ -156,11 +156,11 @@ export function admittedEmail(recipient: EmailRecipient, config: EventConfig, tr
   );
 }
 
-function updateSubject(config: EventConfig): string {
+function updateSubject(config: EmailEventConfig): string {
   return `${config.eventName} application update / Mise à jour de votre candidature à ${config.eventName}`;
 }
 
-export function waitlistedEmail(recipient: EmailRecipient, config: EventConfig): EmailContent {
+export function waitlistedEmail(recipient: EmailRecipient, config: EmailEventConfig): EmailContent {
   const hello = greetings(recipient);
   const contact = contactLines(config);
   return bilingual(
@@ -190,7 +190,7 @@ export function waitlistedEmail(recipient: EmailRecipient, config: EventConfig):
   );
 }
 
-export function refusedEmail(recipient: EmailRecipient, config: EventConfig): EmailContent {
+export function refusedEmail(recipient: EmailRecipient, config: EmailEventConfig): EmailContent {
   const hello = greetings(recipient);
   const contact = contactLines(config);
   return bilingual(
@@ -220,7 +220,7 @@ export function refusedEmail(recipient: EmailRecipient, config: EventConfig): Em
   );
 }
 
-export function discordInviteEmail(recipient: EmailRecipient, config: EventConfig): EmailContent | null {
+export function discordInviteEmail(recipient: EmailRecipient, config: EmailEventConfig): EmailContent | null {
   if (!config.discordInviteUrl) return null;
   const hello = greetings(recipient);
   return bilingual(

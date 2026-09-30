@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { DEFAULT_CONTACT_EMAIL, parseMealSlots, readEventConfig } from "@/config/event";
+import {
+  DEFAULT_CONTACT_EMAIL,
+  EventConfigError,
+  parseMealSlots,
+  readCheckInEventConfig,
+  readEmailEventConfig,
+  readEventConfig,
+} from "@/config/event";
 
 const DEFAULT_TRAVEL_EN = "https://drive.google.com/file/d/1-7HbWwvpoTLa2Mpw406qMu4K0Dit9GOt/view?usp=drive_link";
 const DEFAULT_TRAVEL_FR = "https://drive.google.com/file/d/1Bqh9FSkdL2RlPJEXvq7vAmCLb-T9pM1W/view?usp=drive_link";
@@ -131,5 +138,53 @@ describe("readEventConfig", () => {
     expect(readEventConfig({ ...ENV, CONTACT_EMAIL: "technology.hackconcordia@ecaconcordia.ca" }).contactEmail).toBe(
       "technology.hackconcordia@ecaconcordia.ca",
     );
+  });
+});
+
+describe("split readers", () => {
+  const { EVENT_ID: _id, EVENT_MEALS: _meals, ...EMAIL_ONLY } = ENV;
+
+  it("reads the email settings without EVENT_ID or EVENT_MEALS, and ignores bad values of them", () => {
+    expect(readEmailEventConfig(EMAIL_ONLY)).toMatchObject({ eventName: "ConUHacks XI", contactEmail: DEFAULT_CONTACT_EMAIL });
+    expect(readEmailEventConfig({ ...EMAIL_ONLY, EVENT_ID: "placeholder", EVENT_MEALS: "not json" })).not.toHaveProperty("meals");
+    expect(readEmailEventConfig(EMAIL_ONLY)).not.toHaveProperty("eventId");
+  });
+
+  it("still validates the email settings", () => {
+    expect(() => readEmailEventConfig({ ...EMAIL_ONLY, REGISTRATION_URL: "nope" })).toThrow("REGISTRATION_URL must be an absolute https URL");
+  });
+
+  it("reads the check-in settings without the email ones", () => {
+    expect(readCheckInEventConfig({ EVENT_ID: ENV.EVENT_ID, EVENT_MEALS: ENV.EVENT_MEALS })).toEqual({
+      eventId: "6700000000000000000dec26",
+      meals: [
+        { date: "2026-11-28", type: "breakfast" },
+        { date: "2026-11-28", type: "lunch" },
+      ],
+    });
+  });
+
+  it.each([undefined, "", "  ", "[]"])("requires EVENT_MEALS for check-in (%j)", (meals) => {
+    const attempt = () => readCheckInEventConfig({ EVENT_ID: ENV.EVENT_ID, EVENT_MEALS: meals });
+    expect(attempt).toThrow(EventConfigError);
+    try {
+      attempt();
+    } catch (error) {
+      expect((error as EventConfigError).variable).toBe("EVENT_MEALS");
+    }
+  });
+
+  it("names EVENT_ID and bad EVENT_MEALS as the variable at fault", () => {
+    const variable = (env: Record<string, string>) => {
+      try {
+        readCheckInEventConfig(env);
+      } catch (error) {
+        return (error as EventConfigError).variable;
+      }
+      return "no error";
+    };
+    expect(variable({ EVENT_MEALS: ENV.EVENT_MEALS })).toBe("EVENT_ID");
+    expect(variable({ EVENT_ID: ENV.EVENT_ID, EVENT_MEALS: "not json" })).toBe("EVENT_MEALS");
+    expect(variable({ EVENT_ID: "nope", EVENT_MEALS: ENV.EVENT_MEALS })).toBe("EVENT_ID");
   });
 });

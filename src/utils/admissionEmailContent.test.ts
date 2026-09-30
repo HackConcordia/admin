@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import type { EventConfig } from "@/config/event";
+import type { EmailEventConfig } from "@/config/event";
 import { admittedEmail, discordInviteEmail, refusedEmail, waitlistedEmail } from "@/utils/admissionEmailContent";
 
-const CONFIG: EventConfig = {
+const CONFIG: EmailEventConfig = {
   eventId: "6700000000000000000c0a11",
   eventName: "ConUHacks XI",
   eventDatesLabel: "Saturday, February 6 and Sunday, February 7, 2027",

@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 
-import { getEventConfig } from "@/config/event";
+import { getEmailEventConfig } from "@/config/event";
 import { parseTravelDecision, type TravelDecision } from "@/lib/conuhacks/travel-decision";
 import { fetchIsSuperAdmin, requireAdmin } from "@/lib/require-admin";
 import Application from "@/repository/models/application";
@@ -79,9 +79,9 @@ export const PATCH = async (req: NextRequest, { params }: { params: Promise<{ ap
     const travel = action === "admit" ? parseTravelDecision(input.travelReimbursement) : ({ ok: true, decision: null } as const);
     if (!travel.ok) return sendErrorResponse(travel.error, null, 400);
 
-    // The decision email needs the event settings: refuse before writing anything if they are broken.
+    // The decision email needs the email settings (not EVENT_ID or EVENT_MEALS): refuse before writing anything if they are broken.
     try {
-      getEventConfig();
+      getEmailEventConfig();
     } catch (error) {
       console.error("Status change refused, event settings are invalid:", describeError(error));
       return sendErrorResponse("Event settings are not configured. No status was changed.", null, 500);

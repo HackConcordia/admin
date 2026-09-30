@@ -11,8 +11,8 @@ export interface MealSlot {
   type: MealType;
 }
 
-export interface EventConfig {
-  eventId: string;
+/** What the decision emails need. A bad EVENT_ID or EVENT_MEALS must not block them. */
+export interface EmailEventConfig {
   eventName: string;
   eventDatesLabel: string;
   eventDatesLabelFr: string;
@@ -23,15 +23,26 @@ export interface EventConfig {
   discordInviteUrl: string | null;
   travelGuidelinesUrl: string | null;
   travelGuidelinesUrlFr: string | null;
+}
+
+/** What organizer check-in and the meals page need: the badge event id and the meal schedule. */
+export interface CheckInEventConfig {
+  eventId: string;
   meals: MealSlot[];
 }
+
+export type EventConfig = EmailEventConfig & CheckInEventConfig;
 
 export type EnvSource = Readonly<Record<string, string | undefined>>;
 
 export class EventConfigError extends Error {
-  constructor(message: string) {
+  /** The environment variable at fault, when there is one (names only, never values). */
+  readonly variable: string | null;
+
+  constructor(message: string, variable: string | null = null) {
     super(message);
     this.name = "EventConfigError";
+    this.variable = variable;
   }
 }
 
@@ -64,22 +75,22 @@ export function parseMealSlots(raw: string | undefined): MealSlot[] {
   try {
     parsed = JSON.parse(raw);
   } catch {
-    throw new EventConfigError("EVENT_MEALS is not valid JSON");
+    throw new EventConfigError("EVENT_MEALS is not valid JSON", "EVENT_MEALS");
   }
   if (!Array.isArray(parsed)) {
-    throw new EventConfigError("EVENT_MEALS must be a JSON array");
+    throw new EventConfigError("EVENT_MEALS must be a JSON array", "EVENT_MEALS");
   }
 
   return parsed.map((entry: unknown, index: number) => {
     if (typeof entry !== "object" || entry === null) {
-      throw new EventConfigError(`EVENT_MEALS[${index}] must be an object like {"date":"2026-11-28","type":"lunch"}`);
+      throw new EventConfigError(`EVENT_MEALS[${index}] must be an object like {"date":"2026-11-28","type":"lunch"}`, "EVENT_MEALS");
     }
     const { date, type } = entry as { date?: unknown; type?: unknown };
     if (typeof date !== "string" || !isRealDate(date)) {
-      throw new EventConfigError(`EVENT_MEALS[${index}].date must be a real date in YYYY-MM-DD format`);
+      throw new EventConfigError(`EVENT_MEALS[${index}].date must be a real date in YYYY-MM-DD format`, "EVENT_MEALS");
     }
     if (!isMealType(type)) {
-      throw new EventConfigError(`EVENT_MEALS[${index}].type must be one of ${MEAL_TYPES.join(", ")}`);
+      throw new EventConfigError(`EVENT_MEALS[${index}].type must be one of ${MEAL_TYPES.join(", ")}`, "EVENT_MEALS");
     }
     return { date, type };
   });
@@ -88,7 +99,7 @@ export function parseMealSlots(raw: string | undefined): MealSlot[] {
 function required(env: EnvSource, name: string): string {
   const value = env[name]?.trim();
   if (!value) {
-    throw new EventConfigError(`Missing required environment variable ${name}`);
+    throw new EventConfigError(`Missing required environment variable ${name}`, name);
   }
   return value;
 }
@@ -96,7 +107,7 @@ function required(env: EnvSource, name: string): string {
 function requiredObjectId(env: EnvSource, name: string): string {
   const value = required(env, name).toLowerCase();
   if (!OBJECT_ID_PATTERN.test(value)) {
-    throw new EventConfigError(`${name} must be a 24-character hex MongoDB ObjectId`);
+    throw new EventConfigError(`${name} must be a 24-character hex MongoDB ObjectId`, name);
   }
   return value;
 }
@@ -131,9 +142,8 @@ function contactEmail(env: EnvSource): string {
   return value;
 }
 
-export function readEventConfig(env: EnvSource): EventConfig {
+export function readEmailEventConfig(env: EnvSource): EmailEventConfig {
   return {
-    eventId: requiredObjectId(env, "EVENT_ID"),
     eventName: required(env, "EVENT_NAME"),
     eventDatesLabel: required(env, "EVENT_DATES_LABEL"),
     eventDatesLabelFr: required(env, "EVENT_DATES_LABEL_FR"),
@@ -144,9 +154,26 @@ export function readEventConfig(env: EnvSource): EventConfig {
     discordInviteUrl: optionalHttpUrl(env, "DISCORD_INVITE_URL"),
     travelGuidelinesUrl: optionalHttpUrl(env, "TRAVEL_GUIDELINES_URL") ?? DEFAULT_TRAVEL_GUIDELINES_URL,
     travelGuidelinesUrlFr: optionalHttpUrl(env, "TRAVEL_GUIDELINES_URL_FR") ?? DEFAULT_TRAVEL_GUIDELINES_URL_FR,
-    meals: parseMealSlots(env.EVENT_MEALS),
   };
 }
+
+/** EVENT_MEALS is required here (contract C5): without it organizer check-ins would skip the meal record volunteers create. */
+export function readCheckInEventConfig(env: EnvSource): CheckInEventConfig {
+  const eventId = requiredObjectId(env, "EVENT_ID");
+  const meals = parseMealSlots(required(env, "EVENT_MEALS"));
+  if (meals.length === 0) {
+    throw new EventConfigError("EVENT_MEALS must list at least one meal", "EVENT_MEALS");
+  }
+  return { eventId, meals };
+}
+
+export function readEventConfig(env: EnvSource): EventConfig {
+  return { ...readEmailEventConfig(env), ...readCheckInEventConfig(env) };
+}
+
+export const getEmailEventConfig = (): EmailEventConfig => readEmailEventConfig(process.env);
+
+export const getCheckInEventConfig = (): CheckInEventConfig => readCheckInEventConfig(process.env);
 
 export function getEventConfig(): EventConfig {
   return readEventConfig(process.env);

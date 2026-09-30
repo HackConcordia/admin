@@ -17,7 +17,7 @@ const config = vi.hoisted(() => ({
 }));
 
 vi.mock("@sendgrid/mail", () => ({ default: sendgrid }));
-vi.mock("@/config/event", () => ({ getEventConfig: () => config }));
+vi.mock("@/config/event", () => ({ getEmailEventConfig: () => config }));
 
 import { sendAdmittedEmail, sendDiscordLink } from "@/utils/admissionEmailConfig";
 

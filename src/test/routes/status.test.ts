@@ -10,8 +10,6 @@ const emails = vi.hoisted(() => ({
   sendDiscordLink: vi.fn(async () => true),
 }));
 
-const eventConfig = vi.hoisted(() => ({ getEventConfig: vi.fn(() => ({})) }));
-vi.mock("@/config/event", () => eventConfig);
 vi.mock("@/repository/mongoose", () => ({ default: vi.fn() }));
 vi.mock("@/repository/models/admin", () => ({ default: { findById: createFindByIdMock() } }));
 vi.mock("@/repository/models/application", () => ({ default: applicationModel }));
@@ -35,7 +33,22 @@ async function patch(body: unknown, options: { id?: string; regular?: boolean } 
   return status.PATCH(buildRequest(`/api/status/${id}`, { method: "PATCH", cookie, body }), routeContext({ applicationId: id }));
 }
 
+// The real config reader runs against these values: the decision emails need only the email settings.
+const EMAIL_ENV = {
+  EVENT_NAME: "ConUHacks XI",
+  EVENT_DATES_LABEL: "Saturday, February 6 and Sunday, February 7, 2027",
+  EVENT_DATES_LABEL_FR: "samedi 6 et dimanche 7 février 2027",
+  EVENT_VENUE: "JMSB",
+  EVENT_VENUE_FR: "JMSB",
+  REGISTRATION_URL: "https://register.conuhacks.io/dashboard",
+};
+
+function stubEnv(env: Record<string, string>) {
+  for (const name of ["EVENT_ID", "EVENT_MEALS", ...Object.keys(EMAIL_ENV)]) vi.stubEnv(name, env[name] ?? "");
+}
+
 beforeEach(() => {
+  stubEnv(EMAIL_ENV);
   applicationModel.findById.mockResolvedValue(APPLICANT);
   applicationModel.findOneAndUpdate.mockResolvedValue({ _id: APP_ID });
 });
@@ -43,16 +56,26 @@ beforeEach(() => {
 const TRAVEL_DECISION_UNSET = { isTravelReimbursementApproved: "", travelReimbursementAmount: "", travelReimbursementCurrency: "" };
 
 describe("PATCH /api/status/[applicationId]", () => {
-  it("refuses before writing anything while the event settings are missing", async () => {
-    eventConfig.getEventConfig.mockImplementationOnce(() => {
-      throw new Error("Missing required environment variable EVENT_NAME");
-    });
+  it("refuses before writing anything while an email setting is missing", async () => {
+    stubEnv({ ...EMAIL_ENV, EVENT_NAME: "" });
 
     const res = await patch({ action: "admit" });
 
     expect(res.status).toBe(500);
     expect(applicationModel.findById).not.toHaveBeenCalled();
     expect(applicationModel.findOneAndUpdate).not.toHaveBeenCalled();
+  });
+
+  it.each(["admit", "waitlist", "reject"])("still decides (%s) when EVENT_ID and EVENT_MEALS are missing or invalid", async (action) => {
+    for (const bad of [{}, { EVENT_ID: "placeholder", EVENT_MEALS: "not json" }]) {
+      stubEnv({ ...EMAIL_ENV, ...bad });
+      applicationModel.findOneAndUpdate.mockClear();
+
+      const res = await patch({ action });
+
+      expect(res.status).toBe(200);
+      expect(applicationModel.findOneAndUpdate).toHaveBeenCalledTimes(1);
+    }
   });
 
   it("records the logged-in admin as processedBy, conditional on the status it read", async () => {
