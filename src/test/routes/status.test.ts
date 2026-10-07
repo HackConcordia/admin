@@ -1,19 +1,14 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createFindByIdMock } from "@/test/admin-lookup";
 
 const applicationModel = vi.hoisted(() => ({ findById: vi.fn(), findOneAndUpdate: vi.fn() }));
-const emails = vi.hoisted(() => ({
-  sendAdmittedEmail: vi.fn(async () => true),
-  sendWaitlistedEmail: vi.fn(async () => true),
-  sendRefusedEmail: vi.fn(async () => true),
-  sendDiscordLink: vi.fn(async () => true),
-}));
+const emails = vi.hoisted(() => ({ sendDecisionEmail: vi.fn(async () => true) }));
 
 vi.mock("@/repository/mongoose", () => ({ default: vi.fn() }));
 vi.mock("@/repository/models/admin", () => ({ default: { findById: createFindByIdMock() } }));
 vi.mock("@/repository/models/application", () => ({ default: applicationModel }));
-vi.mock("@/utils/admissionEmailConfig", () => emails);
+vi.mock("@/utils/applicantEmails", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/utils/applicantEmails")>()), ...emails }));
 
 import * as status from "@/app/api/(group)/status/[applicationId]/route";
 import { runGuardCases } from "@/test/guard-cases";
@@ -36,10 +31,6 @@ async function patch(body: unknown, options: { id?: string; regular?: boolean } 
 // The real config reader runs against these values: the decision emails need only the email settings.
 const EMAIL_ENV = {
   EVENT_NAME: "ConUHacks XI",
-  EVENT_DATES_LABEL: "Saturday, February 6 and Sunday, February 7, 2027",
-  EVENT_DATES_LABEL_FR: "samedi 6 et dimanche 7 février 2027",
-  EVENT_VENUE: "JMSB",
-  EVENT_VENUE_FR: "JMSB",
   REGISTRATION_URL: "https://register.conuhacks.io/dashboard",
 };
 
@@ -47,7 +38,12 @@ function stubEnv(env: Record<string, string>) {
   for (const name of ["EVENT_ID", "EVENT_MEALS", ...Object.keys(EMAIL_ENV)]) vi.stubEnv(name, env[name] ?? "");
 }
 
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
+
 beforeEach(() => {
+  emails.sendDecisionEmail.mockClear();
   stubEnv(EMAIL_ENV);
   applicationModel.findById.mockResolvedValue(APPLICANT);
   applicationModel.findOneAndUpdate.mockResolvedValue({ _id: APP_ID });
@@ -57,7 +53,7 @@ const TRAVEL_DECISION_UNSET = { isTravelReimbursementApproved: "", travelReimbur
 
 describe("PATCH /api/status/[applicationId]", () => {
   it("refuses before writing anything while an email setting is missing", async () => {
-    stubEnv({ ...EMAIL_ENV, EVENT_NAME: "" });
+    stubEnv({ ...EMAIL_ENV, REGISTRATION_URL: "" });
 
     const res = await patch({ action: "admit" });
 
@@ -78,6 +74,29 @@ describe("PATCH /api/status/[applicationId]", () => {
     }
   });
 
+  it("refuses before writing anything while the email settings are broken (CONTACT_EMAIL)", async () => {
+    vi.stubEnv("CONTACT_EMAIL", "not-an-email");
+
+    const res = await patch({ action: "admit" });
+
+    expect(res.status).toBe(500);
+    expect(applicationModel.findOneAndUpdate).not.toHaveBeenCalled();
+  });
+
+  it.each([["admit", "Admitted"], ["waitlist", "Waitlisted"], ["reject", "Refused"]])("emails the %s decision only after the write won", async (action, decision) => {
+    applicationModel.findOneAndUpdate.mockResolvedValueOnce(null);
+    expect((await patch({ action })).status).toBe(409);
+    expect(emails.sendDecisionEmail).not.toHaveBeenCalled();
+
+    expect((await patch({ action })).status).toBe(200);
+    expect(emails.sendDecisionEmail).toHaveBeenCalledWith(decision, APPLICANT, expect.anything(), undefined);
+  });
+
+  it("keeps the decision when the email throws", async () => {
+    emails.sendDecisionEmail.mockRejectedValueOnce(new Error("boom"));
+    expect((await patch({ action: "waitlist" })).status).toBe(200);
+  });
+
   it("records the logged-in admin as processedBy, conditional on the status it read", async () => {
     const res = await patch({ action: "waitlist", adminEmail: "attacker@evil.dev" });
 
@@ -87,7 +106,7 @@ describe("PATCH /api/status/[applicationId]", () => {
       { $set: expect.objectContaining({ processedBy: TEST_ADMIN_EMAIL, status: "Waitlisted" }), $unset: TRAVEL_DECISION_UNSET },
       { new: true },
     );
-    expect(emails.sendWaitlistedEmail).toHaveBeenCalledWith("hacker@test.dev", "H", "K");
+    expect(emails.sendDecisionEmail).toHaveBeenCalledWith("Waitlisted", APPLICANT, expect.objectContaining({ registrationUrl: EMAIL_ENV.REGISTRATION_URL }), undefined);
   });
 
   it("stores an approved travel decision from a super admin and passes it to the admission email", async () => {
@@ -102,11 +121,12 @@ describe("PATCH /api/status/[applicationId]", () => {
         travelReimbursementCurrency: "CAD",
       }),
     });
-    expect(emails.sendAdmittedEmail).toHaveBeenCalledWith("hacker@test.dev", "H", "K", { approved: true, amount: 150, currency: "CAD" });
+    expect(emails.sendDecisionEmail).toHaveBeenCalledWith("Admitted", APPLICANT, expect.anything(), { approved: true, amount: 150, currency: "CAD" });
   });
 
-  it("clears a stale amount when the decision is a refusal", async () => {
+  it("clears a stale amount when the decision is a refusal, and tells the email so", async () => {
     await patch({ action: "admit", travelReimbursement: { approved: false } });
+    expect(emails.sendDecisionEmail).toHaveBeenCalledWith("Admitted", APPLICANT, expect.anything(), { approved: false });
 
     expect(applicationModel.findOneAndUpdate.mock.calls[0][1]).toEqual({
       $set: expect.objectContaining({ isTravelReimbursementApproved: false }),
@@ -126,7 +146,7 @@ describe("PATCH /api/status/[applicationId]", () => {
       expect(res.status).toBe(403);
       expect(applicationModel.findById).not.toHaveBeenCalled();
       expect(applicationModel.findOneAndUpdate).not.toHaveBeenCalled();
-      expect(emails.sendAdmittedEmail).not.toHaveBeenCalled();
+      expect(emails.sendDecisionEmail).not.toHaveBeenCalled();
     });
 
     it("answers 403 to a regular admin even when the decision is malformed or sent with another action", async () => {
@@ -145,7 +165,7 @@ describe("PATCH /api/status/[applicationId]", () => {
       expect(update.$set).not.toHaveProperty("travelReimbursementAmount");
       expect(update.$set).not.toHaveProperty("travelReimbursementCurrency");
       expect(update).not.toHaveProperty("$unset");
-      expect(emails.sendAdmittedEmail).toHaveBeenCalledWith("hacker@test.dev", "H", "K", undefined);
+      expect(emails.sendDecisionEmail).toHaveBeenCalledWith("Admitted", APPLICANT, expect.anything(), undefined);
     });
 
     it("lets a regular admin waitlist and refuse", async () => {
@@ -175,7 +195,7 @@ describe("PATCH /api/status/[applicationId]", () => {
 
     expect(res.status).toBe(409);
     expect(applicationModel.findOneAndUpdate).not.toHaveBeenCalled();
-    expect(emails.sendAdmittedEmail).not.toHaveBeenCalled();
+    expect(emails.sendDecisionEmail).not.toHaveBeenCalled();
   });
 
   it("enforces the amount limits: CAD up to 150, USD up to 100, before touching the database", async () => {

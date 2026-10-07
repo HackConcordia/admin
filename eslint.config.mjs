@@ -16,6 +16,9 @@ const compat = new FlatCompat({
 export default [
   { files: ["**/*.{js,mjs,cjs,ts,jsx,tsx}"] },
   { ignores: [".github/", ".husky/", "node_modules/", ".next/", "src/components/ui", "*.config.ts", "*.mjs"] },
+  // src/emails is generated from the registration repo (npm run emails:sync) and linted there;
+  // only the admin-owned drift test in it is linted here.
+  { ignores: ["src/emails/**/*", "!src/emails/kit-sync.test.ts"] },
   {
     languageOptions: {
       globals: globals.browser,

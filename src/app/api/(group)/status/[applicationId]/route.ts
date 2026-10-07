@@ -1,14 +1,16 @@
 import type { NextRequest } from "next/server";
 
-import { getEmailEventConfig } from "@/config/event";
+import { getEmailEventConfig, type EmailEventConfig } from "@/config/event";
 import { parseTravelDecision, type TravelDecision } from "@/lib/conuhacks/travel-decision";
 import { fetchIsSuperAdmin, requireAdmin } from "@/lib/require-admin";
 import Application from "@/repository/models/application";
 import connectMongoDB from "@/repository/mongoose";
 import { sendErrorResponse, sendSuccessResponse } from "@/repository/response";
-import { sendAdmittedEmail, sendRefusedEmail, sendWaitlistedEmail } from "@/utils/admissionEmailConfig";
+import { sendDecisionEmail, type DecisionStatus } from "@/utils/applicantEmails";
+import { describeError } from "@/utils/describeError";
+import { assertEmailSettings } from "@/utils/sendEmail";
 
-const ACTIONS = { admit: "Admitted", waitlist: "Waitlisted", reject: "Refused" } as const;
+const ACTIONS = { admit: "Admitted", waitlist: "Waitlisted", reject: "Refused" } as const satisfies Record<string, DecisionStatus>;
 type Action = keyof typeof ACTIONS;
 
 const OBJECT_ID_HEX = /^[0-9a-fA-F]{24}$/;
@@ -19,14 +21,14 @@ const DECIDABLE_STATUSES = ["Submitted", "Admitted", "Waitlisted", "Refused"];
 /** Body keys that carry a travel decision (approve, decline, amount, currency). Super admins only (A2). */
 const TRAVEL_DECISION_KEYS = ["travelReimbursement", "isTravelReimbursementApproved", "travelReimbursementAmount", "travelReimbursementCurrency"];
 
-type Applicant = { email?: unknown; firstName?: unknown; lastName?: unknown; status?: unknown; travelReimbursement?: unknown };
-
-// Name and Mongo code only: error messages can carry applicant data.
-function describeError(error: unknown): string {
-  if (!(error instanceof Error)) return "unknown error";
-  const code = (error as { code?: unknown }).code;
-  return code === undefined ? error.name : `${error.name} (code ${String(code)})`;
-}
+type Applicant = {
+  email?: unknown;
+  firstName?: unknown;
+  lastName?: unknown;
+  communicationLanguage?: unknown;
+  status?: unknown;
+  travelReimbursement?: unknown;
+};
 
 const carriesTravelDecision = (input: Record<string, unknown>): boolean =>
   TRAVEL_DECISION_KEYS.some((key) => input[key] !== undefined && input[key] !== null);
@@ -44,15 +46,6 @@ function travelUpdate(action: Action, decision: TravelDecision | null): { set: R
   return {
     set: { isTravelReimbursementApproved: true, travelReimbursementAmount: decision.amount, travelReimbursementCurrency: decision.currency },
   };
-}
-
-function sendDecisionEmail(action: Action, applicant: Applicant, decision: TravelDecision | null): Promise<boolean> {
-  const email = String(applicant.email ?? "");
-  const firstName = String(applicant.firstName ?? "");
-  const lastName = String(applicant.lastName ?? "");
-  if (action === "admit") return sendAdmittedEmail(email, firstName, lastName, decision ?? undefined);
-  if (action === "waitlist") return sendWaitlistedEmail(email, firstName, lastName);
-  return sendRefusedEmail(email, firstName, lastName);
 }
 
 export const PATCH = async (req: NextRequest, { params }: { params: Promise<{ applicationId: string }> }) => {
@@ -79,9 +72,12 @@ export const PATCH = async (req: NextRequest, { params }: { params: Promise<{ ap
     const travel = action === "admit" ? parseTravelDecision(input.travelReimbursement) : ({ ok: true, decision: null } as const);
     if (!travel.ok) return sendErrorResponse(travel.error, null, 400);
 
-    // The decision email needs the email settings (not EVENT_ID or EVENT_MEALS): refuse before writing anything if they are broken.
+    // The decision email needs the event email settings (not EVENT_ID or EVENT_MEALS) and the sender/reply-to
+    // settings: refuse before writing anything if they are broken, rather than save a decision whose email can only fail.
+    let config: EmailEventConfig;
     try {
-      getEmailEventConfig();
+      config = getEmailEventConfig();
+      assertEmailSettings();
     } catch (error) {
       console.error("Status change refused, event settings are invalid:", describeError(error));
       return sendErrorResponse("Event settings are not configured. No status was changed.", null, 500);
@@ -114,7 +110,8 @@ export const PATCH = async (req: NextRequest, { params }: { params: Promise<{ ap
     if (!updated) return sendErrorResponse("The application changed while it was being updated. Reload and try again.", null, 409);
 
     try {
-      const sent = await sendDecisionEmail(action as Action, application, travel.decision);
+      // In the applicant's language and name as read before the write (the write changes neither).
+      const sent = await sendDecisionEmail(ACTIONS[action as Action], application, config, travel.decision ?? undefined);
       if (!sent) console.log("Decision email not sent, but the status was updated");
     } catch (error) {
       console.error("Error sending the decision email:", describeError(error));
