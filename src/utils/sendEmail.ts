@@ -6,6 +6,9 @@
  * - No SENDGRID_API_KEY (local and preview): the email is still rendered (so a broken link fails
  *   here too) and only logged as "[Email Stub]".
  * - From SENDGRID_FROM_EMAIL, reply-to CONTACT_EMAIL, both named "HackConcordia".
+ *   CONTACT_EMAIL must equal the kit's CONTACT_EMAIL (src/emails/kit/brand.ts, shown in the email
+ *   footer): team.hackconcordia@ecaconcordia.ca. The env mirrors the HackDécouverte admin, but the
+ *   kit constant is not read here, so the two can drift apart.
  * - Never throws: returns false when rendering or sending fails. Logs the key, the language and
  *   the error's name/code only — never the address or the provider's message.
  */

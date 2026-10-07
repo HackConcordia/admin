@@ -1,6 +1,6 @@
 /**
  * src/emails/ is a generated copy of the registration app's email kit
- * (HackDecouverte-registration-2025/my-app/emails, copied by its `npm run emails:sync`).
+ * (registration-website-conuhacks-10/my-app/emails, copied by its `npm run emails:sync`).
  * This test recomputes the hash the sync script wrote to .kit-hash (same algorithm as
  * my-app/scripts/sync-emails.mjs) and fails when any copied file was edited, added or removed by hand.
  * This file itself is admin-owned: the sync keeps it and leaves it out of the hash.
@@ -40,7 +40,7 @@ describe("email kit copy (src/emails)", () => {
     const expected = readFileSync(join(KIT_DIR, HASH_FILE), "utf8").trim();
     expect(
       kitHash(),
-      "src/emails was edited by hand. Edit HackDecouverte-registration-2025/my-app/emails instead, then run `npm run emails:sync` there.",
+      "src/emails was edited by hand. Edit registration-website-conuhacks-10/my-app/emails instead, then run `npm run emails:sync` there.",
     ).toBe(expected);
   });
 });

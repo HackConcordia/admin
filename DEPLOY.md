@@ -54,7 +54,7 @@ pinned to the registration app's exact versions so both apps render identical HT
 
 Env: unchanged names, but `EVENT_DATES_LABEL`, `EVENT_DATES_LABEL_FR`, `EVENT_VENUE` and
 `EVENT_VENUE_FR` are no longer read (the kit carries the event date and venue): delete them from
-both Vercel environments. `CONTACT_EMAIL` is only the reply-to address.
+both Vercel environments. `CONTACT_EMAIL` is only the reply-to address, and it must equal the email kit's `CONTACT_EMAIL` (`team.hackconcordia@ecaconcordia.ca`, shown in every email footer): set it to that value in both environments.
 
 **Deploy the registration app first.** Every email loads its logo and social icons from the
 registration app's `/email/*.png`, and the admitted email's button opens `REGISTRATION_URL`. Deploy
