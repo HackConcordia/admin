@@ -1,6 +1,6 @@
 /** @jsxRuntime automatic */
 // GENERATED from registration-website-conuhacks-10/my-app/emails — edit there and run npm run emails:sync
-// Copy: docs/superpowers/specs/2026-10-03-email-copy.md, "waitlisted FR" / "waitlisted EN"
+// Copy: docs/superpowers/specs/2026-10-07-conuhacks-email-copy.md, "waitlisted FR" / "waitlisted EN"
 // (with the spec section 4 fix "You will be admitted if a spot opens up. Stay tuned!").
 import { Signature } from "../kit/Signature";
 import { Greeting, Paragraph } from "../kit/Text";

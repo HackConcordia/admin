@@ -1,6 +1,6 @@
 /** @jsxRuntime automatic */
 // GENERATED from registration-website-conuhacks-10/my-app/emails — edit there and run npm run emails:sync
-// Copy: docs/superpowers/specs/2026-10-03-email-copy.md, "you are now owner FR" / "EN".
+// Copy: docs/superpowers/specs/2026-10-07-conuhacks-email-copy.md, "you are now owner FR" / "EN".
 // Spec section 4 addition: when join requests are pending, "Demandes en attente :" /
 // "Pending join requests:" and one row per requester with an Accept button (its approval link),
 // so those requests are not stranded. Shaped like templates/verifyAccount.tsx.

@@ -1,6 +1,6 @@
 /** @jsxRuntime automatic */
 // GENERATED from registration-website-conuhacks-10/my-app/emails — edit there and run npm run emails:sync
-// Copy: docs/superpowers/specs/2026-10-03-email-copy.md, "application reminder"
+// Copy: docs/superpowers/specs/2026-10-07-conuhacks-email-copy.md, "application reminder"
 // (design: 2026-10-07-application-reminders-design.md section 7.2). Shaped like templates/resendVerification.tsx.
 import { Button } from "../kit/Button";
 import { ButtonRow } from "../kit/ButtonRow";

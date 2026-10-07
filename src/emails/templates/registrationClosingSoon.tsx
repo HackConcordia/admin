@@ -1,8 +1,8 @@
 /** @jsxRuntime automatic */
 // GENERATED from registration-website-conuhacks-10/my-app/emails — edit there and run npm run emails:sync
-// Copy: docs/superpowers/specs/2026-10-03-email-copy.md, "registration closing soon"
-// (design: 2026-10-07-application-reminders-design.md section 7.3). Shaped like templates/resendVerification.tsx.
-// Sent one week before the event; it never names a date, on purpose (the deadline may move).
+// Copy: docs/superpowers/specs/2026-10-07-conuhacks-email-copy.md, "registration closing soon"
+// (design: 2026-10-07-conuhacks-email-kit-and-reminders-design.md section 5.1). Shaped like templates/resendVerification.tsx.
+// Sent 3 days before registrationClosingDate; it never names a date, on purpose (the deadline may move).
 import { Button } from "../kit/Button";
 import { ButtonRow } from "../kit/ButtonRow";
 import { Signature } from "../kit/Signature";

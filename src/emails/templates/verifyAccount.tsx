@@ -3,7 +3,7 @@
 // Reference template: copy this shape for every other email (pragma line included).
 // Links built from data go through Button or kit/TextLink only (both reject non-https
 // URLs); never react-email's Link, which would send a broken relative link as is.
-// Copy: docs/superpowers/specs/2026-10-03-email-copy.md, "please verify account email"
+// Copy: docs/superpowers/specs/2026-10-07-conuhacks-email-copy.md, "please verify account email"
 // (with the spec section 4 fix "ignorer ce courriel").
 import { Button } from "../kit/Button";
 import { ButtonRow } from "../kit/ButtonRow";

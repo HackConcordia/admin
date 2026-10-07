@@ -1,6 +1,6 @@
 /** @jsxRuntime automatic */
 // GENERATED from registration-website-conuhacks-10/my-app/emails — edit there and run npm run emails:sync
-// Copy: docs/superpowers/specs/2026-10-03-email-copy.md, "confirmed FR" / "confirmed EN".
+// Copy: docs/superpowers/specs/2026-10-07-conuhacks-email-copy.md, "confirmed FR" / "confirmed EN".
 // No arrival time until the organizers set one (spec 2.1); add EVENT.time and the clause back then.
 // Date and venue come from kit/brand.ts; only the venue's street address (inside the
 // parentheses) links to Google Maps (spec section 4). The Discord sentence is left out when

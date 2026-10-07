@@ -1,6 +1,6 @@
 /** @jsxRuntime automatic */
 // GENERATED from registration-website-conuhacks-10/my-app/emails — edit there and run npm run emails:sync
-// Copy: docs/superpowers/specs/2026-10-03-email-copy.md, "team join request rejected FR" / "EN".
+// Copy: docs/superpowers/specs/2026-10-07-conuhacks-email-copy.md, "team join request rejected FR" / "EN".
 // Shaped like templates/verifyAccount.tsx.
 import { Signature } from "../kit/Signature";
 import { Greeting, Paragraph } from "../kit/Text";

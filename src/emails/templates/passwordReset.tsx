@@ -1,6 +1,6 @@
 /** @jsxRuntime automatic */
 // GENERATED from registration-website-conuhacks-10/my-app/emails — edit there and run npm run emails:sync
-// Copy: docs/superpowers/specs/2026-10-03-email-copy.md, "password reset email"
+// Copy: docs/superpowers/specs/2026-10-07-conuhacks-email-copy.md, "password reset email"
 // (with the spec section 4 fix "ignorer ce courriel"). Shaped like templates/verifyAccount.tsx.
 import { Button } from "../kit/Button";
 import { ButtonRow } from "../kit/ButtonRow";
