@@ -13,7 +13,7 @@ vi.mock("@/repository/mongoose", () => ({ default: vi.fn() }));
 vi.mock("@/repository/models/admin", () => ({ default: { findById: createFindByIdMock() } }));
 vi.mock("@/repository/models/application", () => ({ default: applicationModel }));
 vi.mock("@/repository/models/checkin", () => ({ default: {} }));
-vi.mock("@/utils/admissionEmailConfig", () => ({ sendDiscordLink: vi.fn() }));
+vi.mock("@/utils/applicantEmails", () => ({ sendDiscordInviteEmail: vi.fn() }));
 
 import * as applicationById from "@/app/api/(group)/application/[applicationId]/route";
 import * as star from "@/app/api/(group)/application/[applicationId]/star/route";

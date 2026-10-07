@@ -6,6 +6,7 @@ import {
   parseMealSlots,
   readCheckInEventConfig,
   readEmailEventConfig,
+  readContactEmail,
   readEventConfig,
 } from "@/config/event";
 
@@ -15,10 +16,6 @@ const DEFAULT_TRAVEL_FR = "https://drive.google.com/file/d/1Bqh9FSkdL2RlPJEXvq7v
 const ENV = {
   EVENT_ID: " 6700000000000000000DEC26 ",
   EVENT_NAME: "ConUHacks XI",
-  EVENT_DATES_LABEL: "Saturday, November 28, 2026",
-  EVENT_DATES_LABEL_FR: "samedi 28 novembre 2026",
-  EVENT_VENUE: "the John Molson Building (JMSB), SGW Campus, Concordia University",
-  EVENT_VENUE_FR: "l'édifice John Molson (JMSB), campus SGW, Université Concordia",
   REGISTRATION_URL: "https://register.conuhacks.io/dashboard",
   EVENT_MEALS: '[{"date":"2026-11-28","type":"breakfast"},{"date":"2026-11-28","type":"lunch"}]',
 };
@@ -55,12 +52,7 @@ describe("readEventConfig", () => {
     expect(readEventConfig(ENV)).toEqual({
       eventId: "6700000000000000000dec26",
       eventName: "ConUHacks XI",
-      eventDatesLabel: "Saturday, November 28, 2026",
-      eventDatesLabelFr: "samedi 28 novembre 2026",
-      venue: ENV.EVENT_VENUE,
-      venueFr: ENV.EVENT_VENUE_FR,
       registrationUrl: "https://register.conuhacks.io/dashboard",
-      contactEmail: DEFAULT_CONTACT_EMAIL,
       discordInviteUrl: null,
       travelGuidelinesUrl: DEFAULT_TRAVEL_EN,
       travelGuidelinesUrlFr: DEFAULT_TRAVEL_FR,
@@ -126,16 +118,16 @@ describe("readEventConfig", () => {
     expect(readEventConfig({ ...ENV, REGISTRATION_URL: "http://localhost:3000/dashboard" }).registrationUrl).toBe(
       "http://localhost:3000/dashboard",
     );
-    expect(readEventConfig({ ...ENV, REGISTRATION_URL: "http://127.0.0.1:3000/dashboard" }).registrationUrl).toBe(
-      "http://127.0.0.1:3000/dashboard",
+    // The email kit rejects every other http link, so a loopback IP would save decisions whose emails fail.
+    expect(() => readEventConfig({ ...ENV, REGISTRATION_URL: "http://127.0.0.1:3000/dashboard" })).toThrow(
+      "REGISTRATION_URL must be an absolute https URL",
     );
   });
 
   it("validates CONTACT_EMAIL when it is set", () => {
-    expect(() => readEventConfig({ ...ENV, CONTACT_EMAIL: "not-an-email" })).toThrow(
-      "CONTACT_EMAIL must be an email address",
-    );
-    expect(readEventConfig({ ...ENV, CONTACT_EMAIL: "technology.hackconcordia@ecaconcordia.ca" }).contactEmail).toBe(
+    expect(() => readContactEmail({ CONTACT_EMAIL: "not-an-email" })).toThrow("CONTACT_EMAIL must be an email address");
+    expect(readContactEmail({})).toBe(DEFAULT_CONTACT_EMAIL);
+    expect(readContactEmail({ CONTACT_EMAIL: "technology.hackconcordia@ecaconcordia.ca" })).toBe(
       "technology.hackconcordia@ecaconcordia.ca",
     );
   });
@@ -145,7 +137,7 @@ describe("split readers", () => {
   const { EVENT_ID: _id, EVENT_MEALS: _meals, ...EMAIL_ONLY } = ENV;
 
   it("reads the email settings without EVENT_ID or EVENT_MEALS, and ignores bad values of them", () => {
-    expect(readEmailEventConfig(EMAIL_ONLY)).toMatchObject({ eventName: "ConUHacks XI", contactEmail: DEFAULT_CONTACT_EMAIL });
+    expect(readEmailEventConfig(EMAIL_ONLY)).toMatchObject({ eventName: "ConUHacks XI", registrationUrl: ENV.REGISTRATION_URL });
     expect(readEmailEventConfig({ ...EMAIL_ONLY, EVENT_ID: "placeholder", EVENT_MEALS: "not json" })).not.toHaveProperty("meals");
     expect(readEmailEventConfig(EMAIL_ONLY)).not.toHaveProperty("eventId");
   });

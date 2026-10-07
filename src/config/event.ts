@@ -11,15 +11,16 @@ export interface MealSlot {
   type: MealType;
 }
 
-/** What the decision emails need. A bad EVENT_ID or EVENT_MEALS must not block them. */
+/**
+ * What the decision emails need. A bad EVENT_ID or EVENT_MEALS must not block them. The event
+ * name, dates and venue in the emails come from the email kit (src/emails/kit/brand.ts); the
+ * reply-to address is read by src/utils/sendEmail.ts through readContactEmail.
+ */
 export interface EmailEventConfig {
+  /** Shown on the meals page. */
   eventName: string;
-  eventDatesLabel: string;
-  eventDatesLabelFr: string;
-  venue: string;
-  venueFr: string;
+  /** The registration app's URL: the admitted email's "Confirm on my dashboard" button. */
   registrationUrl: string;
-  contactEmail: string;
   discordInviteUrl: string | null;
   travelGuidelinesUrl: string | null;
   travelGuidelinesUrlFr: string | null;
@@ -113,8 +114,10 @@ function requiredObjectId(env: EnvSource, name: string): string {
 }
 
 // Plain http is allowed only for a local registration app during development; every deployed
-// URL (they end up in applicant emails) must be https.
-const LOCAL_HOSTNAMES = new Set(["localhost", "127.0.0.1", "[::1]"]);
+// URL (they end up in applicant emails) must be https. Only "localhost" counts as local, the same
+// rule as the email kit's isEmailUrl (src/emails/kit/url.ts), which checks every link again:
+// accepting 127.0.0.1 here would save decisions whose emails then fail to render.
+const LOCAL_HOSTNAMES = new Set(["localhost"]);
 
 function httpUrl(value: string, name: string): string {
   let url: URL;
@@ -133,7 +136,8 @@ function optionalHttpUrl(env: EnvSource, name: string): string | null {
   return value ? httpUrl(value, name) : null;
 }
 
-function contactEmail(env: EnvSource): string {
+/** CONTACT_EMAIL, or the default when unset: the reply-to of every email (read by src/utils/sendEmail.ts). */
+export function readContactEmail(env: EnvSource): string {
   const value = env.CONTACT_EMAIL?.trim();
   if (!value) return DEFAULT_CONTACT_EMAIL;
   if (!EMAIL_PATTERN.test(value)) {
@@ -145,12 +149,7 @@ function contactEmail(env: EnvSource): string {
 export function readEmailEventConfig(env: EnvSource): EmailEventConfig {
   return {
     eventName: required(env, "EVENT_NAME"),
-    eventDatesLabel: required(env, "EVENT_DATES_LABEL"),
-    eventDatesLabelFr: required(env, "EVENT_DATES_LABEL_FR"),
-    venue: required(env, "EVENT_VENUE"),
-    venueFr: required(env, "EVENT_VENUE_FR"),
     registrationUrl: httpUrl(required(env, "REGISTRATION_URL"), "REGISTRATION_URL"),
-    contactEmail: contactEmail(env),
     discordInviteUrl: optionalHttpUrl(env, "DISCORD_INVITE_URL"),
     travelGuidelinesUrl: optionalHttpUrl(env, "TRAVEL_GUIDELINES_URL") ?? DEFAULT_TRAVEL_GUIDELINES_URL,
     travelGuidelinesUrlFr: optionalHttpUrl(env, "TRAVEL_GUIDELINES_URL_FR") ?? DEFAULT_TRAVEL_GUIDELINES_URL_FR,

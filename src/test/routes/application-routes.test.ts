@@ -6,12 +6,7 @@ vi.mock("@/repository/mongoose", () => ({ default: vi.fn() }));
 vi.mock("@/repository/models/admin", () => ({ default: { findById: createFindByIdMock() } }));
 vi.mock("@/repository/models/application", () => ({ default: {} }));
 vi.mock("@/repository/models/checkin", () => ({ default: {} }));
-vi.mock("@/utils/admissionEmailConfig", () => ({
-  sendAdmittedEmail: vi.fn(),
-  sendWaitlistedEmail: vi.fn(),
-  sendRefusedEmail: vi.fn(),
-  sendDiscordLink: vi.fn(),
-}));
+vi.mock("@/utils/applicantEmails", () => ({ sendDiscordInviteEmail: vi.fn() }));
 
 import * as applicationById from "@/app/api/(group)/application/[applicationId]/route";
 import * as metadata from "@/app/api/(group)/application/[applicationId]/metadata/route";

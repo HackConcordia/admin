@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createFindByIdMock } from "@/test/admin-lookup";
 
@@ -9,13 +9,13 @@ const applicationModel = vi.hoisted(() => ({
   findByIdAndDelete: vi.fn(),
 }));
 const checkInModel = vi.hoisted(() => ({ updateOne: vi.fn(async () => ({})), findOneAndDelete: vi.fn(async () => null) }));
-const emails = vi.hoisted(() => ({ sendDiscordLink: vi.fn(async () => true) }));
+const emails = vi.hoisted(() => ({ sendDiscordInviteEmail: vi.fn(async () => true) }));
 
 vi.mock("@/repository/mongoose", () => ({ default: vi.fn() }));
 vi.mock("@/repository/models/admin", () => ({ default: { findById: createFindByIdMock() } }));
 vi.mock("@/repository/models/application", () => ({ default: applicationModel }));
 vi.mock("@/repository/models/checkin", () => ({ default: checkInModel }));
-vi.mock("@/utils/admissionEmailConfig", () => emails);
+vi.mock("@/utils/applicantEmails", () => emails);
 
 import * as route from "@/app/api/(group)/application/[applicationId]/route";
 import { TEST_ADMIN_EMAIL, adminCookie, buildRequest, routeContext } from "@/test/http";
@@ -30,6 +30,10 @@ const STORED = {
   status: "Submitted",
   currentLevelOfSchooling: "Undergraduate",
 };
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
 
 async function put(body: unknown, id = APP_ID) {
   return route.PUT(
@@ -159,6 +163,9 @@ describe("PUT /api/application/[applicationId]", () => {
   });
 
   it("creates the check-in record and sends the Discord email when moving to Confirmed", async () => {
+    vi.stubEnv("EVENT_NAME", "ConUHacks XI");
+    vi.stubEnv("REGISTRATION_URL", "https://register.conuhacks.io/dashboard");
+    vi.stubEnv("DISCORD_INVITE_URL", "https://discord.gg/conuhacks");
     applicationModel.findById.mockResolvedValue({ ...STORED, status: "Admitted" });
 
     const res = await put({ ...NAMES, status: "Confirmed", expectedStatus: "Admitted" });
@@ -169,7 +176,10 @@ describe("PUT /api/application/[applicationId]", () => {
       { $setOnInsert: { email: "ada@test.dev", isCheckedIn: false } },
       { upsert: true },
     );
-    expect(emails.sendDiscordLink).toHaveBeenCalledWith("ada@test.dev", "Ada", "Lovelace");
+    expect(emails.sendDiscordInviteEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ email: "ada@test.dev", firstName: "Ada", lastName: "Lovelace" }),
+      expect.objectContaining({ registrationUrl: "https://register.conuhacks.io/dashboard", discordInviteUrl: "https://discord.gg/conuhacks" }),
+    );
   });
 
   it("answers 404 for a missing application and 400 for a malformed id", async () => {

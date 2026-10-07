@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 
 import mongoose from "mongoose";
 
+import { getEmailEventConfig } from "@/config/event";
 import { buildApplicationUpdate } from "@/lib/conuhacks/application-update";
 import { redactSensitiveApplicantFields } from "@/lib/conuhacks/redact-applicant-fields";
 import { fetchIsSuperAdmin, requireAdmin } from "@/lib/require-admin";
@@ -10,19 +11,13 @@ import Application from "@/repository/models/application";
 import CheckIn from "@/repository/models/checkin";
 import connectMongoDB from "@/repository/mongoose";
 import { sendErrorResponse, sendSuccessResponse } from "@/repository/response";
-import { sendDiscordLink } from "@/utils/admissionEmailConfig";
+import { sendDiscordInviteEmail, type EmailApplicant } from "@/utils/applicantEmails";
+import { describeError } from "@/utils/describeError";
 
 type RouteContext = { params: Promise<{ applicationId: string }> };
 
-/** Name and Mongo code only: messages can carry applicant data (an E11000 message includes the key). */
-function describeError(error: unknown): string {
-  if (!(error instanceof Error)) return "unknown error";
-  const code = (error as { code?: unknown }).code;
-  return code === undefined ? error.name : `${error.name} (code ${String(code)})`;
-}
-
 /** Same side effects as the registration app's own "confirm attendance": a CheckIn record, plus the Discord invite. */
-async function onConfirmed(application: { email?: unknown; firstName?: unknown; lastName?: unknown }): Promise<void> {
+async function onConfirmed(application: EmailApplicant): Promise<void> {
   const email = String(application.email ?? "");
   try {
     await CheckIn.updateOne({ email }, { $setOnInsert: { email, isCheckedIn: false } }, { upsert: true });
@@ -30,7 +25,8 @@ async function onConfirmed(application: { email?: unknown; firstName?: unknown; 
     console.error("Error creating CheckIn document:", describeError(error));
   }
   try {
-    const sent = await sendDiscordLink(email, String(application.firstName ?? ""), String(application.lastName ?? ""));
+    // getEmailEventConfig() may throw (broken settings): the status is saved, only the email is skipped.
+    const sent = await sendDiscordInviteEmail(application, getEmailEventConfig());
     if (!sent) console.log("Discord invite email not sent; the status was still updated");
   } catch (error) {
     console.error("Error sending the Discord invite email:", describeError(error));
