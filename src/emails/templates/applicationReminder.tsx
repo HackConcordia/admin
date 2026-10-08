@@ -27,7 +27,7 @@ export const copy: TemplateCopy<ApplicationReminderData> = {
         <ButtonRow>
           <Button href={data.dashboardUrl}>Compléter ma candidature</Button>
         </ButtonRow>
-        <Paragraph>{"Si vous n'êtes plus intéressé, vous pouvez ignorer ce courriel."}</Paragraph>
+        <Paragraph>{"Si vous n'êtes plus intéressé(e), vous pouvez ignorer ce courriel."}</Paragraph>
         <Signature lang="fr" />
       </>
     ),

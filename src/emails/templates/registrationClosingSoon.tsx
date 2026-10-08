@@ -37,7 +37,7 @@ export const copy: TemplateCopy<RegistrationClosingSoonData> = {
             </ButtonRow>
           </>
         )}
-        <Paragraph>{"Si vous n'êtes plus intéressé, vous pouvez ignorer ce courriel."}</Paragraph>
+        <Paragraph>{"Si vous n'êtes plus intéressé(e), vous pouvez ignorer ce courriel."}</Paragraph>
         <Signature lang="fr" />
       </>
     ),

@@ -29,7 +29,7 @@ export const copy: TemplateCopy<VerifyReminderData> = {
         </ButtonRow>
         <Paragraph>
           {
-            "Si vous ne vous êtes pas inscrit à ConUHacks XI ou si vous n'êtes plus intéressé, vous pouvez ignorer ce courriel."
+            "Si vous ne vous êtes pas inscrit(e) à ConUHacks XI ou si vous n'êtes plus intéressé(e), vous pouvez ignorer ce courriel."
           }
         </Paragraph>
         <Signature lang="fr" />
