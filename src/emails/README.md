@@ -8,7 +8,7 @@ This folder is **self-contained**: it imports only `react`, `react-email` and fi
 
 Versions (exact, the same in both apps so they render identical HTML and text): `react-email@6.11.0`, `@react-email/render@2.1.0` (a direct dependency: `react-email` only asks for `>=2.1.0`), and `@react-email/ui@6.11.0` (dev, preview server).
 
-Every `.tsx` file with JSX starts with `/** @jsxRuntime automatic */`, so it compiles the same in any host: the admin app's Vitest has no React plugin and its `tsconfig` says `"jsx": "preserve"`, which would otherwise compile the kit to `React.createElement` and fail with "React is not defined". `kit.test.tsx` fails if a file lacks it. The tests themselves (`*.test.tsx`, `__snapshots__/`) need a React-aware runner and are not synced.
+Every `.tsx` file with JSX starts with `/** @jsxRuntime automatic */`, so it compiles the same in any host: the admin app's Vitest has no React plugin and its `tsconfig` says `"jsx": "preserve"`, which would otherwise compile the kit to `React.createElement` and fail with "React is not defined". `test/emails/kit.test.tsx` fails if a file lacks it. The tests live in `test/emails/` (they need a React-aware runner) and are not synced.
 
 ## Using it
 
@@ -40,7 +40,6 @@ const { subject, html, text } = await renderEmail(
 | `kit/` | theme, brand facts and links, `Layout`, `LanguageSection`, `Button`, `ButtonRow`, `TextLink`, `LanguageDivider`, `Signature`, `Footer`, `Greeting` / `Paragraph` / `Strong`; `responsive.ts` (the one `<style>` block: phone tweaks) and `mso.ts` / `MsoMarker` (Outlook conditional comments) |
 | `templates/` | one file per key: `copy.fr` and `copy.en` (`label`, `subject`, `preheader`, `Body`) |
 | `sampleData.ts` | realistic data per key (previews and tests) |
-| `kit.test.tsx`, `__snapshots__/` | registry-driven tests; subject + text snapshots per key × language, reviewed against the copy doc (`npx vitest run emails -u` after a copy change) |
 | `previews/` | one preview per key × `en` / `fr` / `bilingual` (not synced to the admin app) |
 
 ## Adding an email
