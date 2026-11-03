@@ -2,6 +2,8 @@
 
 import { FileText, Clock, CheckCircle, UserCheck } from "lucide-react";
 
+import { attendanceResponsePool } from "@/lib/status";
+
 interface StatusOverviewProps {
   statusCounts: {
     Submitted: number;
@@ -86,10 +88,7 @@ export function StatusOverview({
               <p className="text-muted-foreground text-xs">{label}</p>
               <p className="text-lg font-semibold">
                 {key === "Confirmed"
-                  ? `${statusCounts[key] || 0}/${
-                      (statusCounts["Admitted"] || 0) +
-                      (statusCounts["Confirmed"] || 0)
-                    }`
+                  ? `${statusCounts[key] || 0}/${attendanceResponsePool(statusCounts)}`
                   : statusCounts[key] || 0}
               </p>
             </div>
