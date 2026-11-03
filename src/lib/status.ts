@@ -37,6 +37,11 @@ export function mergeCheckedInCounts(counts: Readonly<Record<string, number>>): 
   );
 }
 
+/** Admitted applicants, whether they've answered yet or not: declining keeps them in the total. */
+export function attendanceResponsePool(counts: Readonly<Partial<Record<string, number>>>): number {
+  return (counts.Admitted ?? 0) + (counts.Confirmed ?? 0) + (counts.Declined ?? 0);
+}
+
 /** For status filters: any checked-in spelling matches every stored spelling. Returns a new, deduplicated array. */
 export function withLegacyCheckedIn(statuses: readonly string[]): string[] {
   const expanded = statuses.flatMap((status) => (isCheckedInStatus(status) ? [...CHECKED_IN_STATUSES] : [status]));

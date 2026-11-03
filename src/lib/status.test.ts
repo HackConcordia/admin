@@ -3,11 +3,26 @@ import { describe, expect, it } from "vitest";
 import {
   APPLICATION_STATUSES,
   CHECKED_IN_STATUS,
+  attendanceResponsePool,
   isCheckedInStatus,
   mergeCheckedInCounts,
   withLegacyCheckedIn,
 } from "@/lib/status";
 import Application from "@/repository/models/application";
+
+describe("attendanceResponsePool", () => {
+  it("keeps applicants who declined in the total: 22 confirmed, 11 declined is out of 33", () => {
+    expect(attendanceResponsePool({ Admitted: 0, Confirmed: 22, Declined: 11 })).toBe(33);
+  });
+
+  it("counts applicants who haven't answered yet", () => {
+    expect(attendanceResponsePool({ Admitted: 5, Confirmed: 20, Declined: 8 })).toBe(33);
+  });
+
+  it("treats a missing status as zero", () => {
+    expect(attendanceResponsePool({})).toBe(0);
+  });
+});
 
 describe("C4 checked-in status", () => {
   it("uses 'Checked-in' as the canonical value", () => {
