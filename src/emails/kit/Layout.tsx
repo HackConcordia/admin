@@ -7,6 +7,7 @@ import { Footer } from "./Footer";
 import { MsoMarker } from "./MsoMarker";
 import { CLASS, RESPONSIVE_CSS } from "./responsive";
 import { colors, fonts, msoExact, sizes, text } from "./theme";
+import { BILINGUAL_ORDER } from "../language";
 import type { CopyLanguage, EmailLanguage } from "../types";
 
 const FRAME = `${sizes.frameWidth}px solid ${colors.black}`;
@@ -131,14 +132,14 @@ function Perforation() {
   );
 }
 
-/** The <html lang>: one language, or French (first block) when bilingual. */
+/** The <html lang>: one language, or the first block's language when bilingual. */
 function documentLanguage(lang: EmailLanguage): CopyLanguage {
-  return lang === "en" ? "en" : "fr";
+  return lang === "bilingual" ? BILINGUAL_ORDER[0] : lang;
 }
 
 /** Footer languages in the order they appear in the body. */
 export function footerLanguages(lang: EmailLanguage): readonly CopyLanguage[] {
-  return lang === "bilingual" ? ["fr", "en"] : [lang];
+  return lang === "bilingual" ? BILINGUAL_ORDER : [lang];
 }
 
 /**

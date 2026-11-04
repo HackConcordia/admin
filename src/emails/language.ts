@@ -1,5 +1,8 @@
 // GENERATED from registration-website-conuhacks-10/my-app/emails — edit there and run npm run emails:sync
-import type { EmailLanguage } from "./types";
+import type { CopyLanguage, EmailLanguage } from "./types";
+
+/** Bilingual emails show English first, then French. */
+export const BILINGUAL_ORDER: readonly CopyLanguage[] = ["en", "fr"];
 
 /**
  * Maps an application's `communicationLanguage` to the language an email is sent in:

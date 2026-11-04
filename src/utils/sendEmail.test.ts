@@ -61,7 +61,7 @@ describe("sendEmail", () => {
     );
   });
 
-  it("sends French only, English only, or French then English", async () => {
+  it("sends French only, English only, or English then French", async () => {
     useSendGrid();
     await sendEmail("waitlisted", { to: TO, lang: "fr", data: { fullName: "Ada" } });
     await sendEmail("waitlisted", { to: TO, lang: "en", data: { fullName: "Ada" } });
@@ -71,7 +71,7 @@ describe("sendEmail", () => {
     expect(subjects).toEqual([
       "Vous avez été placé(e) sur la liste d'attente pour ConUHacks XI",
       "You have been waitlisted for ConUHacks XI",
-      "Vous avez été placé(e) sur la liste d'attente pour ConUHacks XI // You have been waitlisted for ConUHacks XI",
+      "You have been waitlisted for ConUHacks XI // Vous avez été placé(e) sur la liste d'attente pour ConUHacks XI",
     ]);
   });
 

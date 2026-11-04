@@ -3,10 +3,9 @@
 import { LanguageDivider } from "./kit/LanguageDivider";
 import { Layout } from "./kit/Layout";
 import { LanguageSection } from "./kit/Section";
+import { BILINGUAL_ORDER } from "./language";
 import { registryEntry } from "./registry";
 import type { CopyLanguage, EmailData, EmailKey, EmailLanguage, LanguageCopy } from "./types";
-
-const BILINGUAL_ORDER: readonly CopyLanguage[] = ["fr", "en"];
 
 /** The language an email is actually sent in (account emails are always bilingual). */
 export function effectiveLanguage(key: EmailKey, lang: EmailLanguage): EmailLanguage {
@@ -18,7 +17,7 @@ function blockLanguages(lang: EmailLanguage): readonly CopyLanguage[] {
   return lang === "bilingual" ? BILINGUAL_ORDER : [lang];
 }
 
-/** "<fr> // <en>" when bilingual. */
+/** "<en> // <fr>" when bilingual. */
 export function emailSubject<K extends EmailKey>(key: K, data: EmailData[K], lang: EmailLanguage): string {
   const { copy } = registryEntry(key);
   const effective = effectiveLanguage(key, lang);
@@ -27,14 +26,14 @@ export function emailSubject<K extends EmailKey>(key: K, data: EmailData[K], lan
     .join(" // ");
 }
 
-/** Bilingual emails use the French preheader (French comes first). */
+/** Bilingual emails use the English preheader (English comes first). */
 function emailPreheader<K extends EmailKey>(key: K, data: EmailData[K], lang: EmailLanguage): string {
   const { copy } = registryEntry(key);
   const first = blockLanguages(effectiveLanguage(key, lang))[0];
   return copy[first].preheader(data);
 }
 
-/** The full email for one key: layout + one language block, or French, divider, English. */
+/** The full email for one key: layout + one language block, or English, divider, French. */
 export function EmailDocument<K extends EmailKey>({
   emailKey,
   data,

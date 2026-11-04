@@ -10,7 +10,7 @@ const TEXT_RULE = "-".repeat(40);
 const textOnlyStyle = { display: "none", maxHeight: 0, overflow: "hidden", msoHide: "all" } as CSSProperties;
 
 /**
- * The 2px black rule between the French and English blocks, drawn as a filled table
+ * The 2px black rule between the English and French blocks, drawn as a filled table
  * cell (Outlook draws an <hr> with its own grey bevel). The text part gets a "----" line
  * from a hidden element instead.
  */
