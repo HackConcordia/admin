@@ -3,7 +3,6 @@
  * model- and React-free so the schema, the server rules, the form and the tests share one source.
  * Proposed lists: see the plan's open question Q4 before registration opens.
  */
-export const AGE_VALUES = ["under-18", "18", "19", "20", "21", "22", "23", "24", "25", "26-29", "30+"] as const;
 export const COMMUNICATION_LANGUAGES = ["english", "french"] as const;
 export const LANGUAGES_SPOKEN = ["english", "french", "other"] as const;
 export const SCHOOLING_LEVELS = ["CEGEP", "Undergraduate", "Graduate", "Recent graduate", "Other"] as const;

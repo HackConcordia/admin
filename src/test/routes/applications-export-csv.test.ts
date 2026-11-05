@@ -32,7 +32,7 @@ describe("GET /api/applications/export-csv", () => {
   });
 
   it("downloads confirmed and checked-in applicants as a UTF-8 CSV", async () => {
-    mockApplications([{ _id: "64c000000000000000000001", firstName: "Ada", lastName: "Lovelace", email: "ada@example.com", status: "CheckedIn", age: "19" }]);
+    mockApplications([{ _id: "64c000000000000000000001", firstName: "Ada", lastName: "Lovelace", email: "ada@example.com", status: "CheckedIn" }]);
 
     const res = await exportCsv.GET(buildRequest("/api/applications/export-csv?status=confirmed", { cookie: await adminCookie() }));
 
@@ -42,8 +42,8 @@ describe("GET /api/applications/export-csv", () => {
     expect(res.headers.get("content-disposition")).toBe('attachment; filename="conuhacks-xi-applications-confirmed.csv"');
     expect(res.headers.get("cache-control")).toBe("no-store");
     const body = await res.text();
-    expect(body).toContain("Application ID,First name,Last name,Email,Status,Age");
-    expect(body).toContain("64c000000000000000000001,Ada,Lovelace,ada@example.com,Checked-in,19");
+    expect(body).toContain("Application ID,First name,Last name,Email,Status,Phone");
+    expect(body).toContain("64c000000000000000000001,Ada,Lovelace,ada@example.com,Checked-in,");
   });
 
   it("exports the travel list outside Quebec", async () => {

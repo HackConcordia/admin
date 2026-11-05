@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  AGE_VALUES,
   DISCIPLINES,
   SCHOOLING_LEVELS,
   currentYearValues,
@@ -12,11 +11,6 @@ import {
 describe("ConUHacks XI option values", () => {
   it("levels fit a university audience: no high school", () => {
     expect([...SCHOOLING_LEVELS]).toEqual(["CEGEP", "Undergraduate", "Graduate", "Recent graduate", "Other"]);
-  });
-
-  it("age keeps an explicit under-18 bucket", () => {
-    expect(AGE_VALUES[0]).toBe("under-18");
-    expect(AGE_VALUES).toContain("30+");
   });
 
   it("discipline has an 'other' escape hatch", () => {

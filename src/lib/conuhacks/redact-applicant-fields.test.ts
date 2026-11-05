@@ -7,7 +7,6 @@ const DOC = {
   _id: "64c000000000000000000001",
   firstName: "Ada",
   discipline: "computer-science",
-  age: "under-18",
   phoneNumber: "5145550000",
   shirtSize: "M",
   dietaryRestrictions: ['["vegan"]'],
@@ -24,7 +23,7 @@ const DOC = {
 describe("redactSensitiveApplicantFields", () => {
   it("covers exactly the Q2 list", () => {
     expect([...SUPER_ADMIN_ONLY_FIELD_KEYS].sort()).toEqual(
-      ["age", "dietaryRestrictions", "dietaryRestrictionsDescription", "gender", "phoneNumber", "pronouns", "shirtSize", "underrepresented"],
+      ["dietaryRestrictions", "dietaryRestrictionsDescription", "gender", "phoneNumber", "pronouns", "shirtSize", "underrepresented"],
     );
   });
 
@@ -32,7 +31,7 @@ describe("redactSensitiveApplicantFields", () => {
     const redacted = redactSensitiveApplicantFields(DOC, false);
     expect(redacted).toMatchObject({ firstName: "Ada", discipline: "computer-science" });
     expect(redacted.dietaryRestrictions).toEqual([]);
-    for (const value of ["under-18", "5145550000", "No sesame", "female", "she/her", "vegan"]) {
+    for (const value of ["5145550000", "No sesame", "female", "she/her", "vegan"]) {
       expect(JSON.stringify(redacted)).not.toContain(value);
     }
     expect(DOC.gender).toBe("female");

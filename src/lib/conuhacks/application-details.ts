@@ -10,7 +10,6 @@ export type ApplicationDetails = {
   lastName: string;
   email: string;
   status: string;
-  age: string;
   phoneNumber: string;
   country: string;
   city: string;
@@ -92,7 +91,6 @@ export function toApplicationDetails(doc: Record<string, unknown>): ApplicationD
     lastName: text(doc.lastName),
     email: text(doc.email),
     status: text(doc.status),
-    age: text(doc.age),
     phoneNumber: text(doc.phoneNumber),
     country: text(doc.country),
     city: text(doc.city),

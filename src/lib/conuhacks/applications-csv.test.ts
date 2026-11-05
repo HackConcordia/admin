@@ -40,7 +40,7 @@ describe("buildApplicationsCsv", () => {
   const csv = buildApplicationsCsv([
     {
       _id: "64c000000000000000000001", firstName: "Zoë", lastName: "Łukasz", email: "z@x.dev", status: "CheckedIn",
-      age: "under-18", country: "CA", city: "Montreal", languagesSpoken: ['["english","other"]'], languagesSpokenOther: "Arabic",
+      country: "CA", city: "Montreal", languagesSpoken: ['["english","other"]'], languagesSpokenOther: "Arabic",
       discipline: "other", disciplineOther: "Bio", hackathons: 5, travelReimbursement: null, dietaryRestrictions: ["[]"],
       jobTypesInterested: '["other"]', jobTypesInterestedOther: "Robotics", coolProject: "=cmd|' /C calc'!A0",
       termsAndConditions: { mlhConduct: true, mlhTerms: true, mlhEmails: false },
@@ -58,7 +58,7 @@ describe("buildApplicationsCsv", () => {
   it("has one header per column, covering the XI fields", () => {
     expect(header.split(",")).toEqual([...CSV_HEADERS]);
     expect(CSV_HEADERS).toEqual(
-      expect.arrayContaining(["Age", "Discipline", "Languages spoken", "Hackathons", "Travel requested", "Quebec resident", "Travel approved"]),
+      expect.arrayContaining(["Discipline", "Languages spoken", "Hackathons", "Travel requested", "Quebec resident", "Travel approved"]),
     );
   });
 
@@ -93,7 +93,7 @@ describe("buildApplicationsCsv", () => {
   });
 
   it("writes labels, keeps accented names and neutralizes formulas", () => {
-    for (const expected of ["Zoë", "Łukasz", "Checked-in", "Under 18", "English | Other (Arabic)", "Other (Bio)", "5+", "Not answered",
+    for (const expected of ["Zoë", "Łukasz", "Checked-in", "Canada", "English | Other (Arabic)", "Other (Bio)", "5+", "Not answered",
       "Other (Robotics)", ",yes,", "'=cmd|' /C calc'!A0"]) {
       expect(row).toContain(expected);
     }

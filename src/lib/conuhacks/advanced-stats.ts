@@ -7,21 +7,20 @@ import { JobTypes } from "@/constants/JobTypes";
 import { LanguagesSpoken } from "@/constants/LanguagesSpoken";
 import { SchoolingLevels } from "@/constants/SchoolingLevels";
 import type { IAdvancedStats, NameCount } from "@/interfaces/IAdvancedStats";
-import { formatAge, formatCommunicationLanguage, formatHackathons, optionLabel, type Option } from "@/lib/conuhacks/display";
-import { AGE_VALUES, MAX_HACKATHON_COUNT } from "@/lib/conuhacks/field-options";
+import { formatCommunicationLanguage, formatHackathons, optionLabel, type Option } from "@/lib/conuhacks/display";
+import { MAX_HACKATHON_COUNT } from "@/lib/conuhacks/field-options";
 import { parseListField } from "@/lib/conuhacks/list-field";
 import { isQuebecResident } from "@/lib/conuhacks/quebec";
 import { isCheckedInStatus } from "@/lib/status";
 
 export const ADVANCED_STATS_FIELDS =
-  "status age country city communicationLanguage languagesSpoken isStudentOrRecentGraduate currentLevelOfSchooling " +
+  "status country city communicationLanguage languagesSpoken isStudentOrRecentGraduate currentLevelOfSchooling " +
   "currentYear degreeLength discipline hackathons travelReimbursement isTravelReimbursementApproved " +
   "travelReimbursementAmount travelReimbursementCurrency gender isRegisteredForCoop jobTypesInterested";
 
 /** CAD per USD for the reimbursement totals (ConUHacks X's rate). */
 export const USD_TO_CAD = 1.39;
 
-const UNDER_18 = "under-18";
 const NOT_SPECIFIED = "Not specified";
 
 type App = Record<string, unknown>;
@@ -64,18 +63,6 @@ function travelRequests(apps: readonly App[]): IAdvancedStats["travelReimburseme
     requestedFromQuebec: fromQuebec,
     notRequested: apps.filter((app) => app.travelReimbursement === false).length,
     unanswered: apps.filter((app) => typeof app.travelReimbursement !== "boolean").length,
-  };
-}
-
-function ageDistribution(apps: readonly App[]): IAdvancedStats["ageDistribution"] {
-  const attending = apps.filter(isAttending);
-  const known = new Set<string>(AGE_VALUES);
-  const hasBucket = (app: App): boolean => typeof app.age === "string" && known.has(app.age);
-  return {
-    underEighteen: attending.filter((app) => app.age === UNDER_18).length,
-    eighteenOrAbove: attending.filter((app) => hasBucket(app) && app.age !== UNDER_18).length,
-    notAnswered: attending.filter((app) => !hasBucket(app)).length,
-    buckets: AGE_VALUES.map((value) => ({ name: formatAge(value), count: attending.filter((app) => app.age === value).length })),
   };
 }
 
@@ -135,12 +122,11 @@ export function computeAdvancedStats(applications: readonly App[], admins: reado
         };
       })
       .filter((metric) => metric.totalAssigned > 0),
-    ageDistribution: ageDistribution(applications),
   };
 }
 
 /**
- * Empties the breakdowns of super-admin-only fields (gender, age; SUPER_ADMIN_ONLY_FIELD_KEYS) for a
+ * Empties the breakdowns of super-admin-only fields (gender; SUPER_ADMIN_ONLY_FIELD_KEYS) for a
  * caller who is not a DB-verified super admin. Empty, not zeroed, because an off-list gender becomes
  * its own label (applicant text). The approved travel totals are nulled too: a total that moves right
  * after a super admin's decision would reveal that decision (A2).
@@ -153,6 +139,5 @@ export function redactSensitiveAdvancedStats(stats: IAdvancedStats, isSuperAdmin
     overallTravelReimbursement: null,
     confirmedTravelReimbursement: null,
     genderDistribution: [],
-    ageDistribution: { eighteenOrAbove: 0, underEighteen: 0, notAnswered: 0, buckets: [] },
   };
 }

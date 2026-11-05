@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  formatAge,
   formatCity,
   formatCountry,
   formatDietaryRestrictions,
@@ -45,8 +44,6 @@ describe("formatList (every stored shape)", () => {
 
 describe("field formatters", () => {
   it("label codes and keep typed 'Other' answers", () => {
-    expect(formatAge("under-18")).toBe("Under 18");
-    expect(formatAge("30+")).toBe("30+");
     expect(formatCountry("CA")).toBe("Canada");
     expect(formatCity("Montreal")).toBe("Montreal, Quebec");
     expect(formatSchool("other", "École 42")).toBe("École 42");

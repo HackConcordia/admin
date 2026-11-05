@@ -27,7 +27,6 @@ import {
 } from "@/lib/conuhacks/application-fields";
 import { clearHiddenFields } from "@/lib/conuhacks/conditional-fields";
 import {
-  AGE_VALUES,
   COMMUNICATION_LANGUAGES,
   DEGREE_LENGTHS,
   DISCIPLINES,
@@ -65,7 +64,6 @@ const REQUIRED_NAME_FIELDS = ["firstName", "lastName"] as const;
 const valuesOf = (options: readonly { value: string }[]): string[] => options.map((option) => option.value);
 
 const FIXED_OPTIONS: Partial<Record<ApplicantFieldKey, readonly string[]>> = {
-  age: AGE_VALUES,
   communicationLanguage: COMMUNICATION_LANGUAGES,
   currentLevelOfSchooling: SCHOOLING_LEVELS,
   discipline: DISCIPLINES,

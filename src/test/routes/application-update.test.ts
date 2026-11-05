@@ -54,11 +54,11 @@ beforeEach(() => {
 
 describe("PUT /api/application/[applicationId]", () => {
   it("saves an XI application without isEighteenOrAbove (the ConUHacks X hard break)", async () => {
-    const res = await put({ ...NAMES, email: "evil@x.dev", age: "19", discipline: "data-science", travelReimbursement: null });
+    const res = await put({ ...NAMES, email: "evil@x.dev", discipline: "data-science", travelReimbursement: null });
 
     expect(res.status).toBe(200);
     const [, update, options] = applicationModel.findByIdAndUpdate.mock.calls[0];
-    expect(update.$set).toMatchObject({ age: "19", discipline: "data-science", travelReimbursement: null });
+    expect(update.$set).toMatchObject({ discipline: "data-science", travelReimbursement: null });
     expect(update.$set).not.toHaveProperty("email");
     expect(options).toEqual({ new: true, runValidators: true });
   });

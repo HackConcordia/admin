@@ -17,7 +17,7 @@ const keysOf = (values: ApplicantFieldValues, isSuperAdmin: boolean) =>
   resolveSections(values, { isSuperAdmin }).flatMap((section) => section.fields.map((field) => field.key));
 
 const EVERYTHING: ApplicantFieldValues = {
-  age: "19", phoneNumber: "5145550000", country: "CA", city: "Montreal", communicationLanguage: "french",
+  phoneNumber: "5145550000", country: "CA", city: "Montreal", communicationLanguage: "french",
   languagesSpoken: ['["english","other"]'], languagesSpokenOther: "Arabic", isStudentOrRecentGraduate: true,
   currentLevelOfSchooling: "Other", otherLevelOfSchooling: "Bootcamp", school: "other", schoolOther: "École 42",
   currentYear: "Year 2", degreeLength: "3 years", degreeType: "Other", discipline: "other", disciplineOther: "Bio",

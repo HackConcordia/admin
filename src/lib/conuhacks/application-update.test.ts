@@ -22,8 +22,8 @@ describe("buildApplicationUpdate", () => {
     expect(buildApplicationUpdate("x")).toEqual({ ok: false, error: "Request body must be a JSON object" });
   });
 
-  it("ignores email, ids, files and removed ConUHacks X fields", () => {
-    expect(set({ email: "evil@x.dev", _id: "x", resume: {}, isEighteenOrAbove: "yes", faculty: "eng" })).toEqual({
+  it("ignores email, ids, files, removed ConUHacks X fields and the dropped age", () => {
+    expect(set({ email: "evil@x.dev", _id: "x", resume: {}, isEighteenOrAbove: "yes", faculty: "eng", age: "19" })).toEqual({
       firstName: "Ada",
       lastName: "Lovelace",
     });
@@ -45,7 +45,7 @@ describe("buildApplicationUpdate", () => {
   });
 
   it.each([
-    [{ age: "17" }, "Invalid value for age"],
+    [{ currentLevelOfSchooling: "Kindergarten" }, "Invalid value for currentLevelOfSchooling"],
     [{ discipline: "astrology" }, "Invalid value for discipline"],
     [{ languagesSpoken: ["klingon"] }, "Invalid value for languagesSpoken"],
     [{ github: "javascript:alert(1)" }, "github must be an http(s) link"],

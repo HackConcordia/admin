@@ -14,11 +14,11 @@ import { NON_SUPER_ADMIN_ID, adminCookie, buildRequest } from "@/test/http";
 
 const APPLICATIONS = [
   {
-    _id: "1", status: "Confirmed", age: "under-18", country: "US", city: "", travelReimbursement: true, gender: "female",
+    _id: "1", status: "Confirmed", country: "US", city: "", travelReimbursement: true, gender: "female",
     isTravelReimbursementApproved: true, travelReimbursementAmount: 100, travelReimbursementCurrency: "USD",
   },
   {
-    _id: "2", status: "Checked-in", age: "22", country: "US", city: "", travelReimbursement: true, gender: "male",
+    _id: "2", status: "Checked-in", country: "US", city: "", travelReimbursement: true, gender: "male",
     isTravelReimbursementApproved: true, travelReimbursementAmount: 150, travelReimbursementCurrency: "CAD",
   },
 ];
@@ -44,8 +44,7 @@ describe("GET /api/stats/advanced redaction", () => {
     expect(data.overallTravelReimbursement).toBeNull();
     expect(data.confirmedTravelReimbursement).toBeNull();
     expect(data.genderDistribution).toEqual([]);
-    expect(data.ageDistribution.buckets).toEqual([]);
-    for (const leaked of ["289", "Female", "Male", "Under 18"]) expect(text).not.toContain(leaked);
+    for (const leaked of ["289", "Female", "Male"]) expect(text).not.toContain(leaked);
     // The applicants' own answers stay visible.
     expect(data.travelReimbursement.requested).toBe(2);
   });
@@ -56,13 +55,12 @@ describe("GET /api/stats/advanced redaction", () => {
     expect(data.overallTravelReimbursement).toBeNull();
   });
 
-  it("shows a super admin the gender, age and travel totals", async () => {
+  it("shows a super admin the gender and travel totals", async () => {
     const { text, data } = await get(await adminCookie());
 
     expect(data.sensitiveVisible).toBe(true);
     expect(data.overallTravelReimbursement).toBe(289);
     expect(data.confirmedTravelReimbursement).toBe(289);
     expect(text).toContain("Female");
-    expect(data.ageDistribution.underEighteen).toBe(1);
   });
 });

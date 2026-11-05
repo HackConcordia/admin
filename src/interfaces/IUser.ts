@@ -5,7 +5,6 @@ export interface IUser {
   email: string;
   password: string;
   salt: string;
-  age: string | undefined;
   resetPasswordToken: string;
   resetPasswordExpires: Date;
   createdAt: Date;
