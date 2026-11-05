@@ -107,6 +107,15 @@ describe("buildApplicationsCsv", () => {
     expect(highSchool("Degree length")).toBe("");
   });
 
+  it("names the email-language column like registration, each option in its own language", () => {
+    const language = (communicationLanguage: string) => {
+      const [, line] = buildApplicationsCsv([{ communicationLanguage }]).replace(/^\uFEFF/, "").trimEnd().split(CRLF);
+      return cells(line)[CSV_HEADERS.indexOf("Preferred language for emails")];
+    };
+    expect(language("english")).toBe("English");
+    expect(language("french")).toBe("Français");
+  });
+
   it("writes labels, keeps accented names and neutralizes formulas", () => {
     for (const expected of ["Zoë", "Łukasz", "Checked-in", "Canada", "English | Other (Arabic)", "Other (Bio)", "5+", "Not answered",
       "Other (Robotics)", ",yes,", "'=cmd|' /C calc'!A0"]) {

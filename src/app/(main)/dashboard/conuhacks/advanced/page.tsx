@@ -184,7 +184,7 @@ export default function AdvancedAnalyticsPage() {
         </Card>
       )}
 
-      {/* Row 1: Gender (super admins only) & Communication Language */}
+      {/* Row 1: Gender (super admins only) & Preferred Language for Emails */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {stats.sensitiveVisible && (
           <Card>
@@ -204,7 +204,7 @@ export default function AdvancedAnalyticsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <Languages className="h-5 w-5" />
-              Communication Language
+              Preferred Language for Emails
             </CardTitle>
           </CardHeader>
           <CardContent>

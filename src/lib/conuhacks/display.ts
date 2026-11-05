@@ -40,7 +40,7 @@ function withOther(listedValue: unknown, label: string, other: unknown): string 
 
 export const formatCountry = (country: unknown): string => optionLabel(Countries("en"), country);
 export const formatCity = (city: unknown): string => optionLabel(Cities("en"), city);
-export const formatCommunicationLanguage = (value: unknown): string => optionLabel(CommunicationLanguages("en"), value);
+export const formatCommunicationLanguage = (value: unknown): string => optionLabel(CommunicationLanguages(), value);
 
 /** The typed name when the applicant picked "other" (event-checkin lib/school.ts rule), else the listed school. */
 export function formatSchool(school: unknown, schoolOther: unknown): string {

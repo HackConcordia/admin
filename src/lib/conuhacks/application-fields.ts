@@ -129,7 +129,7 @@ export const TRAVEL_FIELD: ResolvedField = field("travelReimbursement", "Asked f
 function personalFields(values: ApplicantFieldValues, isSuperAdmin: boolean): ResolvedField[] {
   const fields: ResolvedField[] = isSuperAdmin ? [field("phoneNumber", "Phone number", "text")] : [];
   fields.push(
-    field("communicationLanguage", "Communication language", "select", CommunicationLanguages("en")),
+    field("communicationLanguage", "Preferred language for emails", "select", CommunicationLanguages()),
     field("languagesSpoken", "Languages spoken", "multiselect", LanguagesSpoken("en")),
   );
   if (listIncludes(values.languagesSpoken, "other") || hasValue(values.languagesSpokenOther)) {

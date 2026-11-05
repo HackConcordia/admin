@@ -95,7 +95,7 @@ const COLUMNS: readonly { header: string; value: (doc: Doc) => string }[] = [
   { header: "Country", value: (doc) => formatCountry(doc.country) },
   { header: "City", value: (doc) => formatCity(doc.city) },
   { header: "Quebec resident", value: (doc) => (isQuebecResident(doc.country, doc.city) ? "yes" : "no") },
-  { header: "Communication language", value: (doc) => formatCommunicationLanguage(doc.communicationLanguage) },
+  { header: "Preferred language for emails", value: (doc) => formatCommunicationLanguage(doc.communicationLanguage) },
   { header: "Languages spoken", value: (doc) => formatLanguagesSpoken(doc.languagesSpoken, doc.languagesSpokenOther) },
   { header: "Student or recent graduate", value: (doc) => formatYesNo(doc.isStudentOrRecentGraduate) },
   { header: "Level of schooling", value: (doc) => formatLevel(doc.currentLevelOfSchooling, doc.otherLevelOfSchooling) },

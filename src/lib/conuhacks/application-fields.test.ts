@@ -100,7 +100,8 @@ describe("displayFieldValue", () => {
     resolveSections(EVERYTHING, { isSuperAdmin: true }).flatMap((s) => s.fields).find((f) => f.key === key)!;
 
   it("shows labels, Yes/No, 5+ and list labels", () => {
-    expect(displayFieldValue(spec("communicationLanguage"), "french")).toBe("French");
+    expect(displayFieldValue(spec("communicationLanguage"), "french")).toBe("Français");
+    expect(displayFieldValue(spec("communicationLanguage"), "english")).toBe("English");
     expect(displayFieldValue(spec("isStudentOrRecentGraduate"), true)).toBe("Yes");
     expect(displayFieldValue(spec("hackathons"), 5)).toBe("5+");
     expect(displayFieldValue(spec("languagesSpoken"), ['["english","french"]'])).toBe("English | French");
