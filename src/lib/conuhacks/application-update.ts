@@ -8,6 +8,7 @@
  * (conditional-fields.ts), and a value equal to the stored one is always accepted, so an old or
  * hand-made answer never blocks saving an unrelated field.
  */
+import { CegepSchools } from "@/constants/CegepSchools";
 import { Cities } from "@/constants/Cities";
 import { Countries } from "@/constants/Countries";
 import { DietaryRestrictions } from "@/constants/DietaryRestrictions";
@@ -27,15 +28,14 @@ import {
 } from "@/lib/conuhacks/application-fields";
 import { clearHiddenFields } from "@/lib/conuhacks/conditional-fields";
 import {
-  AGE_VALUES,
   COMMUNICATION_LANGUAGES,
-  DEGREE_LENGTHS,
   DISCIPLINES,
   LANGUAGES_SPOKEN,
   MAX_FREE_YEAR_LENGTH,
   MAX_HACKATHON_COUNT,
   SCHOOLING_LEVELS,
   currentYearValues,
+  degreeLengthValues,
   degreeTypeValues,
   isOtherLevel,
 } from "@/lib/conuhacks/field-options";
@@ -65,14 +65,15 @@ const REQUIRED_NAME_FIELDS = ["firstName", "lastName"] as const;
 const valuesOf = (options: readonly { value: string }[]): string[] => options.map((option) => option.value);
 
 const FIXED_OPTIONS: Partial<Record<ApplicantFieldKey, readonly string[]>> = {
-  age: AGE_VALUES,
   communicationLanguage: COMMUNICATION_LANGUAGES,
   currentLevelOfSchooling: SCHOOLING_LEVELS,
   discipline: DISCIPLINES,
-  degreeLength: DEGREE_LENGTHS,
+  // Any level's length; the level's own list is checked with the other level-dependent answers.
+  degreeLength: [...new Set(SCHOOLING_LEVELS.flatMap((level) => degreeLengthValues(level)))],
   country: valuesOf(Countries("en")),
   city: valuesOf(Cities("en")),
-  school: valuesOf(Schools("en")),
+  // Either list the form offers (CEGEP picks from the cégeps), like the registration's check.
+  school: valuesOf([...Schools("en"), ...CegepSchools("en")]),
   shirtSize: valuesOf(TShirtSizes("en")),
   underrepresented: valuesOf(UnderrepresentedGroups("en")),
   jobRolesLookingFor: valuesOf(JobRoles("en")),
@@ -182,25 +183,35 @@ function isValidYear(year: string, level: unknown): boolean {
   return isOtherLevel(level) ? year.length <= MAX_FREE_YEAR_LENGTH : ANY_YEAR.has(year);
 }
 
+/** Any level's length already passed the fixed-option check; a known level narrows it to that level's list. */
+function isValidDegreeLength(length: string, level: unknown): boolean {
+  const forLevel = degreeLengthValues(level);
+  return forLevel.length === 0 || forLevel.includes(length);
+}
+
 function isValidDegreeType(type: string, level: unknown): boolean {
   const forLevel = degreeTypeValues(level);
   return (forLevel.length > 0 ? forLevel : ANY_DEGREE_TYPE).includes(type);
 }
 
+type LevelDependentKey = "currentYear" | "degreeLength" | "degreeType";
+
 /**
- * Year and degree type depend on the level: the one in the update, else the stored one. An unchanged
- * value is exempt only while the level is unchanged; after a level change the stored year and type
- * (when the body omits them) are re-validated against the new level too.
+ * Year, degree length and degree type depend on the level: the one in the update, else the stored
+ * one. An unchanged value is exempt only while the level is unchanged; after a level change the
+ * stored answers (when the body omits them) are re-validated against the new level too.
  */
 function levelDependentError(set: Record<string, unknown>, stored: Body): string | null {
   const levelChanged = "currentLevelOfSchooling" in set && set.currentLevelOfSchooling !== stored.currentLevelOfSchooling;
   const level = "currentLevelOfSchooling" in set ? set.currentLevelOfSchooling : stored.currentLevelOfSchooling;
-  const pick = (key: "currentYear" | "degreeType"): unknown => (key in set ? set[key] : levelChanged ? stored[key] : undefined);
-  const needsCheck = (key: "currentYear" | "degreeType", value: unknown): value is string =>
+  const pick = (key: LevelDependentKey): unknown => (key in set ? set[key] : levelChanged ? stored[key] : undefined);
+  const needsCheck = (key: LevelDependentKey, value: unknown): value is string =>
     typeof value === "string" && value !== "" && (levelChanged || value !== stored[key]);
 
   const year = pick("currentYear");
   if (needsCheck("currentYear", year) && !isValidYear(year, level)) return "Invalid value for currentYear";
+  const degreeLength = pick("degreeLength");
+  if (needsCheck("degreeLength", degreeLength) && !isValidDegreeLength(degreeLength, level)) return "Invalid value for degreeLength";
   const degreeType = pick("degreeType");
   if (needsCheck("degreeType", degreeType) && !isValidDegreeType(degreeType, level)) return "Invalid value for degreeType";
   return null;

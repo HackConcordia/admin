@@ -1,7 +1,6 @@
 import mongoose from "mongoose";
 
 import {
-  AGE_VALUES,
   COMMUNICATION_LANGUAGES,
   DISCIPLINES,
   MAX_HACKATHON_COUNT,
@@ -39,7 +38,6 @@ const applicationsSchema = new mongoose.Schema(
   {
     firstName: { type: String, default: "" },
     lastName: { type: String, default: "" },
-    age: { type: String, default: "", enum: ["", ...AGE_VALUES] },
     phoneNumber: { type: String, default: "" },
     email: { type: String, default: "", required: true, unique: true },
     status: { type: String, default: "Unverified", enum: [...APPLICATION_STATUSES] },

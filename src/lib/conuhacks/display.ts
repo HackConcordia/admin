@@ -1,5 +1,5 @@
 /** Display helpers for ConUHacks XI applications: English labels for stored option values. Client-safe. */
-import { AgeOptions } from "@/constants/AgeOptions";
+import { CegepSchools } from "@/constants/CegepSchools";
 import { Cities } from "@/constants/Cities";
 import { CommunicationLanguages } from "@/constants/CommunicationLanguages";
 import { Countries } from "@/constants/Countries";
@@ -38,16 +38,15 @@ function withOther(listedValue: unknown, label: string, other: unknown): string 
   return text(listedValue).toLowerCase() === "other" && typed ? `Other (${typed})` : label;
 }
 
-export const formatAge = (age: unknown): string => optionLabel(AgeOptions("en"), age);
 export const formatCountry = (country: unknown): string => optionLabel(Countries("en"), country);
 export const formatCity = (city: unknown): string => optionLabel(Cities("en"), city);
-export const formatCommunicationLanguage = (value: unknown): string => optionLabel(CommunicationLanguages("en"), value);
+export const formatCommunicationLanguage = (value: unknown): string => optionLabel(CommunicationLanguages(), value);
 
 /** The typed name when the applicant picked "other" (event-checkin lib/school.ts rule), else the listed school. */
 export function formatSchool(school: unknown, schoolOther: unknown): string {
   const typed = text(schoolOther);
   if (typed && (!text(school) || text(school).toLowerCase() === "other")) return typed;
-  return optionLabel(Schools("en"), school);
+  return optionLabel([...Schools("en"), ...CegepSchools("en")], school);
 }
 
 export const formatLevel = (level: unknown, otherLevel: unknown): string =>

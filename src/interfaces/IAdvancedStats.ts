@@ -4,7 +4,7 @@ export interface NameCount {
 }
 
 export interface IAdvancedStats {
-  /** False for a regular reviewer: gender and age are then empty and the approved travel totals are null. */
+  /** False for a regular reviewer: gender is then empty and the approved travel totals are null. */
   sensitiveVisible: boolean;
   totalApplicants: number;
   /** Approved reimbursements in CAD. Travel decisions are super-admin-only (A2), so null for a regular reviewer. */
@@ -30,6 +30,4 @@ export interface IAdvancedStats {
   coopStats: { registered: number; notRegistered: number };
   jobTypesDistribution: NameCount[];
   adminAssignmentMetrics: { adminName: string; email: string; totalAssigned: number; submittedAssigned: number }[];
-  /** Confirmed and checked-in applicants only. */
-  ageDistribution: { eighteenOrAbove: number; underEighteen: number; notAnswered: number; buckets: NameCount[] };
 }

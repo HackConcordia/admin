@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  AGE_VALUES,
   COMMUNICATION_LANGUAGES,
   DISCIPLINES,
   MAX_HACKATHON_COUNT,
@@ -11,7 +10,7 @@ import Application from "@/repository/models/application";
 
 // The registration app owns this collection: registration-website-conuhacks-10/my-app/lib/models/applicationSchema.ts
 const REGISTRATION_FIELDS = [
-  "firstName", "lastName", "age", "phoneNumber", "email", "status", "processedBy", "processedAt", "teamId",
+  "firstName", "lastName", "phoneNumber", "email", "status", "processedBy", "processedAt", "teamId",
   "country", "city", "communicationLanguage", "languagesSpoken", "languagesSpokenOther", "isStudentOrRecentGraduate",
   "currentLevelOfSchooling", "otherLevelOfSchooling", "school", "schoolOther", "currentYear", "degreeLength",
   "degreeType", "discipline", "disciplineOther", "hackathons", "coolProject", "excitedAbout", "travelReimbursement",
@@ -27,6 +26,8 @@ const REMOVED_X_FIELDS = [
   "isEighteenOrAbove", "faculty", "facultyOther", "levelOfStudy", "levelOfStudyOther", "program", "programOther",
   "graduationSemester", "graduationYear", "preferredLanguage", "workingLanguages", "workingLanguagesOther",
   "workRegions", "workRegionsOther", "nextCoopTerm", "nextCoopTermOther",
+  // Dropped from XI before launch: registration no longer asks the age.
+  "age",
 ];
 
 describe("Application model (ConUHacks XI registration compatibility)", () => {
@@ -47,7 +48,6 @@ describe("Application model (ConUHacks XI registration compatibility)", () => {
   });
 
   it("mirrors the registration enums", () => {
-    expect(Application.schema.path("age").options.enum).toEqual(["", ...AGE_VALUES]);
     expect(Application.schema.path("communicationLanguage").options.enum).toEqual(["", ...COMMUNICATION_LANGUAGES]);
     expect(Application.schema.path("currentLevelOfSchooling").options.enum).toEqual(["", ...SCHOOLING_LEVELS]);
     expect(Application.schema.path("discipline").options.enum).toEqual(["", ...DISCIPLINES]);

@@ -1,5 +1,5 @@
 /**
- * age, phoneNumber, shirtSize, dietary answers, gender, pronouns and underrepresented
+ * phoneNumber, shirtSize, dietary answers, gender, pronouns and underrepresented
  * (SUPER_ADMIN_ONLY_FIELD_KEYS) must never reach a regular reviewer's browser through any route that
  * returns an application document, not just be hidden by the view.
  */
@@ -28,7 +28,6 @@ const DOC = {
   email: "ada@test.dev",
   status: "Submitted",
   discipline: "data-science",
-  age: "under-18",
   phoneNumber: "5145550000",
   shirtSize: "XL",
   dietaryRestrictions: ['["vegan"]'],
@@ -42,7 +41,7 @@ const DOC = {
   travelReimbursementCurrency: "USD",
   resume: { size: 0 },
 };
-const SECRETS = ["under-18", "5145550000", "XL", "vegan", "No sesame", "female", "she/her", "Unsure", "isTravelReimbursementApproved", "travelReimbursementAmount", "travelReimbursementCurrency"];
+const SECRETS = ["5145550000", "XL", "vegan", "No sesame", "female", "she/her", "Unsure", "isTravelReimbursementApproved", "travelReimbursementAmount", "travelReimbursementCurrency"];
 
 const CASES: { name: string; handler: RouteHandler; method: string; url: string; body?: unknown; arrange: () => void }[] = [
   {

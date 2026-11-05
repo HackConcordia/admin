@@ -40,7 +40,7 @@ describe("buildApplicationsCsv", () => {
   const csv = buildApplicationsCsv([
     {
       _id: "64c000000000000000000001", firstName: "Zoë", lastName: "Łukasz", email: "z@x.dev", status: "CheckedIn",
-      age: "under-18", country: "CA", city: "Montreal", languagesSpoken: ['["english","other"]'], languagesSpokenOther: "Arabic",
+      country: "CA", city: "Montreal", languagesSpoken: ['["english","other"]'], languagesSpokenOther: "Arabic",
       discipline: "other", disciplineOther: "Bio", hackathons: 5, travelReimbursement: null, dietaryRestrictions: ["[]"],
       jobTypesInterested: '["other"]', jobTypesInterestedOther: "Robotics", coolProject: "=cmd|' /C calc'!A0",
       termsAndConditions: { mlhConduct: true, mlhTerms: true, mlhEmails: false },
@@ -58,7 +58,7 @@ describe("buildApplicationsCsv", () => {
   it("has one header per column, covering the XI fields", () => {
     expect(header.split(",")).toEqual([...CSV_HEADERS]);
     expect(CSV_HEADERS).toEqual(
-      expect.arrayContaining(["Age", "Discipline", "Languages spoken", "Hackathons", "Travel requested", "Quebec resident", "Travel approved"]),
+      expect.arrayContaining(["Discipline", "Languages spoken", "Hackathons", "Travel requested", "Quebec resident", "Travel approved"]),
     );
   });
 
@@ -92,8 +92,32 @@ describe("buildApplicationsCsv", () => {
     expect(cells(odd)[CSV_HEADERS.indexOf("Underrepresented")]).toBe("Maybe");
   });
 
+  it("labels CEGEP and high-school answers from their own lists", () => {
+    const rowOf = (doc: Record<string, unknown>) => {
+      const [, line] = buildApplicationsCsv([doc]).replace(/^\uFEFF/, "").trimEnd().split(CRLF);
+      return (name: string) => cells(line)[CSV_HEADERS.indexOf(name)];
+    };
+    const cegep = rowOf({ currentLevelOfSchooling: "CEGEP", school: "Cégep d’Ahuntsic", currentYear: "Year 4+", degreeLength: "Other", degreeType: "DEC" });
+    expect(cegep("School")).toBe("Cégep d’Ahuntsic");
+    expect(cegep("Degree length")).toBe("Other");
+    expect(cegep("Degree type")).toBe("DEC (Diploma of College Studies)");
+    const highSchool = rowOf({ currentLevelOfSchooling: "High School", currentYear: "Grade 10" });
+    expect(highSchool("Level of schooling")).toBe("High School");
+    expect(highSchool("Current year")).toBe("Grade 10");
+    expect(highSchool("Degree length")).toBe("");
+  });
+
+  it("names the email-language column like registration, each option in its own language", () => {
+    const language = (communicationLanguage: string) => {
+      const [, line] = buildApplicationsCsv([{ communicationLanguage }]).replace(/^\uFEFF/, "").trimEnd().split(CRLF);
+      return cells(line)[CSV_HEADERS.indexOf("Preferred language for emails")];
+    };
+    expect(language("english")).toBe("English");
+    expect(language("french")).toBe("Français");
+  });
+
   it("writes labels, keeps accented names and neutralizes formulas", () => {
-    for (const expected of ["Zoë", "Łukasz", "Checked-in", "Under 18", "English | Other (Arabic)", "Other (Bio)", "5+", "Not answered",
+    for (const expected of ["Zoë", "Łukasz", "Checked-in", "Canada", "English | Other (Arabic)", "Other (Bio)", "5+", "Not answered",
       "Other (Robotics)", ",yes,", "'=cmd|' /C calc'!A0"]) {
       expect(row).toContain(expected);
     }

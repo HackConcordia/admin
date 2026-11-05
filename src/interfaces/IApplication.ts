@@ -22,7 +22,6 @@ export interface IApplication {
   _id: string;
   firstName: string;
   lastName: string;
-  age: string;
   phoneNumber: string;
   email: string;
   country: string;

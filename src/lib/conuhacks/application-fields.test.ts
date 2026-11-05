@@ -17,7 +17,7 @@ const keysOf = (values: ApplicantFieldValues, isSuperAdmin: boolean) =>
   resolveSections(values, { isSuperAdmin }).flatMap((section) => section.fields.map((field) => field.key));
 
 const EVERYTHING: ApplicantFieldValues = {
-  age: "19", phoneNumber: "5145550000", country: "CA", city: "Montreal", communicationLanguage: "french",
+  phoneNumber: "5145550000", country: "CA", city: "Montreal", communicationLanguage: "french",
   languagesSpoken: ['["english","other"]'], languagesSpokenOther: "Arabic", isStudentOrRecentGraduate: true,
   currentLevelOfSchooling: "Other", otherLevelOfSchooling: "Bootcamp", school: "other", schoolOther: "École 42",
   currentYear: "Year 2", degreeLength: "3 years", degreeType: "Other", discipline: "other", disciplineOther: "Bio",
@@ -63,6 +63,26 @@ describe("field registry", () => {
       resolveSections(values, { isSuperAdmin: false }).flatMap((s) => s.fields).find((f) => f.key === "currentYear");
     expect(find({ currentLevelOfSchooling: "Graduate" })?.options?.map((o) => o.value)).toContain("PhD – year 3+");
     expect(find({ currentLevelOfSchooling: "Other" })).toMatchObject({ input: "text" });
+    expect(find({ currentLevelOfSchooling: "High School" })?.options?.map((o) => o.value)).toEqual([
+      "Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12",
+    ]);
+  });
+
+  it("follows the registration's level rules for the school list and the degree details", () => {
+    const fieldOf = (values: ApplicantFieldValues, key: ResolvedField["key"]) =>
+      resolveSections(values, { isSuperAdmin: false }).flatMap((s) => s.fields).find((f) => f.key === key);
+    const values = (field: ResolvedField | undefined) => field?.options?.map((o) => o.value);
+
+    expect(keysOf({ currentLevelOfSchooling: "High School" }, false)).not.toContain("degreeLength");
+    expect(keysOf({ currentLevelOfSchooling: "High School" }, false)).not.toContain("degreeType");
+    expect(values(fieldOf({ currentLevelOfSchooling: "CEGEP" }, "degreeLength"))).toEqual(["1 year", "2 years", "3 years", "Other"]);
+    expect(values(fieldOf({ currentLevelOfSchooling: "Graduate" }, "degreeLength"))).toEqual(["1 year", "2 years", "3 years", "4 years", "5+ years"]);
+    expect(values(fieldOf({ currentLevelOfSchooling: "CEGEP" }, "degreeType"))).toEqual(["DEC", "AEC", "Certificate", "Technical", "Other"]);
+
+    expect(values(fieldOf({ currentLevelOfSchooling: "CEGEP" }, "school"))).toContain("Cégep d’Ahuntsic");
+    expect(values(fieldOf({ currentLevelOfSchooling: "CEGEP" }, "school"))).not.toContain("Concordia University");
+    expect(values(fieldOf({ currentLevelOfSchooling: "Undergraduate" }, "school"))).toContain("Concordia University");
+    expect(values(fieldOf({ currentLevelOfSchooling: "Undergraduate" }, "school"))).not.toContain("Cégep d’Ahuntsic");
   });
 
   it("resolves sections for every stored list shape and a missing field without throwing", () => {
@@ -80,7 +100,8 @@ describe("displayFieldValue", () => {
     resolveSections(EVERYTHING, { isSuperAdmin: true }).flatMap((s) => s.fields).find((f) => f.key === key)!;
 
   it("shows labels, Yes/No, 5+ and list labels", () => {
-    expect(displayFieldValue(spec("communicationLanguage"), "french")).toBe("French");
+    expect(displayFieldValue(spec("communicationLanguage"), "french")).toBe("Français");
+    expect(displayFieldValue(spec("communicationLanguage"), "english")).toBe("English");
     expect(displayFieldValue(spec("isStudentOrRecentGraduate"), true)).toBe("Yes");
     expect(displayFieldValue(spec("hackathons"), 5)).toBe("5+");
     expect(displayFieldValue(spec("languagesSpoken"), ['["english","french"]'])).toBe("English | French");

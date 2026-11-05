@@ -9,7 +9,6 @@ import { Pronouns } from "@/constants/Pronouns";
 import { UnderrepresentedGroups } from "@/constants/UnderrepresentedGroups";
 import { travelFilterClause } from "@/lib/conuhacks/application-query";
 import {
-  formatAge,
   formatCity,
   formatCommunicationLanguage,
   formatCountry,
@@ -52,7 +51,7 @@ export function csvStatusQuery(filter: CsvStatusFilter): Record<string, unknown>
 }
 
 export const CSV_FIELDS =
-  "firstName lastName email status age phoneNumber country city communicationLanguage languagesSpoken languagesSpokenOther " +
+  "firstName lastName email status phoneNumber country city communicationLanguage languagesSpoken languagesSpokenOther " +
   "isStudentOrRecentGraduate currentLevelOfSchooling otherLevelOfSchooling school schoolOther currentYear degreeLength degreeType " +
   "discipline disciplineOther hackathons coolProject excitedAbout isRegisteredForCoop jobRolesLookingFor jobTypesInterested " +
   "jobTypesInterestedOther travelReimbursement isTravelReimbursementApproved travelReimbursementAmount travelReimbursementCurrency " +
@@ -92,18 +91,17 @@ const COLUMNS: readonly { header: string; value: (doc: Doc) => string }[] = [
   { header: "Last name", value: (doc) => text(doc.lastName) },
   { header: "Email", value: (doc) => text(doc.email) },
   { header: "Status", value: (doc) => (isCheckedInStatus(doc.status) ? CHECKED_IN_STATUS : text(doc.status)) },
-  { header: "Age", value: (doc) => formatAge(doc.age) },
   { header: "Phone", value: (doc) => text(doc.phoneNumber) },
   { header: "Country", value: (doc) => formatCountry(doc.country) },
   { header: "City", value: (doc) => formatCity(doc.city) },
   { header: "Quebec resident", value: (doc) => (isQuebecResident(doc.country, doc.city) ? "yes" : "no") },
-  { header: "Communication language", value: (doc) => formatCommunicationLanguage(doc.communicationLanguage) },
+  { header: "Preferred language for emails", value: (doc) => formatCommunicationLanguage(doc.communicationLanguage) },
   { header: "Languages spoken", value: (doc) => formatLanguagesSpoken(doc.languagesSpoken, doc.languagesSpokenOther) },
   { header: "Student or recent graduate", value: (doc) => formatYesNo(doc.isStudentOrRecentGraduate) },
   { header: "Level of schooling", value: (doc) => formatLevel(doc.currentLevelOfSchooling, doc.otherLevelOfSchooling) },
   { header: "School", value: (doc) => formatSchool(doc.school, doc.schoolOther) },
   { header: "Current year", value: (doc) => optionLabel(CurrentYears(text(doc.currentLevelOfSchooling), "en"), doc.currentYear) },
-  { header: "Degree length", value: (doc) => optionLabel(DegreeLengths("en"), doc.degreeLength) },
+  { header: "Degree length", value: (doc) => optionLabel(DegreeLengths(text(doc.currentLevelOfSchooling), "en"), doc.degreeLength) },
   { header: "Degree type", value: (doc) => optionLabel(DegreeTypes(text(doc.currentLevelOfSchooling), "en"), doc.degreeType) },
   { header: "Discipline", value: (doc) => formatDiscipline(doc.discipline, doc.disciplineOther) },
   { header: "Hackathons", value: (doc) => formatHackathons(doc.hackathons) },

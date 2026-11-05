@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  formatAge,
   formatCity,
   formatCountry,
   formatDietaryRestrictions,
@@ -45,14 +44,15 @@ describe("formatList (every stored shape)", () => {
 
 describe("field formatters", () => {
   it("label codes and keep typed 'Other' answers", () => {
-    expect(formatAge("under-18")).toBe("Under 18");
-    expect(formatAge("30+")).toBe("30+");
     expect(formatCountry("CA")).toBe("Canada");
     expect(formatCity("Montreal")).toBe("Montreal, Quebec");
     expect(formatSchool("other", "École 42")).toBe("École 42");
     expect(formatSchool("Concordia University", "")).toBe("Concordia University");
     expect(formatLevel("Other", "Bootcamp")).toBe("Other (Bootcamp)");
     expect(formatLevel("Graduate", "")).toBe("University – graduate (master's or PhD)");
+    expect(formatLevel("High School", "")).toBe("High School");
+    expect(formatSchool("Cégep d’Ahuntsic", "")).toBe("Cégep d’Ahuntsic");
+    expect(formatSchool("Collège Dawson", "")).toBe("Collège Dawson");
     expect(formatDiscipline("other", "Bioinformatics")).toBe("Other (Bioinformatics)");
     expect(formatDiscipline("data-science", "")).toBe("Data Science");
     expect(formatLanguagesSpoken(['["english","other"]'], "Arabic")).toBe("English | Other (Arabic)");

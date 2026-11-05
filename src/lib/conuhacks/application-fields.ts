@@ -4,7 +4,7 @@
  * components/application-form/*Section.tsx): same option values, same "Other" follow-ups, same
  * level rules (field-options.ts). Client-safe: the detail view imports it.
  */
-import { AgeOptions } from "@/constants/AgeOptions";
+import { CegepSchools } from "@/constants/CegepSchools";
 import { Cities } from "@/constants/Cities";
 import { CommunicationLanguages } from "@/constants/CommunicationLanguages";
 import { Countries } from "@/constants/Countries";
@@ -36,7 +36,7 @@ export interface FieldOption {
 
 /** Applicant-answered fields (names, email, status, files and admin fields are handled separately). */
 export const APPLICANT_FIELD_KEYS = [
-  "age", "phoneNumber", "country", "city", "communicationLanguage", "languagesSpoken", "languagesSpokenOther",
+  "phoneNumber", "country", "city", "communicationLanguage", "languagesSpoken", "languagesSpokenOther",
   "isStudentOrRecentGraduate", "currentLevelOfSchooling", "otherLevelOfSchooling", "school", "schoolOther",
   "currentYear", "degreeLength", "degreeType", "discipline", "disciplineOther",
   "hackathons", "coolProject", "excitedAbout",
@@ -52,7 +52,7 @@ export type FieldStorage = "string" | "nullableString" | "boolean" | "nullableBo
 
 /** How each field is stored in the applications collection (registration app format). */
 export const FIELD_STORAGE: Readonly<Record<ApplicantFieldKey, FieldStorage>> = {
-  age: "string", phoneNumber: "string", country: "string", city: "string", communicationLanguage: "string",
+  phoneNumber: "string", country: "string", city: "string", communicationLanguage: "string",
   languagesSpoken: "jsonInArray", languagesSpokenOther: "string", isStudentOrRecentGraduate: "boolean",
   currentLevelOfSchooling: "string", otherLevelOfSchooling: "string", school: "string", schoolOther: "string",
   currentYear: "string", degreeLength: "string", degreeType: "string", discipline: "string", disciplineOther: "string",
@@ -67,7 +67,7 @@ export const FIELD_STORAGE: Readonly<Record<ApplicantFieldKey, FieldStorage>> = 
  * and redactSensitiveApplicantFields blanks them before any response or page prop leaves the server.
  */
 export const SUPER_ADMIN_ONLY_FIELD_KEYS = [
-  "age", "phoneNumber", "shirtSize", "dietaryRestrictions", "dietaryRestrictionsDescription", "gender", "pronouns", "underrepresented",
+  "phoneNumber", "shirtSize", "dietaryRestrictions", "dietaryRestrictionsDescription", "gender", "pronouns", "underrepresented",
 ] as const satisfies readonly ApplicantFieldKey[];
 
 /** Rendered in the view's "Links & Documents" block (through safeExternalUrl), not in a section. */
@@ -110,19 +110,26 @@ export function currentYearOptionsFor(level: unknown): readonly FieldOption[] {
   return currentYearValues(level) ? CurrentYears(String(level), "en") : [];
 }
 
+export function degreeLengthOptionsFor(level: unknown): readonly FieldOption[] {
+  return typeof level === "string" ? DegreeLengths(level, "en") : [];
+}
+
 export function degreeTypeOptionsFor(level: unknown): readonly FieldOption[] {
   return typeof level === "string" ? DegreeTypes(level, "en") : [];
+}
+
+/** Like the registration form: CEGEP students pick from the Quebec cégeps, every other level from the full list. */
+export function schoolOptionsFor(level: unknown): readonly FieldOption[] {
+  return level === "CEGEP" ? CegepSchools("en") : Schools("en");
 }
 
 /** The applicant's travel answer. The view renders it in its own block, next to the admin decision. */
 export const TRAVEL_FIELD: ResolvedField = field("travelReimbursement", "Asked for travel reimbursement", "nullableBoolean", YES_NO);
 
 function personalFields(values: ApplicantFieldValues, isSuperAdmin: boolean): ResolvedField[] {
-  const fields: ResolvedField[] = isSuperAdmin
-    ? [field("age", "Age", "select", AgeOptions("en")), field("phoneNumber", "Phone number", "text")]
-    : [];
+  const fields: ResolvedField[] = isSuperAdmin ? [field("phoneNumber", "Phone number", "text")] : [];
   fields.push(
-    field("communicationLanguage", "Communication language", "select", CommunicationLanguages("en")),
+    field("communicationLanguage", "Preferred language for emails", "select", CommunicationLanguages()),
     field("languagesSpoken", "Languages spoken", "multiselect", LanguagesSpoken("en")),
   );
   if (listIncludes(values.languagesSpoken, "other") || hasValue(values.languagesSpokenOther)) {
@@ -146,7 +153,7 @@ function educationFields(values: ApplicantFieldValues): ResolvedField[] {
   if (isOtherLevel(level) || hasValue(values.otherLevelOfSchooling)) {
     fields.push(field("otherLevelOfSchooling", "Level of schooling (other)", "text"));
   }
-  fields.push(field("school", "School", "select", Schools("en")));
+  fields.push(field("school", "School", "select", schoolOptionsFor(level)));
   if (text(values.school).toLowerCase() === "other" || hasValue(values.schoolOther)) {
     fields.push(field("schoolOther", "School (other)", "text"));
   }
@@ -154,7 +161,7 @@ function educationFields(values: ApplicantFieldValues): ResolvedField[] {
   fields.push(years.length > 0 ? field("currentYear", "Current year", "select", years) : field("currentYear", "Current year", "text"));
   if (requiresDegreeDetails(level) || hasValue(values.degreeLength) || hasValue(values.degreeType)) {
     fields.push(
-      field("degreeLength", "Degree length", "select", DegreeLengths("en")),
+      field("degreeLength", "Degree length", "select", degreeLengthOptionsFor(level)),
       field("degreeType", "Degree type", "select", degreeTypeOptionsFor(level)),
     );
   }
