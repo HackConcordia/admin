@@ -63,6 +63,26 @@ describe("field registry", () => {
       resolveSections(values, { isSuperAdmin: false }).flatMap((s) => s.fields).find((f) => f.key === "currentYear");
     expect(find({ currentLevelOfSchooling: "Graduate" })?.options?.map((o) => o.value)).toContain("PhD – year 3+");
     expect(find({ currentLevelOfSchooling: "Other" })).toMatchObject({ input: "text" });
+    expect(find({ currentLevelOfSchooling: "High School" })?.options?.map((o) => o.value)).toEqual([
+      "Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12",
+    ]);
+  });
+
+  it("follows the registration's level rules for the school list and the degree details", () => {
+    const fieldOf = (values: ApplicantFieldValues, key: ResolvedField["key"]) =>
+      resolveSections(values, { isSuperAdmin: false }).flatMap((s) => s.fields).find((f) => f.key === key);
+    const values = (field: ResolvedField | undefined) => field?.options?.map((o) => o.value);
+
+    expect(keysOf({ currentLevelOfSchooling: "High School" }, false)).not.toContain("degreeLength");
+    expect(keysOf({ currentLevelOfSchooling: "High School" }, false)).not.toContain("degreeType");
+    expect(values(fieldOf({ currentLevelOfSchooling: "CEGEP" }, "degreeLength"))).toEqual(["1 year", "2 years", "3 years", "Other"]);
+    expect(values(fieldOf({ currentLevelOfSchooling: "Graduate" }, "degreeLength"))).toEqual(["1 year", "2 years", "3 years", "4 years", "5+ years"]);
+    expect(values(fieldOf({ currentLevelOfSchooling: "CEGEP" }, "degreeType"))).toEqual(["DEC", "AEC", "Certificate", "Technical", "Other"]);
+
+    expect(values(fieldOf({ currentLevelOfSchooling: "CEGEP" }, "school"))).toContain("Cégep d’Ahuntsic");
+    expect(values(fieldOf({ currentLevelOfSchooling: "CEGEP" }, "school"))).not.toContain("Concordia University");
+    expect(values(fieldOf({ currentLevelOfSchooling: "Undergraduate" }, "school"))).toContain("Concordia University");
+    expect(values(fieldOf({ currentLevelOfSchooling: "Undergraduate" }, "school"))).not.toContain("Cégep d’Ahuntsic");
   });
 
   it("resolves sections for every stored list shape and a missing field without throwing", () => {

@@ -2,6 +2,7 @@ import { Language } from "@/lib/LanguageContext";
 import { SCHOOLING_LEVELS, SchoolingLevel } from "@/lib/conuhacks/field-options";
 
 const LABELS: Record<SchoolingLevel, Record<Language, string>> = {
+  "High School": { en: "High School", fr: "École secondaire" },
   CEGEP: { en: "CEGEP", fr: "Cégep" },
   Undergraduate: { en: "University – undergraduate", fr: "Université – 1er cycle" },
   Graduate: { en: "University – graduate (master's or PhD)", fr: "Université – cycles supérieurs (maîtrise ou doctorat)" },

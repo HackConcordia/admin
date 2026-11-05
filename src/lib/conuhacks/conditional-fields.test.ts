@@ -36,10 +36,17 @@ describe("clearHiddenFields", () => {
     ).toMatchObject({ city: "", schoolOther: "", disciplineOther: "", languagesSpokenOther: "", dietaryRestrictionsDescription: "" });
   });
 
-  it("level 'Other' drops degree details; any other level drops the 'other level' text", () => {
+  it("levels 'Other' and 'High School' drop degree details; any other level drops the 'other level' text", () => {
     expect(clearHiddenFields({ currentLevelOfSchooling: "Other", otherLevelOfSchooling: "Bootcamp", degreeLength: "2 years", degreeType: "AEC" })).toEqual({
       currentLevelOfSchooling: "Other",
       otherLevelOfSchooling: "Bootcamp",
+      degreeLength: "",
+      degreeType: "",
+    });
+    expect(clearHiddenFields({ currentLevelOfSchooling: "High School", currentYear: "Grade 9", degreeLength: "2 years", degreeType: "DEC" })).toEqual({
+      currentLevelOfSchooling: "High School",
+      currentYear: "Grade 9",
+      otherLevelOfSchooling: "",
       degreeLength: "",
       degreeType: "",
     });
@@ -66,6 +73,7 @@ describe("clearHiddenFields", () => {
       expect(clearHiddenFields({ city: "Toronto" }, { country: "US" })).toEqual({ city: "" });
       expect(clearHiddenFields({ schoolOther: "x" }, { school: "McGill University" })).toEqual({ schoolOther: "" });
       expect(clearHiddenFields({ degreeType: "AEC" }, { currentLevelOfSchooling: "Other" })).toEqual({ degreeType: "", degreeLength: "" });
+      expect(clearHiddenFields({ degreeLength: "1 year" }, { currentLevelOfSchooling: "High School" })).toEqual({ degreeType: "", degreeLength: "" });
     });
 
     it("the body value wins over the stored one, and a visible controller keeps the answer", () => {

@@ -1,0 +1,68 @@
+import { Language } from "@/lib/LanguageContext";
+
+/**
+ * The Quebec cégeps and colleges offered when the level is CEGEP (HackDécouverte's list). Names are
+ * proper nouns, so only the few with an official French name differ in French. "other" reveals the
+ * free-text school field, like the full list's "other".
+ */
+const CEGEPS: readonly { value: string; label: string; fr?: string }[] = [
+  { value: "Cégep André-Laurendeau", label: "Cégep André-Laurendeau" },
+  { value: "Cégep Beauce-Appalaches", label: "Cégep Beauce-Appalaches" },
+  { value: "Cégep d’Ahuntsic", label: "Cégep d’Ahuntsic" },
+  { value: "Cégep d’Alma", label: "Cégep d’Alma" },
+  { value: "Cégep de Baie-Comeau", label: "Cégep de Baie-Comeau" },
+  { value: "Cégep de Bois-de-Boulogne", label: "Cégep de Bois-de-Boulogne" },
+  { value: "Cégep de Chicoutimi", label: "Cégep de Chicoutimi" },
+  { value: "Cégep de Drummondville", label: "Cégep de Drummondville" },
+  { value: "Cégep de Granby–Haute-Yamaska", label: "Cégep de Granby–Haute-Yamaska" },
+  { value: "Cégep de Jonquière", label: "Cégep de Jonquière" },
+  { value: "Cégep de l’Abitibi-Témiscamingue", label: "Cégep de l’Abitibi-Témiscamingue" },
+  { value: "Cégep de la Gaspésie et des Îles", label: "Cégep de la Gaspésie et des Îles" },
+  { value: "Cégep de La Pocatière", label: "Cégep de La Pocatière" },
+  { value: "Cégep de Lévis-Lauzon", label: "Cégep de Lévis-Lauzon" },
+  { value: "Cégep de Limoilou", label: "Cégep de Limoilou" },
+  { value: "Cégep de l’Outaouais", label: "Cégep de l’Outaouais" },
+  { value: "Cégep de Maisonneuve", label: "Cégep de Maisonneuve" },
+  { value: "Cégep de Matane", label: "Cégep de Matane" },
+  { value: "Cégep de Rimouski", label: "Cégep de Rimouski" },
+  { value: "Cégep de Rivière-du-Loup", label: "Cégep de Rivière-du-Loup" },
+  { value: "Cégep de Rosemont", label: "Cégep de Rosemont" },
+  { value: "Cégep de Saint-Félicien", label: "Cégep de Saint-Félicien" },
+  { value: "Cégep de Saint-Hyacinthe", label: "Cégep de Saint-Hyacinthe" },
+  { value: "Cégep de Saint-Jérôme", label: "Cégep de Saint-Jérôme" },
+  { value: "Cégep de Saint-Laurent", label: "Cégep de Saint-Laurent" },
+  { value: "Cégep de Sainte-Foy", label: "Cégep de Sainte-Foy" },
+  { value: "Cégep de Sept-Îles", label: "Cégep de Sept-Îles" },
+  { value: "Cégep de Sherbrooke", label: "Cégep de Sherbrooke" },
+  { value: "Cégep de Sorel-Tracy", label: "Cégep de Sorel-Tracy" },
+  { value: "Cégep de Thetford", label: "Cégep de Thetford" },
+  { value: "Cégep de Trois-Rivières", label: "Cégep de Trois-Rivières" },
+  { value: "Cégep de Valleyfield", label: "Cégep de Valleyfield" },
+  { value: "Cégep de Victoriaville", label: "Cégep de Victoriaville" },
+  { value: "Cégep du Vieux-Montréal", label: "Cégep du Vieux-Montréal" },
+  { value: "Cégep Édouard-Montpetit", label: "Cégep Édouard-Montpetit" },
+  { value: "Cégep François-Xavier-Garneau", label: "Cégep François-Xavier-Garneau" },
+  { value: "Cégep Gérald-Godin", label: "Cégep Gérald-Godin" },
+  { value: "Cégep John Abbott", label: "Cégep John Abbott" },
+  { value: "Cégep Lionel-Groulx", label: "Cégep Lionel-Groulx" },
+  { value: "Cégep Marie-Victorin", label: "Cégep Marie-Victorin" },
+  { value: "Cégep Montmorency", label: "Cégep Montmorency" },
+  { value: "Cégep régional de Lanaudière (Joliette)", label: "Cégep régional de Lanaudière (Joliette)" },
+  { value: "Cégep régional de Lanaudière (L’Assomption)", label: "Cégep régional de Lanaudière (L’Assomption)" },
+  { value: "Cégep régional de Lanaudière (Terrebonne)", label: "Cégep régional de Lanaudière (Terrebonne)" },
+  { value: "Cégep Saint-Jean-sur-Richelieu", label: "Cégep Saint-Jean-sur-Richelieu" },
+  { value: "Cégep Champlain à Lennoxville", label: "Cégep Champlain à Lennoxville" },
+  { value: "Cégep Champlain - Saint-Lawrence", label: "Cégep Champlain - Saint-Lawrence" },
+  { value: "Cégep Champlain à Saint-Lambert", label: "Cégep Champlain à Saint-Lambert" },
+  { value: "Collège Dawson", label: "Collège Dawson" },
+  { value: "Collège Héritage", label: "Collège Héritage" },
+  { value: "Collège de Shawinigan", label: "Collège de Shawinigan" },
+  { value: "Collège Lasalle", label: "Collège Lasalle" },
+  { value: "Collège Stanislas", label: "Collège Stanislas" },
+  { value: "Marianopolis College", label: "Marianopolis College", fr: "Collège Marianopolis" },
+  { value: "Vanier College", label: "Vanier College", fr: "Collège Vanier" },
+  { value: "other", label: "Other", fr: "Autre" },
+];
+
+export const CegepSchools = (lang: Language = "en") =>
+  CEGEPS.map(({ value, label, fr }) => ({ value, label: lang === "fr" ? fr ?? label : label }));

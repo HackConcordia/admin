@@ -96,7 +96,9 @@ export function computeAdvancedStats(applications: readonly App[], admins: reado
     levelOfSchoolingDistribution: labelled(applications, "currentLevelOfSchooling", SchoolingLevels("en")),
     currentYearDistribution: countBy(applications.map((app) => orNotSpecified(text(app.currentYear)))),
     degreeLengthDistribution: countBy(
-      applications.filter((app) => text(app.degreeLength)).map((app) => optionLabel(DegreeLengths("en"), app.degreeLength)),
+      applications
+        .filter((app) => text(app.degreeLength))
+        .map((app) => optionLabel(DegreeLengths(text(app.currentLevelOfSchooling), "en"), app.degreeLength)),
     ),
     // Grouped by the listed value ("Other" stays one bar); the typed text is in the CSV.
     disciplineDistribution: labelled(applications, "discipline", Disciplines("en")),

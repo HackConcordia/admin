@@ -101,7 +101,7 @@ const COLUMNS: readonly { header: string; value: (doc: Doc) => string }[] = [
   { header: "Level of schooling", value: (doc) => formatLevel(doc.currentLevelOfSchooling, doc.otherLevelOfSchooling) },
   { header: "School", value: (doc) => formatSchool(doc.school, doc.schoolOther) },
   { header: "Current year", value: (doc) => optionLabel(CurrentYears(text(doc.currentLevelOfSchooling), "en"), doc.currentYear) },
-  { header: "Degree length", value: (doc) => optionLabel(DegreeLengths("en"), doc.degreeLength) },
+  { header: "Degree length", value: (doc) => optionLabel(DegreeLengths(text(doc.currentLevelOfSchooling), "en"), doc.degreeLength) },
   { header: "Degree type", value: (doc) => optionLabel(DegreeTypes(text(doc.currentLevelOfSchooling), "en"), doc.degreeType) },
   { header: "Discipline", value: (doc) => formatDiscipline(doc.discipline, doc.disciplineOther) },
   { header: "Hackathons", value: (doc) => formatHackathons(doc.hackathons) },

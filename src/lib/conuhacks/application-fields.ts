@@ -4,6 +4,7 @@
  * components/application-form/*Section.tsx): same option values, same "Other" follow-ups, same
  * level rules (field-options.ts). Client-safe: the detail view imports it.
  */
+import { CegepSchools } from "@/constants/CegepSchools";
 import { Cities } from "@/constants/Cities";
 import { CommunicationLanguages } from "@/constants/CommunicationLanguages";
 import { Countries } from "@/constants/Countries";
@@ -109,8 +110,17 @@ export function currentYearOptionsFor(level: unknown): readonly FieldOption[] {
   return currentYearValues(level) ? CurrentYears(String(level), "en") : [];
 }
 
+export function degreeLengthOptionsFor(level: unknown): readonly FieldOption[] {
+  return typeof level === "string" ? DegreeLengths(level, "en") : [];
+}
+
 export function degreeTypeOptionsFor(level: unknown): readonly FieldOption[] {
   return typeof level === "string" ? DegreeTypes(level, "en") : [];
+}
+
+/** Like the registration form: CEGEP students pick from the Quebec cégeps, every other level from the full list. */
+export function schoolOptionsFor(level: unknown): readonly FieldOption[] {
+  return level === "CEGEP" ? CegepSchools("en") : Schools("en");
 }
 
 /** The applicant's travel answer. The view renders it in its own block, next to the admin decision. */
@@ -143,7 +153,7 @@ function educationFields(values: ApplicantFieldValues): ResolvedField[] {
   if (isOtherLevel(level) || hasValue(values.otherLevelOfSchooling)) {
     fields.push(field("otherLevelOfSchooling", "Level of schooling (other)", "text"));
   }
-  fields.push(field("school", "School", "select", Schools("en")));
+  fields.push(field("school", "School", "select", schoolOptionsFor(level)));
   if (text(values.school).toLowerCase() === "other" || hasValue(values.schoolOther)) {
     fields.push(field("schoolOther", "School (other)", "text"));
   }
@@ -151,7 +161,7 @@ function educationFields(values: ApplicantFieldValues): ResolvedField[] {
   fields.push(years.length > 0 ? field("currentYear", "Current year", "select", years) : field("currentYear", "Current year", "text"));
   if (requiresDegreeDetails(level) || hasValue(values.degreeLength) || hasValue(values.degreeType)) {
     fields.push(
-      field("degreeLength", "Degree length", "select", DegreeLengths("en")),
+      field("degreeLength", "Degree length", "select", degreeLengthOptionsFor(level)),
       field("degreeType", "Degree type", "select", degreeTypeOptionsFor(level)),
     );
   }

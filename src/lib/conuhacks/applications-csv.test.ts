@@ -92,6 +92,21 @@ describe("buildApplicationsCsv", () => {
     expect(cells(odd)[CSV_HEADERS.indexOf("Underrepresented")]).toBe("Maybe");
   });
 
+  it("labels CEGEP and high-school answers from their own lists", () => {
+    const rowOf = (doc: Record<string, unknown>) => {
+      const [, line] = buildApplicationsCsv([doc]).replace(/^\uFEFF/, "").trimEnd().split(CRLF);
+      return (name: string) => cells(line)[CSV_HEADERS.indexOf(name)];
+    };
+    const cegep = rowOf({ currentLevelOfSchooling: "CEGEP", school: "Cégep d’Ahuntsic", currentYear: "Year 4+", degreeLength: "Other", degreeType: "DEC" });
+    expect(cegep("School")).toBe("Cégep d’Ahuntsic");
+    expect(cegep("Degree length")).toBe("Other");
+    expect(cegep("Degree type")).toBe("DEC (Diploma of College Studies)");
+    const highSchool = rowOf({ currentLevelOfSchooling: "High School", currentYear: "Grade 10" });
+    expect(highSchool("Level of schooling")).toBe("High School");
+    expect(highSchool("Current year")).toBe("Grade 10");
+    expect(highSchool("Degree length")).toBe("");
+  });
+
   it("writes labels, keeps accented names and neutralizes formulas", () => {
     for (const expected of ["Zoë", "Łukasz", "Checked-in", "Canada", "English | Other (Arabic)", "Other (Bio)", "5+", "Not answered",
       "Other (Robotics)", ",yes,", "'=cmd|' /C calc'!A0"]) {

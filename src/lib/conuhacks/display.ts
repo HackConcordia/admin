@@ -1,4 +1,5 @@
 /** Display helpers for ConUHacks XI applications: English labels for stored option values. Client-safe. */
+import { CegepSchools } from "@/constants/CegepSchools";
 import { Cities } from "@/constants/Cities";
 import { CommunicationLanguages } from "@/constants/CommunicationLanguages";
 import { Countries } from "@/constants/Countries";
@@ -45,7 +46,7 @@ export const formatCommunicationLanguage = (value: unknown): string => optionLab
 export function formatSchool(school: unknown, schoolOther: unknown): string {
   const typed = text(schoolOther);
   if (typed && (!text(school) || text(school).toLowerCase() === "other")) return typed;
-  return optionLabel(Schools("en"), school);
+  return optionLabel([...Schools("en"), ...CegepSchools("en")], school);
 }
 
 export const formatLevel = (level: unknown, otherLevel: unknown): string =>

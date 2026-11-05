@@ -74,6 +74,43 @@ describe("buildApplicationUpdate", () => {
     expect(error({ currentLevelOfSchooling: "Graduate", degreeType: "AEC" })).toBe("Invalid value for degreeType");
   });
 
+  it.each([
+    [{ currentLevelOfSchooling: "CEGEP", degreeType: "DEC – pre-university" }, "degreeType"],
+    [{ currentLevelOfSchooling: "CEGEP", degreeLength: "4 years" }, "degreeLength"],
+    [{ currentLevelOfSchooling: "Undergraduate", degreeLength: "Other" }, "degreeLength"],
+    [{ currentLevelOfSchooling: "High School", currentYear: "Year 1" }, "currentYear"],
+    [{ currentLevelOfSchooling: "CEGEP", currentYear: "Grade 12" }, "currentYear"],
+    [{ degreeLength: "10 years" }, "degreeLength"],
+    [{ school: "Hogwarts" }, "school"],
+  ])("rejects the registration's per-level mismatch %j", (body, key) => {
+    expect(error(body)).toBe(`Invalid value for ${key}`);
+  });
+
+  it("high school takes a grade and no degree details; CEGEP takes its own years, lengths, types and the cégep list", () => {
+    expect(set({ currentLevelOfSchooling: "High School", currentYear: "Grade 7", degreeLength: "2 years", degreeType: "DEC" })).toMatchObject({
+      currentYear: "Grade 7",
+      degreeLength: "",
+      degreeType: "",
+    });
+    expect(
+      set({ currentLevelOfSchooling: "CEGEP", school: "Cégep d’Ahuntsic", currentYear: "Year 4+", degreeLength: "Other", degreeType: "Technical" }),
+    ).toMatchObject({ school: "Cégep d’Ahuntsic", currentYear: "Year 4+", degreeLength: "Other", degreeType: "Technical" });
+    for (const school of ["Marianopolis College", "Collège Dawson", "other", "Concordia University"]) {
+      expect(set({ currentLevelOfSchooling: "CEGEP", school }).school).toBe(school);
+    }
+  });
+
+  it("the stored level decides the degree length when the body has none, and a level change re-checks the stored length", () => {
+    expect(set({ degreeLength: "Other" }, { currentLevelOfSchooling: "CEGEP" }).degreeLength).toBe("Other");
+    expect(error({ degreeLength: "5+ years" }, { currentLevelOfSchooling: "CEGEP" })).toBe("Invalid value for degreeLength");
+    expect(set({ degreeLength: "5+ years" }, { currentLevelOfSchooling: "Graduate" }).degreeLength).toBe("5+ years");
+    expect(set({ degreeLength: "Other" }).degreeLength).toBe("Other");
+    const stored = { currentLevelOfSchooling: "Undergraduate", currentYear: "Year 3", degreeLength: "4 years", degreeType: "Other" };
+    expect(error({ currentLevelOfSchooling: "CEGEP", currentYear: "Year 3" }, stored)).toBe("Invalid value for degreeLength");
+    // level unchanged: an off-list stored length stays accepted
+    expect(set({ degreeLength: "4 years" }, { ...stored, currentLevelOfSchooling: "CEGEP" }).degreeLength).toBe("4 years");
+  });
+
   it("clears hidden follow-ups with the registration rule", () => {
     expect(
       set({ isRegisteredForCoop: false, jobRolesLookingFor: "intern", jobTypesInterested: ["other"], jobTypesInterestedOther: "x" }),

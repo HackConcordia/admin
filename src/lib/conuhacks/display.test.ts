@@ -50,6 +50,9 @@ describe("field formatters", () => {
     expect(formatSchool("Concordia University", "")).toBe("Concordia University");
     expect(formatLevel("Other", "Bootcamp")).toBe("Other (Bootcamp)");
     expect(formatLevel("Graduate", "")).toBe("University – graduate (master's or PhD)");
+    expect(formatLevel("High School", "")).toBe("High School");
+    expect(formatSchool("Cégep d’Ahuntsic", "")).toBe("Cégep d’Ahuntsic");
+    expect(formatSchool("Collège Dawson", "")).toBe("Collège Dawson");
     expect(formatDiscipline("other", "Bioinformatics")).toBe("Other (Bioinformatics)");
     expect(formatDiscipline("data-science", "")).toBe("Data Science");
     expect(formatLanguagesSpoken(['["english","other"]'], "Arabic")).toBe("English | Other (Arabic)");
