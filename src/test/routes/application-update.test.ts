@@ -10,12 +10,20 @@ const applicationModel = vi.hoisted(() => ({
 }));
 const checkInModel = vi.hoisted(() => ({ updateOne: vi.fn(async () => ({})), findOneAndDelete: vi.fn(async () => null) }));
 const emails = vi.hoisted(() => ({ sendDiscordInviteEmail: vi.fn(async () => true) }));
+const qrCodeMappingModel = vi.hoisted(() => ({ deleteMany: vi.fn(async () => ({ deletedCount: 1 })) }));
+const EVENT_ID = vi.hoisted(() => "6700000000000000000dec26");
+const checkInConfig = vi.hoisted(() => ({ getCheckInEventConfig: vi.fn(() => ({ eventId: EVENT_ID, meals: [] })) }));
 
 vi.mock("@/repository/mongoose", () => ({ default: vi.fn() }));
 vi.mock("@/repository/models/admin", () => ({ default: { findById: createFindByIdMock() } }));
 vi.mock("@/repository/models/application", () => ({ default: applicationModel }));
 vi.mock("@/repository/models/checkin", () => ({ default: checkInModel }));
 vi.mock("@/utils/applicantEmails", () => emails);
+vi.mock("@/repository/models/qrcodemapping", () => ({ default: qrCodeMappingModel }));
+vi.mock("@/config/event", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/config/event")>()),
+  getCheckInEventConfig: checkInConfig.getCheckInEventConfig,
+}));
 
 import * as route from "@/app/api/(group)/application/[applicationId]/route";
 import { TEST_ADMIN_EMAIL, adminCookie, buildRequest, routeContext } from "@/test/http";
@@ -186,5 +194,74 @@ describe("PUT /api/application/[applicationId]", () => {
     applicationModel.findById.mockResolvedValue(null);
     expect((await put(NAMES)).status).toBe(404);
     expect((await put(NAMES, "not-an-id")).status).toBe(400);
+  });
+});
+
+describe("PUT /api/application/[applicationId] leaving Checked-in", () => {
+  const CHECKED_IN = { ...STORED, status: "Checked-in" };
+
+  it.each(["Checked-in", "CheckedIn"])("frees the applicant's badge for this event when %s becomes Confirmed", async (stored) => {
+    applicationModel.findById.mockResolvedValue({ ...STORED, status: stored });
+
+    const res = await put({ ...NAMES, status: "Confirmed", expectedStatus: stored });
+
+    expect(res.status).toBe(200);
+    expect(qrCodeMappingModel.deleteMany).toHaveBeenCalledWith({ applicationId: APP_ID, eventId: EVENT_ID });
+    expect(applicationModel.findOneAndUpdate.mock.invocationCallOrder[0]).toBeLessThan(
+      qrCodeMappingModel.deleteMany.mock.invocationCallOrder[0],
+    );
+    // checkedInAt goes back to its schema default in the same conditional write as the status.
+    expect(applicationModel.findOneAndUpdate.mock.calls[0][1].$set).toMatchObject({ status: "Confirmed", checkedInAt: null });
+  });
+
+  it("frees the badge for any status other than checked in", async () => {
+    applicationModel.findById.mockResolvedValue(CHECKED_IN);
+
+    expect((await put({ ...NAMES, status: "Declined", expectedStatus: "Checked-in" })).status).toBe(200);
+    expect(qrCodeMappingModel.deleteMany).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the badge when the status stays checked in or was never checked in", async () => {
+    applicationModel.findById.mockResolvedValue(CHECKED_IN);
+    expect((await put(NAMES)).status).toBe(200);
+    expect((await put({ ...NAMES, status: "CheckedIn", expectedStatus: "Checked-in" })).status).toBe(200);
+
+    applicationModel.findById.mockResolvedValue({ ...STORED, status: "Confirmed" });
+    expect((await put({ ...NAMES, status: "Declined", expectedStatus: "Confirmed" })).status).toBe(200);
+
+    expect(qrCodeMappingModel.deleteMany).not.toHaveBeenCalled();
+    for (const [, update] of applicationModel.findOneAndUpdate.mock.calls) expect(update.$set).not.toHaveProperty("checkedInAt");
+    for (const [, update] of applicationModel.findByIdAndUpdate.mock.calls) expect(update.$set).not.toHaveProperty("checkedInAt");
+  });
+
+  it("keeps the badge when the status change loses a race", async () => {
+    applicationModel.findById.mockResolvedValue(CHECKED_IN);
+    applicationModel.findOneAndUpdate.mockResolvedValueOnce(null);
+
+    expect((await put({ ...NAMES, status: "Confirmed", expectedStatus: "Checked-in" })).status).toBe(409);
+    expect(qrCodeMappingModel.deleteMany).not.toHaveBeenCalled();
+  });
+
+  it("refuses before writing anything when EVENT_ID can't be read", async () => {
+    applicationModel.findById.mockResolvedValue(CHECKED_IN);
+    checkInConfig.getCheckInEventConfig.mockImplementationOnce(() => {
+      throw new Error("Missing required environment variable EVENT_ID");
+    });
+
+    const res = await put({ ...NAMES, status: "Confirmed", expectedStatus: "Checked-in" });
+
+    expect(res.status).toBe(500);
+    expect(applicationModel.findOneAndUpdate).not.toHaveBeenCalled();
+    expect(qrCodeMappingModel.deleteMany).not.toHaveBeenCalled();
+  });
+
+  it("still saves the status, and says so, when the badge can't be freed", async () => {
+    applicationModel.findById.mockResolvedValue(CHECKED_IN);
+    qrCodeMappingModel.deleteMany.mockRejectedValueOnce(new Error("network"));
+
+    const res = await put({ ...NAMES, status: "Confirmed", expectedStatus: "Checked-in" });
+
+    expect(res.status).toBe(200);
+    expect((await res.json()).message).toMatch(/QR badge/);
   });
 });

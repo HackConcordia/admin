@@ -2,19 +2,24 @@ import type { NextRequest } from "next/server";
 
 import mongoose from "mongoose";
 
-import { getEmailEventConfig } from "@/config/event";
+import { getCheckInEventConfig, getEmailEventConfig } from "@/config/event";
 import { buildApplicationUpdate } from "@/lib/conuhacks/application-update";
 import { redactSensitiveApplicantFields } from "@/lib/conuhacks/redact-applicant-fields";
 import { fetchIsSuperAdmin, requireAdmin } from "@/lib/require-admin";
 import { DECISION_STATUSES, isCheckedInStatus, isSameStatus } from "@/lib/status";
 import Application from "@/repository/models/application";
 import CheckIn from "@/repository/models/checkin";
+import QrCodeMapping from "@/repository/models/qrcodemapping";
 import connectMongoDB from "@/repository/mongoose";
 import { sendErrorResponse, sendSuccessResponse } from "@/repository/response";
 import { sendDiscordInviteEmail, type EmailApplicant } from "@/utils/applicantEmails";
 import { describeError } from "@/utils/describeError";
 
 type RouteContext = { params: Promise<{ applicationId: string }> };
+
+const UPDATED = "Application updated successfully";
+const UPDATED_BADGE_NOT_RELEASED =
+  "Application updated, but its QR badge could not be released. Checking in with that badge will be refused until its qrcodemappings entry is removed.";
 
 /** Same side effects as the registration app's own "confirm attendance": a CheckIn record, plus the Discord invite. */
 async function onConfirmed(application: EmailApplicant): Promise<void> {
@@ -38,6 +43,20 @@ async function onLeftConfirmed(email: string): Promise<void> {
     await CheckIn.findOneAndDelete({ email });
   } catch (error) {
     console.error("Error deleting CheckIn document:", describeError(error));
+  }
+}
+
+/**
+ * Leaving checked-in undoes the badge scan: the applicant's qrcodemappings entries for this event
+ * are deleted, so the badge (and the applicant) can be checked in again. Returns false on failure.
+ */
+async function onLeftCheckedIn(applicationId: string, eventId: string): Promise<boolean> {
+  try {
+    await QrCodeMapping.deleteMany({ applicationId, eventId });
+    return true;
+  } catch (error) {
+    console.error("Error deleting the QR code mapping:", describeError(error));
+    return false;
   }
 }
 
@@ -109,6 +128,19 @@ export const PUT = async (req: NextRequest, { params }: RouteContext) => {
     // Leaving Confirmed for anything but checked in (C4) removes the CheckIn record.
     const isLeavingConfirmed =
       previousStatus === "Confirmed" && nextStatus !== undefined && nextStatus !== "Confirmed" && !isCheckedInStatus(nextStatus);
+    const isLeavingCheckedIn = isCheckedInStatus(previousStatus) && nextStatus !== undefined && !isCheckedInStatus(nextStatus);
+
+    // Freeing the badge needs this deployment's EVENT_ID: refuse before writing if it can't be read,
+    // rather than undo the check-in and leave the badge mapped.
+    let eventId: string | undefined;
+    if (isLeavingCheckedIn) {
+      try {
+        eventId = getCheckInEventConfig().eventId;
+      } catch (error) {
+        console.error("Status change refused, event settings are invalid:", describeError(error));
+        return sendErrorResponse("Event settings are not configured. No status was changed.", null, 500);
+      }
+    }
 
     // A status change records the session admin and is conditional on the status just read, so it
     // loses with 409 to a concurrent decision instead of silently overwriting it.
@@ -116,7 +148,8 @@ export const PUT = async (req: NextRequest, { params }: RouteContext) => {
       nextStatus !== undefined
         ? await Application.findOneAndUpdate(
             { _id: applicationId, status: previousStatus },
-            { $set: { ...set, processedBy: auth.admin.email, processedAt: new Date() } },
+            // Leaving checked-in resets checkedInAt to its schema default (null) in this same write.
+            { $set: { ...set, processedBy: auth.admin.email, processedAt: new Date(), ...(isLeavingCheckedIn ? { checkedInAt: null } : {}) } },
             { new: true, runValidators: true },
           )
         : await Application.findByIdAndUpdate(applicationId, { $set: set }, { new: true, runValidators: true });
@@ -129,8 +162,9 @@ export const PUT = async (req: NextRequest, { params }: RouteContext) => {
 
     if (isChangingToConfirmed) await onConfirmed(stored);
     if (isLeavingConfirmed) await onLeftConfirmed(String(stored.email ?? ""));
+    const isBadgeReleased = eventId === undefined || (await onLeftCheckedIn(applicationId, eventId));
 
-    return sendSuccessResponse("Application updated successfully", updatedApplication.toObject(), 200);
+    return sendSuccessResponse(isBadgeReleased ? UPDATED : UPDATED_BADGE_NOT_RELEASED, updatedApplication.toObject(), 200);
   } catch (error) {
     console.error("Error in PUT /api/application/[applicationId]:", describeError(error));
     if (error instanceof Error && error.name === "ValidationError") {

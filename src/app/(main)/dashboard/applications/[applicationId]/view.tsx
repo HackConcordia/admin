@@ -583,7 +583,10 @@ export default function ApplicationView({
       });
       setIsEditMode(false);
       setResumeFile(null);
-      toast.success("Application updated successfully");
+      // Any other message means part of the save didn't go through (e.g. a QR badge left mapped).
+      const savedMessage = "Application updated successfully";
+      if (json?.message && json.message !== savedMessage) toast.warning(json.message);
+      else toast.success(savedMessage);
     } catch (e: any) {
       setError(e?.message ?? "Failed to update application");
       toast.error(e?.message ?? "Failed to update application");
