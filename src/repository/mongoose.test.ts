@@ -13,7 +13,7 @@ async function loadConnectMongoDB() {
 describe("connectMongoDB", () => {
   beforeEach(() => {
     connect.mockReset();
-    delete (globalThis as { __mongooseConnection?: unknown }).__mongooseConnection;
+    delete (globalThis as { mongooseConnectionCache?: unknown }).mongooseConnectionCache;
     vi.stubEnv("MONGODB_URI", URI);
     vi.spyOn(console, "error").mockImplementation(() => {});
   });

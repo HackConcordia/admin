@@ -15,8 +15,8 @@ const CONNECT_OPTIONS = { bufferCommands: false } as const;
 type ConnectionCache = { promise: Promise<unknown> | null };
 
 // On globalThis so dev hot reloads and separately bundled routes share one connection.
-const globalWithCache = globalThis as typeof globalThis & { __mongooseConnection?: ConnectionCache };
-const cache: ConnectionCache = (globalWithCache.__mongooseConnection ??= { promise: null });
+const globalWithCache = globalThis as typeof globalThis & { mongooseConnectionCache?: ConnectionCache };
+const cache: ConnectionCache = (globalWithCache.mongooseConnectionCache ??= { promise: null });
 
 const connectMongoDB = async (): Promise<void> => {
   const uri = process.env.MONGODB_URI;
@@ -28,6 +28,7 @@ const connectMongoDB = async (): Promise<void> => {
     cache.promise = mongoose.connect(uri, CONNECT_OPTIONS).catch((error: unknown) => {
       // Let the next request try again instead of caching the failure.
       cache.promise = null;
+
       // Never log or rethrow the raw error: it can contain the connection URI (credentials + host).
       const name = error instanceof Error ? error.name : "UnknownError";
       const code = (error as { code?: unknown } | null)?.code;
