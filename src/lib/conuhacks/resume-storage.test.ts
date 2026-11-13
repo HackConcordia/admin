@@ -120,6 +120,12 @@ describe("sanitizeFileName", () => {
     expect(sanitizeFileName(longName).length).toBe(200);
   });
 
+  it("stores accented names as plain ASCII, so they always fit in a download header", () => {
+    expect(sanitizeFileName("Sabrina CV - Français.pdf")).toBe("Sabrina CV - Francais.pdf");
+    expect(sanitizeFileName("Éloïse Côté.pdf")).toBe("Eloise Cote.pdf");
+    expect(sanitizeFileName("简历.pdf")).toBe("resume.pdf");
+  });
+
   it("falls back to resume.pdf when nothing is left", () => {
     expect(sanitizeFileName("")).toBe("resume.pdf");
     expect(sanitizeFileName("///")).toBe("resume.pdf");

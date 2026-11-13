@@ -76,4 +76,23 @@ describe("safeFileHeaders", () => {
     const headers = safeFileHeaders("application/pdf", '"""');
     expect(headers["Content-Disposition"]).toContain('filename="download"');
   });
+
+  it("never throws on a non-Latin-1 name, and keeps the real name in filename*", () => {
+    // The stored name that broke the download: "c" + U+0327 COMBINING CEDILLA (macOS spelling).
+    const decomposed = "Sabrina CV - Français.pdf";
+    const headers = safeFileHeaders("application/pdf", decomposed);
+    expect(() => new Headers(headers)).not.toThrow();
+    expect(headers["Content-Disposition"]).toBe(
+      "inline; filename=\"Sabrina CV - Francais.pdf\"; filename*=UTF-8''Sabrina%20CV%20-%20Fran%C3%A7ais.pdf",
+    );
+  });
+
+  it("keeps the quoted filename printable ASCII for any input", () => {
+    for (const name of ["Résumé.pdf", "CV 🚀 简历.pdf", "bad\ud800.pdf"]) {
+      const headers = safeFileHeaders("application/pdf", name);
+      expect(() => new Headers(headers)).not.toThrow();
+      const [, quoted] = headers["Content-Disposition"].match(/filename="([^"]*)"/) ?? [];
+      expect(quoted).toMatch(/^[\x20-\x7e]+$/);
+    }
+  });
 });
