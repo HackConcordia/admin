@@ -13,6 +13,8 @@
  * receive a sandboxing CSP and are forced to download as attachments.
  */
 
+import { toAsciiFileName } from "@/lib/ascii-file-name";
+
 const ALLOWED_MIME_TYPES: ReadonlySet<string> = new Set([
   "application/pdf",
   "application/msword",
@@ -27,15 +29,28 @@ function sanitizeFilename(filename: string): string {
   return cleaned || "download";
 }
 
+/** The exact name, percent-encoded for `filename*`; a malformed one (lone surrogate) falls back to ASCII. */
+function encodeUtf8Filename(safeName: string, asciiName: string): string {
+  try {
+    return encodeURIComponent(safeName.normalize("NFC"));
+  } catch {
+    return encodeURIComponent(asciiName);
+  }
+}
+
 export function safeFileHeaders(mimetype: string | undefined, filename: string): Record<string, string> {
   const contentType = mimetype && ALLOWED_MIME_TYPES.has(mimetype) ? mimetype : SAFE_MIME_TYPE;
   const disposition = contentType === "application/pdf" ? "inline" : "attachment";
   const safeName = sanitizeFilename(filename);
-  const utf8Name = encodeURIComponent(safeName);
+  // A header value must be Latin-1, so the quoted name is folded to ASCII (a name stored before
+  // uploads were folded can hold e.g. U+0327, which made `new Headers()` throw and the download
+  // answer 500); filename* keeps the exact name for browsers that read it.
+  const asciiName = sanitizeFilename(toAsciiFileName(safeName));
+  const utf8Name = encodeUtf8Filename(safeName, asciiName);
 
   const headers: Record<string, string> = {
     "Content-Type": contentType,
-    "Content-Disposition": `${disposition}; filename="${safeName}"; filename*=UTF-8''${utf8Name}`,
+    "Content-Disposition": `${disposition}; filename="${asciiName}"; filename*=UTF-8''${utf8Name}`,
     "X-Content-Type-Options": "nosniff",
   };
 

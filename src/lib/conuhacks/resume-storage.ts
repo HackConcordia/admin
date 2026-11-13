@@ -1,5 +1,7 @@
 import mongoose from "mongoose";
 
+import { toAsciiFileName } from "@/lib/ascii-file-name";
+
 /**
  * Registration app convention (HackDecouverte-registration-2025/my-app/lib/files/{resumeUpload,
  * resumeStore}.ts): only a PDF, verified by both its declared type and its magic bytes, is
@@ -61,18 +63,18 @@ export async function validateResumeUpload(value: FormDataEntryValue | null): Pr
   return { ok: true, bytes, originalName: sanitizeFileName(value.name), size: bytes.length };
 }
 
-/** Last path segment, without control characters, quotes or backslashes, max 200 chars. */
+/** Last path segment, plain ASCII, without control characters, quotes or backslashes, max 200 chars. */
 export function sanitizeFileName(name: string): string {
   const base = name.split(/[\\/]/).pop() ?? "";
-  const cleaned = Array.from(base)
+  const withoutControls = Array.from(base)
     .filter((ch) => {
       const code = ch.charCodeAt(0);
       return code >= 0x20 && code !== 0x7f && ch !== '"' && ch !== "\\";
     })
-    .join("")
-    .trim()
-    .slice(0, 200);
-  return cleaned || "resume.pdf";
+    .join("");
+  const cleaned = toAsciiFileName(withoutControls).trim().slice(0, 200);
+  const stem = cleaned.replace(/\.[^.]*$/, "");
+  return /[A-Za-z0-9]/.test(stem) ? cleaned : "resume.pdf";
 }
 
 export interface UploadedFile {
